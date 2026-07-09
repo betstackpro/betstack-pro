@@ -670,7 +670,7 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="irow"><div class="ic">💸</div><div class="mid"><div class="t">4 · Top up &amp; withdraw</div><div class="d">Credit is used to unlock codes. Unspent credit is yours and withdrawable anytime; withdrawals are protected by your 4-digit PIN.</div></div></div>
 
       <div class="sec">How booking codes work</div>
-      <div class="note" style="background:var(--surface);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/></svg><p>A booking code is a short reference you enter at a bookmaker (Bet9ja, SportyBet, 1xBet, Betway…) to instantly load a pre-built bet slip. We sell the <b>code</b> as information. After unlocking it, you place and fund the bet yourself on your own account — <b>we never take custody of your stake or your winnings.</b></p></div>
+      <div class="note" style="background:var(--surface);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/></svg><p>A booking code is a short reference you enter at a bookmaker (1xBet, Parimatch, Melbet, Bet365, Betway…) to instantly load a pre-built bet slip. We sell the <b>code</b> as information. After unlocking it, you place and fund the bet yourself on your own account — <b>we never take custody of your stake or your winnings.</b></p></div>
 
       <div class="sec">Membership tiers</div>
       <p class="sub" style="margin:-2px 2px 12px;">A tier is a membership that unlocks more features (more daily tips, VIP “sure” specials, faster support, a badge). It is <b>not an investment</b>, makes no return promises, and never takes a cut of your winnings.</p>
@@ -746,6 +746,7 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="menu-card">
         <div class="menu-item" onclick="App.openSheet('aichat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="lab">Ask BetBot (AI assistant)</span><span class="chev">›</span></div>
         <div class="menu-item" onclick="App.joinTelegram()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 3-9 9M22 3l-7 19-4-8-8-4z"/></svg><span class="lab">Join VIP Telegram group</span><span class="chev">›</span></div>
+        <div class="menu-item" id="menu-connect-tg" style="display:none;" onclick="App.connectTelegram()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 3-9 9M22 3l-7 19-4-8-8-4z"/></svg><span class="lab">Connect my Telegram<span id="tg-connect-state" style="color:var(--green);font-size:.7rem;font-weight:600;margin-left:6px;"></span></span><span class="chev">›</span></div>
         <div class="menu-item" onclick="App.contactEmail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.2z"/></svg><span class="lab">Contact support</span><span class="chev">›</span></div>
         <div class="menu-item" onclick="App.contactEmail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span class="lab">Report a problem</span><span class="chev">›</span></div>
       </div>
@@ -778,7 +779,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 <div class="overlay" id="overlay" onclick="if(event.target===this)App.closeSheet()"><div class="sheet" id="sheet"></div></div>
 
 <script>
-const State={role:null,balance:0,principal:0,earnings:0,refs:3,owned:new Set(),codes:new Set(),pin:null,profile:null,twofa:false};
+const State={role:null,balance:0,principal:0,earnings:0,refs:3,owned:new Set(),codes:new Set(),pin:null,profile:null,twofa:false,tgLinked:false};
 let Account=null; // PREVIEW ONLY: the account registered this session. Real auth lives server-side.
 // ============ BACKEND CONNECTION ============
 // Point this at your server once it's deployed. While empty, auth/codes run in preview mode.
@@ -873,16 +874,16 @@ const SPORTS=['Football','Basketball','Tennis','Cricket','Rugby','Baseball','Ice
 const RISKS=['Low','Medium','High'];
 // Booking codes (tips) — seeded fallback; hydrated from the server (admin-editable) when online.
 let CODES=[
-  {id:1,title:'Weekend Banker',sport:'Football',book:'Bet9ja',odds:3.45,games:3,risk:'Medium',price:7,code:'B9J-4K72PX'},
-  {id:2,title:'Over Goals Special',sport:'Football',book:'SportyBet',odds:5.10,games:4,risk:'High',price:9,code:'SB-9QX3M1'},
+  {id:1,title:'Weekend Banker',sport:'Football',book:'Bet365',odds:3.45,games:3,risk:'Medium',price:7,code:'B365-4K72PX'},
+  {id:2,title:'Over Goals Special',sport:'Football',book:'Parimatch',odds:5.10,games:4,risk:'High',price:9,code:'PM-9QX3M1'},
   {id:3,title:'Low-Risk Single',sport:'Basketball',book:'1xBet',odds:1.80,games:1,risk:'Low',price:5,code:'1X-77ADE2',sure:true},
   {id:4,title:'Acca of the Day',sport:'Football',book:'Betway',odds:8.20,games:5,risk:'High',price:12,code:'BW-LM55QZ'},
-  {id:5,title:'Draw Hunter',sport:'Football',book:'Bet9ja',odds:3.10,games:2,risk:'Medium',price:6,code:'B9J-DH22XK'},
-  {id:6,title:'BTTS Builder',sport:'Football',book:'SportyBet',odds:4.30,games:3,risk:'Medium',price:8,code:'SB-BT41QM'},
+  {id:5,title:'Draw Hunter',sport:'Football',book:'Melbet',odds:3.10,games:2,risk:'Medium',price:6,code:'MB-DH22XK'},
+  {id:6,title:'BTTS Builder',sport:'Football',book:'Bet365',odds:4.30,games:3,risk:'Medium',price:8,code:'B365-BT41QM'},
   {id:7,title:'Safe Banker Pair',sport:'Football',book:'1xBet',odds:2.05,games:2,risk:'Low',price:5,code:'1X-SB09PA',sure:true},
   {id:8,title:'Goals Galore',sport:'Football',book:'Betway',odds:6.75,games:4,risk:'High',price:10,code:'BW-GG88LX'},
-  {id:9,title:'Cup Night Special',sport:'Football',book:'Bet9ja',odds:4.90,games:3,risk:'Medium',price:8,code:'B9J-CN53RT'},
-  {id:10,title:'Underdog Value',sport:'Football',book:'SportyBet',odds:7.40,games:3,risk:'High',price:11,code:'SB-UD27VK'},
+  {id:9,title:'Cup Night Special',sport:'Football',book:'Parimatch',odds:4.90,games:3,risk:'Medium',price:8,code:'PM-CN53RT'},
+  {id:10,title:'Underdog Value',sport:'Football',book:'Melbet',odds:7.40,games:3,risk:'High',price:11,code:'MB-UD27VK'},
   {id:11,title:'Tennis Straight',sport:'Tennis',book:'1xBet',odds:1.95,games:1,risk:'Low',price:5,code:'1X-TN66ZQ'},
   {id:12,title:'Mega Acca',sport:'Football',book:'Betway',odds:12.50,games:6,risk:'High',price:15,code:'BW-MA99QD'},
 ];
@@ -982,6 +983,7 @@ const App={
       if(r&&r.ok&&r.user){
         State.tier=r.user.tier||'none';
         State.isAdmin=(r.user.role==='admin');
+        State.tgLinked=!!r.user.telegram_linked;
         State.profile=Object.assign(State.profile||{},{username:r.user.username,email:r.user.email,name:r.user.full_name});
         Account={email:r.user.email,username:r.user.username};
         this.login('Member',true);
@@ -1204,6 +1206,7 @@ const App={
     if(view==='admin')this.renderAdmin();
     if(view==='hub')this.renderHubPreds();
     if(view==='how'){const e=document.getElementById('how-tiers');if(e)e.innerHTML=this.tierCards('info');}
+    if(view==='settings')this.updateTelegramConnect();
     this.show(view);
     document.getElementById('nav').classList.toggle('hide', view==='admin'||view==='hub');
     document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.nav===view));
@@ -1865,10 +1868,10 @@ const App={
       h+=`<h3>${c.id?'Edit':'Add'} daily tip</h3><p class="sub" style="margin-bottom:12px;">Tier access is set automatically: up to 3 games = Bronze, up to 5 = Silver, 6+ = Gold. Mark as “Sure” to make it VIP-only.</p>
         <div class="field"><label>Title</label><input class="input" id="cd-title" value="${this.esc(c.title||'')}" placeholder="e.g. Weekend Banker"></div>
         <div class="field"><label>Sport</label><select class="sel" id="cd-sport">${sOpts}</select></div>
-        <div class="field"><label>Bookmaker</label><input class="input" id="cd-book" value="${this.esc(c.book||'')}" placeholder="e.g. Bet9ja"></div>
+        <div class="field"><label>Bookmaker</label><input class="input" id="cd-book" value="${this.esc(c.book||'')}" placeholder="e.g. Bet365"></div>
         <div class="row2" style="display:flex;gap:10px;"><div class="field" style="flex:1;"><label>Odds</label><input class="input" id="cd-odds" type="number" step="0.01" inputmode="decimal" value="${c.odds||''}" placeholder="3.45"></div><div class="field" style="flex:1;"><label>Games</label><input class="input" id="cd-games" type="number" inputmode="numeric" value="${c.games||''}" placeholder="3"></div></div>
         <div class="field"><label>Risk</label><select class="sel" id="cd-risk">${rOpts}</select></div>
-        <div class="field"><label>Booking code</label><input class="input" id="cd-code" value="${this.esc(c.code||'')}" placeholder="e.g. B9J-4K72PX"></div>
+        <div class="field"><label>Booking code</label><input class="input" id="cd-code" value="${this.esc(c.code||'')}" placeholder="e.g. B365-4K72PX"></div>
         <label style="display:flex;align-items:center;gap:10px;margin:4px 0 16px;font-size:.9rem;"><input type="checkbox" id="cd-sure" ${c.sure?'checked':''} style="width:18px;height:18px;">VIP “Sure” special (high-stake, low-odds)</label>
         <button class="btn btn-green" onclick="App.saveCode()">${c.id?'Save changes':'Add tip'}</button>
         <button class="btn btn-dark mt" onclick="App.closeSheet()">Cancel</button>`;
@@ -1932,13 +1935,13 @@ const App={
       h+=`<h3>Edit slip</h3><p class="sub">Update the details or replace the image. Status stays ${t.status==='open'?'Pending':t.status}.</p>
       ${imgBlock}
       <div class="field"><label>Slip title</label><input class="input" id="e-label" value="${this.esc(t.title)}"></div>
-      <div class="row2" style="display:flex;gap:10px;"><div class="field" style="flex:1;"><label>Bookmaker</label><input class="input" id="e-book" value="${this.esc(t.book||'')}" placeholder="Bet9ja"></div><div class="field" style="flex:1;"><label>Total odds</label><input class="input" id="e-odds" type="number" step="0.01" inputmode="decimal" value="${t.odds||''}" placeholder="8.40"></div></div>
+      <div class="row2" style="display:flex;gap:10px;"><div class="field" style="flex:1;"><label>Bookmaker</label><input class="input" id="e-book" value="${this.esc(t.book||'')}" placeholder="1xBet"></div><div class="field" style="flex:1;"><label>Total odds</label><input class="input" id="e-odds" type="number" step="0.01" inputmode="decimal" value="${t.odds||''}" placeholder="8.40"></div></div>
       <div class="field"><label>${t.img?'Replace':'Upload'} image</label><input class="input" id="e-img" type="file" accept="image/*" style="padding-top:14px;"></div>
       <button class="btn btn-green" onclick="App.updateSlip('${t.id}')">Save changes</button>
       <button class="btn btn-out mt" style="border-color:var(--red);color:var(--red);" onclick="App.confirmDelete('${t.id}')">${svg('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>')} Delete slip</button>`;}
     else if(type==='post'){h+=`<h3>Post booking slip</h3><p class="sub">Upload a photo of the slip. It posts as Pending; mark Won/Lost when it settles and everyone gets the signal.</p>
       <div class="field" style="margin-top:18px;"><label>Slip title</label><input class="input" id="p-label" placeholder="Saturday Acca"></div>
-      <div class="row2" style="display:flex;gap:10px;"><div class="field" style="flex:1;"><label>Bookmaker</label><input class="input" id="p-book" placeholder="Bet9ja"></div><div class="field" style="flex:1;"><label>Total odds</label><input class="input" id="p-odds" type="number" step="0.01" inputmode="decimal" placeholder="8.40"></div></div>
+      <div class="row2" style="display:flex;gap:10px;"><div class="field" style="flex:1;"><label>Bookmaker</label><input class="input" id="p-book" placeholder="1xBet"></div><div class="field" style="flex:1;"><label>Total odds</label><input class="input" id="p-odds" type="number" step="0.01" inputmode="decimal" placeholder="8.40"></div></div>
       <div class="field"><label>Slip image (photo of the booking)</label><input class="input" id="p-img" type="file" accept="image/*" style="padding-top:14px;"></div>
       <button class="btn btn-green" onclick="App.postTicket()">Post slip</button>`;}
     else if(type==='payout'){ const r=State.ref||{min:15,require_proof:true,balance:0,payout_count:0};
@@ -2010,6 +2013,30 @@ const App={
   copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>this.toast('Copied: '+t),()=>this.toast('Copy: '+t));}else this.toast('Copy: '+t);},
   contactEmail(){this.toast('Opening email to '+SUPPORT_EMAIL);window.location.href='mailto:'+SUPPORT_EMAIL+'?subject=Betstack%20Pro%20support';},
   joinTelegram(){this.toast('Opening Telegram…');window.open(TELEGRAM_JOIN,'_blank');},
+  // Active, verified subscriber only: signed in + role Member + a real tier.
+  isActiveMember(){ return !!AUTH_TOKEN && State.role==='Member' && !!State.tier && State.tier!=='none'; },
+  // Show/hide the "Connect my Telegram" row based on subscriber status.
+  updateTelegramConnect(){
+    const row=document.getElementById('menu-connect-tg'); if(!row)return;
+    const show=this.isActiveMember();
+    row.style.display=show?'':'none';
+    const st=document.getElementById('tg-connect-state');
+    if(st)st.textContent=State.tgLinked?'· Connected ✓':'';
+  },
+  // Mint a one-time link token and open the bot to bind this account.
+  connectTelegram(){
+    if(!this.isActiveMember()){ this.toast('Subscribe to an active plan to connect Telegram'); return; }
+    if(!API_BASE){ this.toast('Telegram linking needs the live server'); return; }
+    this.toast('Opening Telegram…');
+    fetch(API_BASE+'/api/telegram/link-token',{method:'POST',headers:authHeaders({'Content-Type':'application/json'}),credentials:'include'})
+      .then(async res=>{ const d=await res.json().catch(()=>({}));
+        if(res.ok&&(d.link_url||d.link)){ window.open(d.link_url||d.link,'_blank','noopener'); State.tgLinked=true; this.updateTelegramConnect(); }
+        else if(res.status===401){ this.toast('Please sign in again to connect Telegram'); }
+        else if(res.status===403||d.error==='subscription_required'){ this.toast('Connecting Telegram needs an active subscription'); }
+        else{ this.toast('Could not start Telegram linking — please try again'); }
+      })
+      .catch(()=>this.toast('Network error — please try again'));
+  },
   renderAiFeed(){const f=document.getElementById('ai-feed');if(!f)return;f.innerHTML=this._aiMsgs.map(m=>`<div class="ai-msg ${m.me?'me':'bot'}">${this.esc(m.t)}</div>`).join('');f.scrollTop=f.scrollHeight;},
   aiSend(){
     const i=document.getElementById('ai-q');const q=(i.value||'').trim();if(!q)return;
