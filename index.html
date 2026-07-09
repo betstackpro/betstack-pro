@@ -837,6 +837,11 @@ const Api={
   // Server creates a hosted invoice for one item at the SERVER-side price and returns {invoice_url, order_id}.
   // method is gateway-agnostic ('nowpayments' today; cards etc. can be added later) — server picks the gateway.
   createCheckout(item,method){ return this.post('/api/checkout/create',{item,method:method||'nowpayments'}); },
+  unlockCode(codeId){ return this.post('/api/codes/unlock',{code_id:codeId}); },
+  unlockStatus(codeId){ return this.get('/api/codes/unlock-status?code_id='+encodeURIComponent(codeId)); },
+  adminUnlocks(){ return this.get('/api/admin/unlocks'); },
+  adminUnlockDecide(id,action){ return this.post('/api/admin/unlock/decide',{id,action}); },
+  adminStats(){ return this.get('/api/admin/stats'); },
   // Server checks the purchase (confirmed only via signed webhook) and returns {status} (+ code/tier once paid).
   checkoutStatus(orderId){ return this.get('/api/checkout/status?order_id='+encodeURIComponent(orderId)); },
   // Real user reviews — submit (auth) and public list with true average. Never seeded with fakes.
@@ -1283,10 +1288,38 @@ const App={
   },
   unlockTip(id){
     const c=CODES.find(x=>String(x.id)===String(id)); if(!c)return;
-    if(State.codes.has(String(id))){ this.openSheet('code',id); return; }
+    if(State.codes.has(String(id))&&c.code){ this.openSheet('code',id); return; }
     const can=this.canOpen(c);
     if(!can.ok){ this._upsell={reason:can.reason,need:can.need}; this.openSheet('upgrade'); return; }
-    State.codes.add(String(id)); this.recordUnlock(String(id)); this.openSheet('code',id); this.renderHome();
+    if(!API_BASE){ State.codes.add(String(id)); this.recordUnlock(String(id)); this.openSheet('code',id); this.renderHome(); return; }
+    // Admin-approval gate: request the unlock, then wait for confirmation that the code is fresh.
+    this.toast('Requesting unlock…');
+    Api.unlockCode(String(id)).then(r=>{
+      if(r&&r.status==='approved'&&r.code){ c.code=r.code; State.codes.add(String(id)); this.recordUnlock(String(id)); this.openSheet('code',id); this.renderHome(); return; }
+      if(r&&r.status==='pending'){ this.toast('Sent for admin check — verifying the code is fresh ✓'); this.pollUnlock(String(id)); return; }
+      if(r&&r.error==='subscription_required'){ this._upsell={reason:'You need an active plan to unlock tips.',need:'bronze'}; this.openSheet('upgrade'); return; }
+      this.toast('Could not request unlock — please try again');
+    }).catch(()=>this.toast('Network error — please try again'));
+  },
+  pollUnlock(id){
+    if(this._unlockPolls&&this._unlockPolls[id])return;
+    this._unlockPolls=this._unlockPolls||{};
+    let tries=0;
+    this._unlockPolls[id]=setInterval(()=>{
+      tries++;
+      if(tries>100){ clearInterval(this._unlockPolls[id]); delete this._unlockPolls[id]; return; }
+      Api.unlockStatus(id).then(r=>{
+        if(r&&r.status==='approved'&&r.code){
+          clearInterval(this._unlockPolls[id]); delete this._unlockPolls[id];
+          const c=CODES.find(x=>String(x.id)===String(id)); if(c)c.code=r.code;
+          State.codes.add(String(id)); this.recordUnlock(String(id));
+          this.toast('Code confirmed fresh ✅'); this.openSheet('code',id); this.renderHome();
+        } else if(r&&r.status==='rejected'){
+          clearInterval(this._unlockPolls[id]); delete this._unlockPolls[id];
+          this.toast('That tip expired — check today\'s new codes');
+        }
+      }).catch(()=>{});
+    },6000);
   },
   buyTier(key){
     if(!API_BASE){ State.tier=key; this.closeSheet(); this.toast(this.tierName(key)+' plan active'); this.go('home'); return; }
@@ -1683,10 +1716,65 @@ const App={
         :`<button class="btn btn-dark btn-sm" style="height:34px;padding:0 11px;" onclick="App.mark('${t.id}','open')">Pending</button>`;
       return `<div class="irow"><div style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0;"></div><div class="mid"><div class="t" style="font-size:.95rem;">${this.esc(t.title)} <span style="color:${col};font-size:.7rem;">· ${label}</span></div><div class="d">${t.book?this.esc(t.book)+' · ':''}${t.odds?'@'+Number(t.odds).toFixed(2)+' · ':''}${t.img?'Photo uploaded':'No photo yet'}</div></div><div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:170px;"><button class="btn btn-out btn-sm" style="height:34px;padding:0 11px;" onclick="App.openSheet('editslip','${t.id}')">Edit</button>${ctrls}</div></div>`;
     }).join('')||'<p class="sub">No slips yet — post one above.</p>';
-    document.getElementById('admin-list').innerHTML=`<div class="sec">Daily predictions (free)</div>${pred}<div class="sec">Daily tips (codes)</div>${tips}<div class="sec">Booked slips</div>${tix}<div class="sec">Withdrawal requests</div><div id="admin-payouts"><p class="sub">Loading…</p></div>`+
+    document.getElementById('admin-list').innerHTML=`<div id="admin-stats" class="card" style="padding:12px 14px;margin-bottom:12px;"><p class="sub" style="margin:0;">Loading stats…</p></div><div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Unlock requests <button class="btn btn-out btn-sm" style="height:30px;padding:0 10px;font-size:.68rem;" onclick="App.toggleAlarm()" id="alarm-btn">🔔 Alarm on</button></div><div id="admin-unlocks"><p class="sub">Loading…</p></div><div class="sec">Daily predictions (free)</div>${pred}<div class="sec">Daily tips (codes)</div>${tips}<div class="sec">Booked slips</div>${tix}<div class="sec">Withdrawal requests</div><div id="admin-payouts"><p class="sub">Loading…</p></div>`+
       `<div class="sec">Email diagnostics</div><div class="card" style="padding:14px 15px;"><p class="sub" style="margin:0 0 10px;">Send a test verification email to check Resend is configured.</p><input class="input" id="et-to" type="email" placeholder="you@email.com" style="margin-bottom:8px;"><button class="btn btn-out btn-sm" style="height:40px;" onclick="App.emailTest()">Send test email</button><div id="et-result" style="font-size:.8rem;margin-top:10px;color:var(--sub);word-break:break-word;"></div></div>`;
     this.loadAdminPayouts();
+    this.loadAdminUnlocks();
+    if(!this._unlockWatch){ this._unlockWatch=setInterval(()=>{ if(document.getElementById('view-admin').classList.contains('active')) this.loadAdminUnlocks(true); },20000); }
   },
+  loadAdminUnlocks(silent){
+    if(!API_BASE)return;
+    Api.adminStats().then(s=>{
+      const el=document.getElementById('admin-stats'); if(!el||!s||!s.ok)return;
+      const tiers=Object.entries(s.tiers||{}).map(([k,v])=>`${k.toUpperCase()}: <b>${v}</b>`).join(' · ')||'no subscribers yet';
+      el.innerHTML=`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;">
+        <span>🟢 Online (15m): <b>${s.online}</b></span>
+        <span>👥 Users: <b>${s.total_users}</b></span>
+        <span>🔓 Pending unlocks: <b style="color:${s.pending_unlocks?'var(--gold)':'var(--green)'}">${s.pending_unlocks}</b></span>
+      </div><div class="sub" style="font-size:.72rem;margin-top:6px;">Subscribers — ${tiers}</div>`;
+    }).catch(()=>{});
+    Api.adminUnlocks().then(r=>{
+      const el=document.getElementById('admin-unlocks'); if(!el)return;
+      const list=(r&&r.unlocks)||[];
+      const pending=list.filter(u=>u.status==='pending');
+      if(pending.length){ this.startAlarm(); } else { this.stopAlarm(); }
+      if(!list.length){ el.innerHTML='<p class="sub">No unlock requests yet.</p>'; return; }
+      el.innerHTML=list.slice(0,12).map(u=>{
+        const col=u.status==='approved'?'var(--green)':u.status==='rejected'?'var(--red)':'var(--gold)';
+        const ctrls=u.status==='pending'
+          ?`<button class="btn btn-green btn-sm" style="height:34px;padding:0 12px;" onclick="App.decideUnlock('${u.id}','approved')">Approve</button><button class="btn btn-out btn-sm" style="height:34px;padding:0 12px;color:var(--red);border-color:var(--red);" onclick="App.decideUnlock('${u.id}','rejected')">Reject</button>`
+          :`<span style="color:${col};font-size:.78rem;font-weight:700;text-transform:capitalize;">${u.status}</span>`;
+        return `<div class="card" style="padding:12px 14px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="min-width:0;"><div class="t" style="font-weight:700;font-size:.88rem;">${this.esc(u.username||'member')} <span class="sub" style="font-size:.7rem;">(${u.tier||'—'})</span></div>
+            <div class="d" style="font-size:.76rem;">${this.esc(u.title||'code')}${u.book?' · '+this.esc(u.book):''} — <b>${this.esc(u.code||'')}</b></div></div>
+            <div style="display:flex;gap:6px;flex-shrink:0;">${ctrls}</div>
+          </div></div>`;
+      }).join('');
+    }).catch(()=>{ if(!silent){const el=document.getElementById('admin-unlocks'); if(el)el.innerHTML='<p class="sub">Could not load unlock requests.</p>';} });
+  },
+  decideUnlock(id,action){
+    Api.adminUnlockDecide(id,action).then(()=>{ this.toast(action==='approved'?'Approved ✅ — user can now view the code':'Rejected'); this.loadAdminUnlocks(); }).catch(()=>this.toast('Could not update — try again'));
+  },
+  // Loud looping alarm while unlock requests are pending. Tap 🔔 to mute/unmute.
+  startAlarm(){
+    if(this._alarmMuted||this._alarmTimer)return;
+    try{
+      this._ac=this._ac||new (window.AudioContext||window.webkitAudioContext)();
+      if(this._ac.state==='suspended')this._ac.resume();
+      const beep=()=>{ try{
+        const o=this._ac.createOscillator(),g=this._ac.createGain();
+        o.type='square';o.frequency.value=880;g.gain.value=0.25;
+        o.connect(g);g.connect(this._ac.destination);
+        o.start();o.frequency.setValueAtTime(660,this._ac.currentTime+0.15);o.stop(this._ac.currentTime+0.3);
+      }catch(e){} };
+      beep(); this._alarmTimer=setInterval(beep,1200);
+      if(navigator.vibrate)navigator.vibrate([300,150,300]);
+      const btn=document.getElementById('alarm-btn'); if(btn)btn.textContent='🔕 Mute alarm';
+    }catch(e){}
+  },
+  stopAlarm(){ if(this._alarmTimer){clearInterval(this._alarmTimer);this._alarmTimer=null;} const btn=document.getElementById('alarm-btn'); if(btn)btn.textContent=this._alarmMuted?'🔕 Alarm off':'🔔 Alarm on'; },
+  toggleAlarm(){ this._alarmMuted=!this._alarmMuted; if(this._alarmMuted){this.stopAlarm();this.toast('Alarm muted');} else {this.toast('Alarm on');this.loadAdminUnlocks(true);} },
   loadAdminPayouts(){
     if(!API_BASE)return;
     Api.adminGetPayouts().then(r=>{
@@ -2030,8 +2118,13 @@ const App={
     let tries=0;
     const check=()=>{
       Api.checkoutStatus(orderId).then(r=>{
-        if(r&&r.status==='paid'){
-          setPending(null);State.pendingPay=null;
+        if(r&&r.status==='paid'&&r.pending_release){
+          // Payment verified on-chain; code held for an admin freshness check.
+          if(!this._relToastShown){ this._relToastShown=true; this.toast('Payment confirmed ✅ — your code is being verified by our team. It unlocks here automatically.'); }
+          if(tries++<60)setTimeout(check,6000); // keep polling ~6 min while admin releases
+          else this.toast('Verified & queued — your code will appear in the app shortly.');
+        }else if(r&&r.status==='paid'){
+          setPending(null);State.pendingPay=null;this._relToastShown=false;
           if(p.tierKey){ State.tier=p.tierKey; this.go('home'); this.toast(this.tierName(p.tierKey)+' plan active — enjoy your tips'); }
           else if(r.code&&p.codeId){State.codes.add(p.codeId);this.recordUnlock(p.codeId);this.go('home');this.openSheet('code',p.codeId);this.toast('Payment confirmed — code unlocked');}
           else{this.toast('Payment confirmed — thank you');}
