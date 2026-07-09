@@ -40,6 +40,22 @@ button{font-family:var(--b);cursor:pointer;border:none;background:none;color:inh
 input,select,textarea{font-family:var(--b);}
 h1,h2,h3,h4{font-family:var(--d);letter-spacing:-.02em;line-height:1.06;}
 .shell{position:relative;width:100%;max-width:460px;height:100dvh;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;border-left:1px solid var(--border);border-right:1px solid var(--border);}
+/* ---- Desktop / landscape: full-width web layout, mobile stays portrait shell ---- */
+@media (min-width:1024px){
+  .shell{max-width:1080px;border-left:1px solid var(--border);border-right:1px solid var(--border);box-shadow:0 0 60px rgba(0,0,0,.5);}
+  .topbar{padding:16px 34px;}
+  .view{padding-left:34px;padding-right:34px;}
+  .nav{max-width:1080px;margin:0 auto;width:100%;}
+  .tipcard,.card,.irow-card{max-width:none;}
+  .tips-grid-desktop{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+}
+@media (min-width:1440px){ .shell{max-width:1400px;} .view{padding-left:48px;padding-right:48px;} }
+@media (min-width:1024px){
+  .content{scrollbar-width:thin;}
+  .hero{padding:34px 38px;}
+  .hero .h1{font-size:2.3rem;}
+  .navitem{padding:10px 0 8px;}
+}
 /* logo */
 .bars{display:inline-flex;align-items:flex-end;gap:2.5px;height:1em;}
 .bars i{width:.18em;border-radius:2px;display:block;}
@@ -50,7 +66,7 @@ h1,h2,h3,h4{font-family:var(--d);letter-spacing:-.02em;line-height:1.06;}
 .wordmark{font-family:var(--d);font-weight:800;font-size:1.15rem;letter-spacing:-.01em;}
 .wordmark b{color:var(--green);font-weight:800;}.wordmark span{color:var(--muted);font-weight:600;}
 /* topbar */
-.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:15px 18px;background:var(--surface);border-bottom:1px solid var(--border);z-index:30;}
+.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:max(calc(env(safe-area-inset-top,0px) + 14px), 18px) 18px 12px;background:var(--surface);border-bottom:1px solid var(--border);z-index:30;}
 .topbar .lhs{display:flex;align-items:center;gap:10px;}
 .topbar .bars{font-size:26px;}
 .top-actions{display:flex;gap:8px;align-items:center;color:var(--muted);}
@@ -317,9 +333,9 @@ body.light .st{background:rgba(0,0,0,.04);}
 .acc-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
 .acc.open .acc-body{max-height:260px;padding-bottom:14px;}
 /* bottom nav */
-.nav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--border);padding-bottom:var(--safe);z-index:30;}
+.nav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--border);padding-bottom:max(env(safe-area-inset-bottom,0px),2px);z-index:30;}
 .nav.hide{display:none;}
-.navitem{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 0 10px;color:var(--faint);}
+.navitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 0 6px;color:var(--faint);}
 .navitem svg{width:23px;height:23px;}
 .navitem span{font-size:.62rem;font-weight:700;}
 .navitem.active{color:var(--red);}
@@ -785,7 +801,7 @@ let Account=null; // PREVIEW ONLY: the account registered this session. Real aut
 // Point this at your server once it's deployed. While empty, auth/codes run in preview mode.
 const API_BASE='https://betstackpro-backend.betstackpro.workers.dev'; // your Cloudflare Worker
 const SUPPORT_EMAIL='support@betstackpro.com';
-const TELEGRAM_JOIN='https://t.me/BetstackPro'; // PUBLIC group invite link — replace with yours. NEVER put the bot token or numeric chat id in front-end code.
+const TELEGRAM_JOIN='https://t.me/+AUyzm-N5PfxkNTk0'; // Betstack Pro VIP group invite link. NEVER put the bot token or numeric chat id in front-end code.
 const SOCIALS=[
   {name:'X',url:'https://x.com/Betstackpro',path:'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z'},
   {name:'TikTok',url:'https://www.tiktok.com/@betstack_pro',path:'M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z'},
@@ -1338,6 +1354,21 @@ const App={
 
   renderHome(){
     const el=document.getElementById('view-home');let h='';const rate=this.rate();
+    // Telegram community banner — the #1 growth channel deserves front-page placement.
+    const tgLinked = !!State.tgLinked;
+    h+=`<div class="card" style="display:flex;align-items:center;gap:14px;margin-bottom:14px;background:linear-gradient(120deg,rgba(42,171,238,.12),transparent);border:1px solid rgba(42,171,238,.35);cursor:pointer;" onclick="App.joinTelegram()">
+      <div style="width:42px;height:42px;border-radius:50%;background:#2AABEE;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.061 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;font-size:.92rem;">Join our Telegram community</div>
+        <div style="font-size:.74rem;color:var(--muted);">Live results, free tips &amp; whale alerts — posted first in the group.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">
+        <button class="btn btn-sm" style="background:#2AABEE;color:#fff;height:34px;padding:0 14px;">Join</button>
+        ${(this.isActiveMember&&this.isActiveMember())?`<button class="btn btn-out btn-sm" style="height:30px;padding:0 12px;font-size:.68rem;" onclick="event.stopPropagation();App.connectTelegram()">${tgLinked?'Connected ✓':'Connect bot'}</button>`:''}
+      </div>
+    </div>`;
     if(State.role==='Member'){
       const plan=(State.tier&&State.tier!=='none')?TIERS.find(x=>x.key===State.tier):null;
       const used=this.unlocksToday().length;
@@ -1515,7 +1546,12 @@ const App={
   sendChat(){
     const i=document.getElementById('chat-input');const v=(i.value||'').trim();if(!v)return;
     CHAT.push({who:'You',me:true,text:v,ts:Date.now()});i.value='';
+    if(API_BASE&&AUTH_TOKEN){ fetch(API_BASE+'/api/chat/send',{method:'POST',headers:authHeaders({'Content-Type':'application/json'}),credentials:'include',body:JSON.stringify({text:v})}).catch(()=>{}); }
     this.renderChat();
+    // Mirror the message into the Telegram group (best-effort; never blocks the UI).
+    if(API_BASE && AUTH_TOKEN){
+      fetch(API_BASE+'/api/chat/relay',{method:'POST',headers:authHeaders({'Content-Type':'application/json'}),credentials:'include',body:JSON.stringify({text:v})}).catch(()=>{});
+    }
   },
   rec:{active:false,mr:null,chunks:[],t0:0,timer:null,stream:null},
   async toggleRec(){
@@ -2013,8 +2049,8 @@ const App={
   copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>this.toast('Copied: '+t),()=>this.toast('Copy: '+t));}else this.toast('Copy: '+t);},
   contactEmail(){this.toast('Opening email to '+SUPPORT_EMAIL);window.location.href='mailto:'+SUPPORT_EMAIL+'?subject=Betstack%20Pro%20support';},
   joinTelegram(){this.toast('Opening Telegram…');window.open(TELEGRAM_JOIN,'_blank');},
-  // Active, verified subscriber only: signed in + role Member + a real tier.
-  isActiveMember(){ return !!AUTH_TOKEN && State.role==='Member' && !!State.tier && State.tier!=='none'; },
+  // Active, verified subscriber only: signed in + role Member + a real tier. Admins also allowed (for testing & staff use).
+  isActiveMember(){ return !!AUTH_TOKEN && (State.isAdmin || (State.role==='Member' && !!State.tier && State.tier!=='none')); },
   // Show/hide the "Connect my Telegram" row based on subscriber status.
   updateTelegramConnect(){
     const row=document.getElementById('menu-connect-tg'); if(!row)return;
