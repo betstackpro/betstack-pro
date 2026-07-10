@@ -1426,7 +1426,7 @@ const App={
           <div class="hr"></div>
           <div class="posrow"><div><div class="poslab">Odds · Games</div><div class="posval" style="font-size:.95rem;">@ ${c.odds.toFixed(2)} · ${c.games}</div></div>
             ${owned?`<span class="conf">UNLOCKED</span>`:`<button class="btn btn-gold btn-sm" onclick="App.unlockTip('${c.id}')">${svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>')} Unlock</button>`}</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:9px;">${badge}${owned?`<button class="btn btn-out btn-sm" style="height:34px;padding:0 14px;" onclick="App.openSheet('code','${c.id}')">View code</button>`:''}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:9px;">${badge}${owned?`<button class="btn btn-out btn-sm" style="height:34px;padding:0 14px;" onclick="App.openSheet('code','${c.id}')">View picks</button>`:''}</div>
         </div>`;
       }).join('');
       const planBanner = State.isAdmin
