@@ -339,6 +339,12 @@ body.light .st{background:rgba(0,0,0,.04);}
 .navitem svg{width:23px;height:23px;}
 .navitem span{font-size:.62rem;font-weight:700;}
 .navitem.active{color:var(--red);}
+.pill{background:var(--surface);border:1px solid var(--border);color:var(--sub);padding:8px 14px;border-radius:100px;font-size:.74rem;font-weight:700;cursor:pointer;transition:.2s;font-family:inherit;}
+.pill.active{background:rgba(0,200,120,.12);border-color:var(--green);color:var(--green);}
+.bookbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;margin-top:12px;border:none;border-radius:14px;background:linear-gradient(135deg,#00c853,#00e676);color:#00210f;font-weight:800;font-size:1rem;font-family:inherit;cursor:pointer;box-shadow:0 6px 24px rgba(0,200,83,.35);animation:bookPulse 2.4s infinite;}
+@keyframes bookPulse{0%,100%{box-shadow:0 6px 24px rgba(0,200,83,.35);}50%{box-shadow:0 6px 34px rgba(0,200,83,.6);}}
+.bookbtn:active{transform:scale(.98);}
+.book-sub{font-size:.62rem;color:var(--faint);text-align:center;margin-top:6px;}
 /* drawer */
 .drawer-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;opacity:0;pointer-events:none;transition:.25s;}
 .drawer-bg.show{opacity:1;pointer-events:auto;}
@@ -842,6 +848,10 @@ const Api={
   adminUnlocks(){ return this.get('/api/admin/unlocks'); },
   adminUnlockDecide(id,action){ return this.post('/api/admin/unlock/decide',{id,action}); },
   adminStats(){ return this.get('/api/admin/stats'); },
+  adminUsers(){ return this.get('/api/admin/users'); },
+  adminFixtures(sport){ return this.get('/api/admin/fixtures?sport='+encodeURIComponent(sport)); },
+  publicFixtures(sport){ return this.get('/api/fixtures?sport='+encodeURIComponent(sport)); },
+  adminFixturesRefresh(sport){ return this.post('/api/admin/fixtures/refresh',{sport}); },
   // Server checks the purchase (confirmed only via signed webhook) and returns {status} (+ code/tier once paid).
   checkoutStatus(orderId){ return this.get('/api/checkout/status?order_id='+encodeURIComponent(orderId)); },
   // Real user reviews — submit (auth) and public list with true average. Never seeded with fakes.
@@ -1441,12 +1451,13 @@ const App={
         <div class="stat2"><div class="st"><div class="v">${CODES.length}</div><div class="k">Tips today</div></div><div class="st"><div class="v" style="color:var(--green);">${rate}%</div><div class="k">90d hit rate</div></div></div>
       </div>
       ${planBanner}
+      <div id="results-strip"></div>
       <div class="sec">Today's free predictions</div>
       ${preds||'<p class="sub">No predictions posted yet — check back soon.</p>'}
       <div class="sec">Daily tips</div>
       ${codeCards}
       <button class="btn btn-out mt" style="width:100%;" onclick="App.openResults()">${svg('<path d="M3 3v18h18M7 16l4-4 3 3 5-6"/>')} See our verified track record</button>
-      <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Your subscription unlocks the tips — you place every bet yourself with your own money at your own bookmaker. We never hold your stake or your winnings. Tips can lose; bet responsibly. 18+.</p></div>`;
+      <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Your subscription unlocks the tips — you place every bet yourself with your own money at your own bookmaker. We never hold your stake or your winnings. Tips can lose; bet responsibly. 18+.</p></div><div class=\"sec\" style=\"display:flex;align-items:center;justify-content:space-between;\">This week's games <span id=\"wk-count\" class=\"sub\" style=\"font-size:.7rem;\"></span></div><div id=\"week-games\"><p class=\"sub\">Loading games\u2026</p></div>`;
     }else if(State.role==='Partner'){
       h=this.installBanner()+`<div class="hero green"><div class="glow"></div>
         <div class="pill-eye" style="margin-bottom:14px;border-color:rgba(255,255,255,.4);">Partner</div>
@@ -1456,12 +1467,61 @@ const App={
       <button class="btn btn-green" onclick="App.go('wallet')">${svg(ICON.up)} Open Invite &amp; Earn</button>
       <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Commission is paid on genuine activity only — <b>no rewards for sign-ups alone</b>. Withdrawals are reviewed before payout. 18+.</p></div>`;
     }
+    // ===== PUBLIC CREDIBILITY SECTIONS (busy, data-rich home) =====
+    h+=`<div id="home-statstrip"></div>
+    <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">\uD83D\uDCC5 Match center <span class="sub" style="font-size:.68rem;font-weight:400;">today &amp; tomorrow</span></div>
+    <div id="home-matches"><p class="sub">Loading matches\u2026</p></div>
+    <div class="sec">\uD83D\uDCF0 News &amp; updates</div>
+    <div id="home-news"><p class="sub">Loading\u2026</p></div>`;
     h+=this.membershipCard();
     if(State.role==='Member')h+=`<div class="sec">Community reviews</div><div id="reviews-block"></div>`;
     el.innerHTML=h;
+    this.loadHomeExtras();
     if(State.role==='Member')this.loadReviews();
   },
   starRow(n,size){let o='';const r=Math.round(n);for(let i=1;i<=5;i++)o+=`<span class="star ${i<=r?'on':''}" style="font-size:${size||15}px;">★</span>`;return o;},
+  loadHomeExtras(){
+    if(!API_BASE){const m=document.getElementById('home-matches');if(m)m.innerHTML='<p class="sub">Match data loads on the live site.</p>';const n=document.getElementById('home-news');if(n)n.innerHTML='';return;}
+    // Record + activity strip
+    Api.publicStats().then(s=>{
+      const el=document.getElementById('home-statstrip'); if(!el||!s||!s.ok)return;
+      const total=s.won+s.lost; const rate=total?Math.round(s.won/total*100):0;
+      el.innerHTML=`<div class="card" style="padding:12px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
+        <div><div style="font-weight:800;font-size:1.05rem;color:var(--green);">${s.won}W\u2013${s.lost}L</div><div class="sub" style="font-size:.62rem;">30-day record${total?` \u00B7 ${rate}%`:''}</div></div>
+        <div><div style="font-weight:800;font-size:1.05rem;">${s.tips}</div><div class="sub" style="font-size:.62rem;">Active tips</div></div>
+        <div><div style="font-weight:800;font-size:1.05rem;">${s.matches_tracked}</div><div class="sub" style="font-size:.62rem;">Matches tracked</div></div>
+      </div>`;
+    }).catch(()=>{});
+    // Match center — today & tomorrow from our fixtures DB
+    Api.publicFixtures('football').then(r=>{
+      const el=document.getElementById('home-matches'); if(!el)return;
+      const fx=(r&&r.fixtures)||[];
+      if(!fx.length){ el.innerHTML='<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">Match schedule updates daily \u2014 check back soon.</p></div>'; return; }
+      const today=new Date().toDateString();
+      const groups={};
+      fx.slice(0,14).forEach(f=>{ const d=new Date(f.start_ts); const key=d.toDateString()===today?'Today':'Tomorrow'; (groups[key]=groups[key]||[]).push(f); });
+      el.innerHTML=Object.entries(groups).map(([g,list])=>`<div class="sub" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">${g}</div>`+list.map(f=>{
+        const t=new Date(f.start_ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        return `<div class="card" style="padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
+          <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.82rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
+          <div class="sub" style="font-size:.64rem;">\u26BD ${this.esc(f.league||'')}</div></div>
+        </div>`;}).join('')).join('')
+        + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.go('hub')">See our predictions \u2192</button>`;
+    }).catch(()=>{const el=document.getElementById('home-matches');if(el)el.innerHTML='';});
+    // News & updates — real platform notifications
+    Api.getNotifications().then(r=>{
+      const el=document.getElementById('home-news'); if(!el)return;
+      const items=((r&&r.notifications)||[]).slice(0,4);
+      if(!items.length){ el.innerHTML='<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">Updates from the Betstack team will appear here.</p></div>'; return; }
+      el.innerHTML=items.map(n=>`<div class="card" style="padding:12px 14px;margin-bottom:8px;">
+        ${n.image_url?`<img src="${n.image_url}" style="width:100%;border-radius:10px;margin-bottom:8px;" loading="lazy">`:''}
+        <div style="font-weight:700;font-size:.86rem;">${this.esc(n.title||'Update')}</div>
+        <div class="sub" style="font-size:.76rem;line-height:1.5;margin-top:2px;">${this.esc(n.body||'')}</div>
+        <div class="sub" style="font-size:.62rem;margin-top:6px;">${n.created_at?new Date(n.created_at).toLocaleDateString():''}</div>
+      </div>`).join('');
+    }).catch(()=>{const el=document.getElementById('home-news');if(el)el.innerHTML='';});
+  },
   loadReviews(){
     if(API_BASE){
       Api.getReviews().then(r=>this.renderReviews(r&&r.ok?r:{count:0,avg:0,items:[]})).catch(()=>this.renderReviews({count:0,avg:0,items:[]}));
@@ -1724,11 +1784,111 @@ const App={
         :`<button class="btn btn-dark btn-sm" style="height:34px;padding:0 11px;" onclick="App.mark('${t.id}','open')">Pending</button>`;
       return `<div class="irow"><div style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0;"></div><div class="mid"><div class="t" style="font-size:.95rem;">${this.esc(t.title)} <span style="color:${col};font-size:.7rem;">· ${label}</span></div><div class="d">${t.book?this.esc(t.book)+' · ':''}${t.odds?'@'+Number(t.odds).toFixed(2)+' · ':''}${t.img?'Photo uploaded':'No photo yet'}</div></div><div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:170px;"><button class="btn btn-out btn-sm" style="height:34px;padding:0 11px;" onclick="App.openSheet('editslip','${t.id}')">Edit</button>${ctrls}</div></div>`;
     }).join('')||'<p class="sub">No slips yet — post one above.</p>';
-    document.getElementById('admin-list').innerHTML=`<div id="admin-stats" class="card" style="padding:12px 14px;margin-bottom:12px;"><p class="sub" style="margin:0;">Loading stats…</p></div><div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Unlock requests <button class="btn btn-out btn-sm" style="height:30px;padding:0 10px;font-size:.68rem;" onclick="App.toggleAlarm()" id="alarm-btn">🔔 Alarm on</button></div><div id="admin-unlocks"><p class="sub">Loading…</p></div><div class="sec">Daily predictions (free)</div>${pred}<div class="sec">Daily bet tips</div>${tips}<div class="sec">Booked slips</div>${tix}<div class="sec">Withdrawal requests</div><div id="admin-payouts"><p class="sub">Loading…</p></div>`+
-      `<div class="sec">Email diagnostics</div><div class="card" style="padding:14px 15px;"><p class="sub" style="margin:0 0 10px;">Send a test verification email to check Resend is configured.</p><input class="input" id="et-to" type="email" placeholder="you@email.com" style="margin-bottom:8px;"><button class="btn btn-out btn-sm" style="height:40px;" onclick="App.emailTest()">Send test email</button><div id="et-result" style="font-size:.8rem;margin-top:10px;color:var(--sub);word-break:break-word;"></div></div>`;
+    document.getElementById('admin-list').innerHTML=`<div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button class="pill ${this._adminTab!=='games'&&this._adminTab!=='users'?'active':''}" onclick="App.adminGo('overview')">Overview</button>
+      <button class="pill ${this._adminTab==='games'?'active':''}" onclick="App.adminGo('games')">🗓 Games</button>
+      <button class="pill ${this._adminTab==='users'?'active':''}" onclick="App.adminGo('users')">👥 Users</button>
+    </div><div id="admin-tab-body"></div><div id="admin-overview" style="display:${this._adminTab==='games'||this._adminTab==='users'?'none':'block'}"><div id="admin-stats" class="card" style="padding:12px 14px;margin-bottom:12px;"><p class="sub" style="margin:0;">Loading stats…</p></div><div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Unlock requests <button class="btn btn-out btn-sm" style="height:30px;padding:0 10px;font-size:.68rem;" onclick="App.toggleAlarm()" id="alarm-btn">🔔 Alarm on</button></div><div id="admin-unlocks"><p class="sub">Loading…</p></div><div class="sec">Daily predictions (free)</div>${pred}<div class="sec">Daily bet tips</div>${tips}<div class="sec">Booked slips</div>${tix}<div class="sec">Withdrawal requests</div><div id="admin-payouts"><p class="sub">Loading…</p></div>`+
+      `<div class="sec">Email diagnostics</div><div class="card" style="padding:14px 15px;"><p class="sub" style="margin:0 0 10px;">Send a test verification email to check Resend is configured.</p><input class="input" id="et-to" type="email" placeholder="you@email.com" style="margin-bottom:8px;"><button class="btn btn-out btn-sm" style="height:40px;" onclick="App.emailTest()">Send test email</button><div id="et-result" style="font-size:.8rem;margin-top:10px;color:var(--sub);word-break:break-word;"></div></div></div>`;
     this.loadAdminPayouts();
     this.loadAdminUnlocks();
+    if(this._adminTab==='games')this.renderAdminGames();
+    if(this._adminTab==='users')this.renderAdminUsers();
     if(!this._unlockWatch){ this._unlockWatch=setInterval(()=>{ if(document.getElementById('view-admin').classList.contains('active')) this.loadAdminUnlocks(true); },20000); }
+  },
+  adminGo(tab){ this._adminTab=tab==='overview'?null:tab; this.renderAdmin(); },
+  _fxSport:'football', _draftSels:[],
+  renderAdminGames(){
+    const body=document.getElementById('admin-tab-body'); if(!body)return;
+    const sports=[['football','\u26BD'],['basketball','\uD83C\uDFC0'],['nfl','\uD83C\uDFC8'],['baseball','\u26BE'],['hockey','\uD83C\uDFD2'],['volleyball','\uD83C\uDFD0']];
+    body.innerHTML=`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;">${sports.map(([k,e])=>`<button class="pill ${this._fxSport===k?'active':''}" style="flex-shrink:0;" onclick="App._fxSport='${k}';App.renderAdminGames()">${e} ${k[0].toUpperCase()+k.slice(1)}</button>`).join('')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span class="sub" style="font-size:.75rem;">This week \u00B7 top leagues</span>
+        <button class="btn btn-out btn-sm" style="height:32px;padding:0 12px;font-size:.7rem;" onclick="App.refreshFixtures()">\u21BB Refresh data</button>
+      </div>
+      <div id="fx-list"><p class="sub">Loading games\u2026</p></div>
+      <div id="fx-draft"></div>`;
+    this.loadFixtures(); this.renderDraft();
+  },
+  loadFixtures(){
+    Api.adminFixtures(this._fxSport).then(r=>{
+      const el=document.getElementById('fx-list'); if(!el)return;
+      const fx=(r&&r.fixtures)||[];
+      if(!fx.length){ el.innerHTML='<div class="card" style="padding:16px;text-align:center;"><p class="sub" style="margin:0;">No games stored yet for this sport.<br>Tap <b>\u21BB Refresh data</b> to pull this week\u2019s fixtures.</p></div>'; return; }
+      const days={};
+      fx.forEach(f=>{ const d=new Date(f.start_ts); const key=d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}); (days[key]=days[key]||[]).push(f); });
+      el.innerHTML=Object.entries(days).map(([day,list])=>`<div class="sec" style="margin:12px 0 8px;">${day}</div>`+list.map(f=>{
+        let odds={}; try{odds=JSON.parse(f.odds||'{}')}catch(e){}
+        const t=new Date(f.start_ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        const dt=new Date(f.start_ts).toISOString().slice(0,10);
+        const chips=[];
+        if(odds.h2h){ if(odds.h2h.Home)chips.push(['1',odds.h2h.Home,f.home+' Win']); if(odds.h2h.Draw)chips.push(['X',odds.h2h.Draw,'Draw']); if(odds.h2h.Away)chips.push(['2',odds.h2h.Away,f.away+' Win']); }
+        if(odds.ou25)chips.push(['O2.5',odds.ou25,'Over 2.5 Goals']);
+        if(odds.btts&&odds.btts.Yes)chips.push(['GG',odds.btts.Yes,'BTTS \u2014 Yes']);
+        const mk=(pick,od)=>`App.addDraft('${this.esc(f.home)} vs ${this.esc(f.away)}','${pick.replace(/'/g,'')}',${od?Number(od):'null'},'${dt}','${t}')`;
+        const chipHtml=chips.map(([lab,od,pick])=>`<button class="pill" style="font-size:.68rem;padding:5px 10px;" onclick="${mk(pick,od)}">${lab} <b>${od}</b></button>`).join('');
+        return `<div class="card" style="padding:12px 14px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="min-width:0;"><div style="font-weight:700;font-size:.86rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
+            <div class="sub" style="font-size:.68rem;">${this.esc(f.league||'')} \u00B7 ${t}</div></div>
+            <button class="btn btn-out btn-sm" style="height:32px;padding:0 12px;flex-shrink:0;" onclick="${mk('',null)}">+ Add</button>
+          </div>${chipHtml?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${chipHtml}</div>`:''}</div>`;
+      }).join('')).join('');
+    }).catch(()=>{const el=document.getElementById('fx-list');if(el)el.innerHTML='<p class="sub">Could not load games.</p>';});
+  },
+  refreshFixtures(){
+    this.toast('Fetching this week\u2019s games\u2026');
+    Api.adminFixturesRefresh(this._fxSport).then(r=>{
+      if(r&&r.ok){ this.toast(`Updated \u2713 ${r.saved||0} games stored`); this.loadFixtures(); }
+      else this.toast(r&&r.error==='no_key_or_sport'?'Add SPORTS_API_KEY in Worker settings first':'Refresh failed \u2014 try again');
+    }).catch(()=>this.toast('Network error'));
+  },
+  addDraft(match,pick,odds,date,time){ this._draftSels.push({match,pick,odds,date,time}); this.toast(`Added (${this._draftSels.length} game${this._draftSels.length>1?'s':''})`); this.renderDraft(); },
+  renderDraft(){
+    const el=document.getElementById('fx-draft'); if(!el)return;
+    if(!this._draftSels.length){ el.innerHTML=''; return; }
+    el.innerHTML=`<div class="card" style="position:sticky;bottom:12px;padding:12px 14px;border:1px solid var(--green);display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--surface);">
+      <span style="font-size:.82rem;font-weight:700;">\uD83E\uDDFE ${this._draftSels.length} game${this._draftSels.length>1?'s':''} selected</span>
+      <div style="display:flex;gap:6px;"><button class="btn btn-out btn-sm" style="height:34px;padding:0 10px;" onclick="App._draftSels=[];App.renderDraft()">Clear</button>
+      <button class="btn btn-green btn-sm" style="height:34px;padding:0 12px;" onclick="App.draftToTip()">Create tip \u2192</button></div></div>`;
+  },
+  draftToTip(){ this._editCode={selections:this._draftSels.slice()}; this._draftSels=[]; this.openSheet('editcode'); },
+  _userFilter:'all', _userQ:'',
+  renderAdminUsers(){
+    const body=document.getElementById('admin-tab-body'); if(!body)return;
+    body.innerHTML=`<input class="input" placeholder="Search name, email, username\u2026" style="margin-bottom:10px;" oninput="App._userQ=this.value.toLowerCase();App.paintUsers()">
+      <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px;">${['all','online','members','partners','admins'].map(f=>`<button class="pill ${this._userFilter===f?'active':''}" style="flex-shrink:0;" onclick="App._userFilter='${f}';App.paintUsers()">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}</div>
+      <div id="users-list"><p class="sub">Loading users\u2026</p></div>`;
+    Api.adminUsers().then(r=>{ this._users=(r&&r.users)||[]; this.paintUsers(); }).catch(()=>{const el=document.getElementById('users-list');if(el)el.innerHTML='<p class="sub">Could not load users.</p>';});
+  },
+  paintUsers(){
+    const el=document.getElementById('users-list'); if(!el)return;
+    const now=Date.now();
+    let list=(this._users||[]).map(u=>({...u,online:u.last_seen&&(now-u.last_seen)<15*60*1000,isPartner:(u.referred||0)>0||(u.payout_count||0)>0}));
+    const f=this._userFilter;
+    if(f==='online')list=list.filter(u=>u.online);
+    if(f==='members')list=list.filter(u=>u.role!=='admin'&&!u.isPartner);
+    if(f==='partners')list=list.filter(u=>u.role!=='admin'&&u.isPartner);
+    if(f==='admins')list=list.filter(u=>u.role==='admin');
+    if(this._userQ)list=list.filter(u=>((u.username||'')+(u.email||'')+(u.full_name||'')).toLowerCase().includes(this._userQ));
+    if(!list.length){ el.innerHTML='<p class="sub">No users match.</p>'; return; }
+    el.innerHTML=`<p class="sub" style="font-size:.72rem;margin-bottom:8px;">${list.length} user${list.length>1?'s':''} \u00B7 \uD83D\uDFE2 ${list.filter(u=>u.online).length} online</p>`+list.map(u=>{
+      const tierCol=u.tier==='vip'?'var(--green)':u.tier==='gold'?'var(--gold)':'var(--sub)';
+      const badge=u.role==='admin'?'<span class="pill" style="font-size:.6rem;padding:2px 8px;background:rgba(233,69,96,.15);color:var(--red);">ADMIN</span>':u.isPartner?'<span class="pill" style="font-size:.6rem;padding:2px 8px;background:rgba(0,200,120,.12);color:var(--green);">PARTNER</span>':'<span class="pill" style="font-size:.6rem;padding:2px 8px;">MEMBER</span>';
+      return `<div class="card" style="padding:12px 14px;margin-bottom:8px;cursor:pointer;" onclick="const d=this.querySelector('.udetail');d.style.display=d.style.display==='none'?'block':'none'">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:800;font-size:.85rem;position:relative;">${this.esc((u.username||'?')[0].toUpperCase())}${u.online?'<span style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:var(--green);border:2px solid var(--surface);"></span>':''}</div>
+          <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.86rem;display:flex;align-items:center;gap:6px;">${this.esc(u.username||'\u2014')} ${badge}</div>
+          <div class="sub" style="font-size:.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this.esc(u.email||'')}</div></div>
+          <span style="font-size:.66rem;font-weight:800;text-transform:uppercase;color:${tierCol};flex-shrink:0;">${u.tier&&u.tier!=='none'?u.tier:'free'}</span>
+        </div>
+        <div class="udetail" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:.76rem;line-height:1.7;">
+          <div><span class="sub">Full name:</span> ${this.esc(u.full_name||'\u2014')}</div>
+          <div><span class="sub">Status:</span> ${u.online?'\uD83D\uDFE2 Online now':(u.last_seen?'Last seen '+new Date(u.last_seen).toLocaleString():'Never seen')}</div>
+          <div><span class="sub">Telegram:</span> ${u.tg_linked?'\u2705 Linked':'Not linked'}</div>
+          <div><span class="sub">Referral code:</span> ${this.esc(u.ref_code||'\u2014')} \u00B7 <span class="sub">Referred:</span> ${u.referred||0} \u00B7 <span class="sub">Balance:</span> $${Number(u.ref_balance||0).toFixed(2)} \u00B7 <span class="sub">Payouts:</span> ${u.payout_count||0}</div>
+        </div></div>`;
+    }).join('');
   },
   loadAdminUnlocks(silent){
     if(!API_BASE)return;
@@ -1958,6 +2118,8 @@ const App={
         const copyTxt=sels.map(s=>`${s.match} \u2014 ${s.pick} @ ${(Number(s.odds)||0).toFixed(2)}`).join('\n');
         h+=`<div class="code-box" style="text-align:left;"><div class="code-label" style="text-align:center;">Selected games \u00B7 combined @ ${c.odds.toFixed(2)}</div>${selRows||'<p class="sub" style="text-align:center;margin-top:8px;">Games loading\u2026</p>'}<button class="btn btn-out btn-sm" style="margin-top:12px;width:100%;" onclick="App.copySelections('${c.id}')">Copy all picks</button></div>
         <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Rebuild these picks at <b>any bookmaker in your country</b>, stake your own money, and keep 100% of what you win \u2014 we never hold your funds.</p></div>`;
+        h+=`<button class="bookbtn" onclick="window.open(API_BASE+'/go/bet','_blank','noopener')">\u26A1 Book these games now \u2192</button>
+        <div class="book-sub">Opens our recommended bookmaker for your country \u00B7 Affiliate link \u00B7 18+ \u00B7 Bet responsibly</div>`;
       }else{
         h+=`<div class="locked-note" style="margin-bottom:14px;">${svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>')}<span>Unlock with your plan to reveal every selected game — teams, markets and odds you can place at any bookmaker in your country.</span></div>
         <button class="btn btn-gold" onclick="App.closeSheet();App.unlockTip('${c.id}')">Unlock with my plan</button>`;
