@@ -1,7 +1,7 @@
 // Betstack Pro service worker
 // Network-first for the page (so updates always show), cache-first for static assets.
 // CRITICAL: never caches API/auth/payment calls — those must always hit the live network.
-const CACHE = 'betstack-v2.1';
+const CACHE = 'betstack-v5';
 const ASSETS = [
   '/', '/index.html', '/manifest.webmanifest',
   '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/apple-touch-icon.png'
