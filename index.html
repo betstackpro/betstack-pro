@@ -812,7 +812,7 @@ const State={role:null,balance:0,principal:0,earnings:0,refs:3,owned:new Set(),c
 let Account=null; // PREVIEW ONLY: the account registered this session. Real auth lives server-side.
 // ============ BACKEND CONNECTION ============
 // Point this at your server once it's deployed. While empty, auth/codes run in preview mode.
-const API_BASE='https://betstackpro-backend.betstackpro.workers.dev'; // your Cloudflare Worker
+const API_BASE='https://api.betstackpro.com'; // first-party API domain — same site as the app, so no browser shield ever blocks it
 const SUPPORT_EMAIL='support@betstackpro.com';
 const TELEGRAM_JOIN='https://t.me/+AUyzm-N5PfxkNTk0'; // Betstack Pro VIP group invite link. NEVER put the bot token or numeric chat id in front-end code.
 const SOCIALS=[
