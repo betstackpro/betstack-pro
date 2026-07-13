@@ -857,7 +857,12 @@ const Api={
   adminStats(){ return this.get('/api/admin/stats'); },
   adminUsers(){ return this.get('/api/admin/users'); },
   adminFixtures(sport){ return this.get('/api/admin/fixtures?sport='+encodeURIComponent(sport)); },
-  publicFixtures(sport){ return this.get('/api/fixtures?sport='+encodeURIComponent(sport)); },
+  publicFixtures(sport){ return this.get('/api/fixtures/public?sport='+encodeURIComponent(sport||'football')); },
+  publicStats(){ return this.get('/api/public-stats'); },
+  getNotifications(){ return this.get('/api/notifications'); },
+  unlockStatus(codeId){ return this.get('/api/codes/unlock-status?code_id='+encodeURIComponent(codeId)); },
+  adminUnlockDecide(id,action){ return this.post('/api/admin/unlock/decide',{id,action}); },
+  adminFixturesRefresh(sport){ return this.post('/api/admin/fixtures/refresh',{sport}); },
   adminFixturesRefresh(sport){ return this.post('/api/admin/fixtures/refresh',{sport}); },
   // Server checks the purchase (confirmed only via signed webhook) and returns {status} (+ code/tier once paid).
   checkoutStatus(orderId){ return this.get('/api/checkout/status?order_id='+encodeURIComponent(orderId)); },
