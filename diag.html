@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Betstack Diagnostic</title>
+<style>
+body{background:#0b0d0f;color:#f6f7f9;font-family:-apple-system,'Segoe UI',sans-serif;padding:20px;line-height:1.5;}
+h1{font-size:1.1rem;color:#1fd17a;}
+.t{background:#14171a;border:1px solid #23282d;border-radius:12px;padding:14px;margin-bottom:12px;font-size:.85rem;word-break:break-word;}
+.ok{color:#1fd17a;font-weight:800;}
+.bad{color:#ff5566;font-weight:800;}
+.lbl{color:#8c919b;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;}
+code{background:#0b0d0f;padding:2px 6px;border-radius:6px;font-size:.78rem;}
+</style>
+</head>
+<body>
+<h1>🔧 Betstack Pro — Live Diagnostic</h1>
+<p style="color:#8c919b;font-size:.78rem;">Screenshots this whole page for support. Delete this file after debugging.</p>
+<div class="t" id="t0"><div class="lbl">0 · This page's origin</div>…</div>
+<div class="t" id="t1"><div class="lbl">1 · Which build is live? (API address inside index.html)</div>…</div>
+<div class="t" id="t2"><div class="lbl">2 · GET api.betstackpro.com/health (simple request)</div>…</div>
+<div class="t" id="t3"><div class="lbl">3 · POST api.betstackpro.com login (preflight + POST)</div>…</div>
+<div class="t" id="t4"><div class="lbl">4 · GET workers.dev/health (old address, for comparison)</div>…</div>
+<div class="t" id="t5"><div class="lbl">5 · Service worker on this page</div>…</div>
+<script>
+const put=(id,html)=>{const e=document.getElementById(id);e.innerHTML=e.querySelector('.lbl').outerHTML+'<div style="margin-top:6px;">'+html+'</div>';};
+put('t0','<code>'+location.origin+'</code>');
+
+// 1. Read the live index.html and find its API_BASE
+fetch('/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
+  const m=txt.match(/const API_BASE='([^']*)'/);
+  if(!m){put('t1','<span class="bad">✗ Could not find API_BASE in the served index.html</span>');return;}
+  const good=m[1].includes('api.betstackpro.com');
+  put('t1',(good?'<span class="ok">✓ NEW build live</span>':'<span class="bad">✗ OLD build still served</span>')+' — API_BASE = <code>'+m[1]+'</code>');
+}).catch(e=>put('t1','<span class="bad">✗ '+e+'</span>'));
+
+// 2. Simple GET to the new API domain
+fetch('https://api.betstackpro.com/health',{cache:'no-store'}).then(async r=>{
+  put('t2','<span class="ok">✓ reachable</span> — status '+r.status+' — <code>'+(await r.text()).slice(0,60)+'</code>');
+}).catch(e=>put('t2','<span class="bad">✗ BLOCKED / FAILED</span> — <code>'+e+'</code>'));
+
+// 3. POST with JSON (forces CORS preflight) — wrong creds EXPECTED; any JSON answer = path works
+fetch('https://api.betstackpro.com/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email:'diag@test.com',password:'x'})}).then(async r=>{
+  put('t3','<span class="ok">✓ POST path works</span> — status '+r.status+' (401/400 here is CORRECT) — <code>'+(await r.text()).slice(0,80)+'</code>');
+}).catch(e=>put('t3','<span class="bad">✗ BLOCKED / FAILED</span> — <code>'+e+'</code>'));
+
+// 4. Old address for comparison
+fetch('https://betstackpro-backend.betstackpro.workers.dev/health',{cache:'no-store'}).then(async r=>{
+  put('t4','<span class="ok">✓ reachable</span> — status '+r.status);
+}).catch(e=>put('t4','<span class="bad">✗ blocked</span> — <code>'+e+'</code> (this failing is OK if test 2–3 pass)'));
+
+// 5. Service worker state
+if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>{
+  put('t5',rs.length?('<span class="lbl">'+rs.length+' registered</span> — scope '+rs.map(r=>r.scope).join(', ')):'none registered (normal in private tabs)');
+});}else{put('t5','not supported');}
+</script>
+</body>
+</html>
