@@ -2547,6 +2547,27 @@ const App={
   toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(this._t);this._t=setTimeout(()=>t.classList.remove('show'),2300);},
   signal(kind,ic,m){const s=document.getElementById('signal');s.className='signal '+(kind==='win'?'win':kind==='pending'?'pending':'');document.getElementById('sig-ic').textContent=ic;document.getElementById('sig-msg').textContent=m;requestAnimationFrame(()=>s.classList.add('show'));clearTimeout(this._s);this._s=setTimeout(()=>s.classList.remove('show'),3200);}
 };
+// TEMP DEBUG TRAP — shows any runtime crash on screen so we can see the real cause.
+window.addEventListener('error',ev=>{
+  try{
+    let b=document.getElementById('err-bar');
+    if(!b){ b=document.createElement('div'); b.id='err-bar';
+      b.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#3a0d12;color:#ffb3bd;font:12px/1.4 monospace;padding:10px;max-height:40vh;overflow:auto;border-top:2px solid #ff5566;';
+      document.body.appendChild(b);
+    }
+    b.textContent += '❌ '+(ev.message||'error')+'  @'+(ev.filename||'').split('/').pop()+':'+(ev.lineno||'?')+':'+(ev.colno||'?')+'\n';
+  }catch(e){}
+});
+window.addEventListener('unhandledrejection',ev=>{
+  try{
+    let b=document.getElementById('err-bar');
+    if(!b){ b=document.createElement('div'); b.id='err-bar';
+      b.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#3a0d12;color:#ffb3bd;font:12px/1.4 monospace;padding:10px;max-height:40vh;overflow:auto;border-top:2px solid #ff5566;';
+      document.body.appendChild(b);
+    }
+    b.textContent += '⚠️ promise: '+(ev.reason&&(ev.reason.message||ev.reason))+'\n';
+  }catch(e){}
+});
 App.init();
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(App.refreshInstall)App.refreshInstall();});
