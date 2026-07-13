@@ -657,13 +657,24 @@ body.light .st{background:rgba(0,0,0,.04);}
       <button class="btn btn-out" onclick="App.openResults()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 3v18h18M7 16l4-4 3 3 5-6"/></svg> View our verified results</button>
       <div class="sec">Today's free predictions</div>
       <p class="sub" style="font-size:.78rem;margin:-6px 0 10px;">Free for everyone. Sign up and subscribe to unlock the full bet tips.</p>
+      <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
+        <button class="pill active" onclick="App.hubScroll('hub-preds',this)">🎯 Predictions</button>
+        <button class="pill" onclick="App.hubScroll('hub-matches',this)">📅 Fixtures</button>
+        <button class="pill" onclick="App.hubScroll('hub-scores',this)">⚡ Scores</button>
+        <button class="pill" onclick="App.hubScroll('hub-realnews',this)">📰 News</button>
+        <button class="pill" onclick="App.hubScroll('hub-reviews',this)">⭐ Reviews</button>
+      </div>
       <div id="hub-preds"><p class="sub" style="font-size:.8rem;">Loading today's predictions…</p></div>
       <div id="hub-statstrip"></div>
       <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">📅 Match center <span class="sub" style="font-size:.68rem;font-weight:400;">today &amp; tomorrow</span></div>
       <div id="hub-matches"><p class="sub" style="font-size:.8rem;">Loading matches…</p></div>
+      <div class="sec">⚡ Live scores &amp; results</div>
+      <div id="hub-scores"><p class="sub" style="font-size:.8rem;">Loading scores…</p></div>
+      <div class="sec">📰 Football news <span class="sub" style="font-size:.62rem;font-weight:400;">· transfers, injuries &amp; headlines</span></div>
+      <div id="hub-realnews"><p class="sub" style="font-size:.8rem;">Loading news…</p></div>
       <div class="sec">⭐ What members say</div>
       <div id="hub-reviews"><p class="sub" style="font-size:.8rem;">Loading…</p></div>
-      <div class="sec">📰 News &amp; updates</div>
+      <div class="sec">📢 Platform updates</div>
       <div id="hub-news"><p class="sub" style="font-size:.8rem;">Loading…</p></div>
     </div>
 
@@ -859,6 +870,10 @@ const Api={
   adminFixtures(sport){ return this.get('/api/admin/fixtures?sport='+encodeURIComponent(sport)); },
   publicFixtures(sport){ return this.get('/api/fixtures/public?sport='+encodeURIComponent(sport||'football')); },
   publicStats(){ return this.get('/api/public-stats'); },
+  publicNews(){ return this.get('/api/news/public'); },
+  fixtureStats(id){ return this.get('/api/fixture/stats?id='+encodeURIComponent(id)); },
+  publicScores(sport){ return this.get('/api/scores/public?sport='+encodeURIComponent(sport||'football')); },
+  adminBulkPredictions(selections,risk){ return this.post('/api/admin/predictions/bulk',{selections,risk}); },
   getNotifications(){ return this.get('/api/notifications'); },
   unlockStatus(codeId){ return this.get('/api/codes/unlock-status?code_id='+encodeURIComponent(codeId)); },
   adminUnlockDecide(id,action){ return this.post('/api/admin/unlock/decide',{id,action}); },
@@ -1505,7 +1520,63 @@ const App={
   starRow(n,size){let o='';const r=Math.round(n);for(let i=1;i<=5;i++)o+=`<span class="star ${i<=r?'on':''}" style="font-size:${size||15}px;">★</span>`;return o;},
   // Fill data sections for both the logged-in home (home-*) and the guest hub (hub-*).
   fillIds(suffix,html){ ['home-'+suffix,'hub-'+suffix].forEach(id=>{ const el=document.getElementById(id); if(el)el.innerHTML=html; }); },
-  loadHubExtras(){ this.loadHomeExtras(); this.loadHubReviews(); },
+  loadHubExtras(){ this.loadHomeExtras(); this.loadHubReviews(); this.loadHubScores(); this.loadHubNews(); },
+  // Tap "Stats" on any fixture -> H2H + recent form (cached server-side; free to view).
+  toggleStats(fid,el){
+    const box=document.getElementById('st-'+fid);
+    if(!box)return;
+    if(box.style.display==='block'){ box.style.display='none'; return; }
+    box.style.display='block';
+    if(box.dataset.loaded){ return; }
+    box.innerHTML='<p class="sub" style="font-size:.72rem;margin:0;">Loading stats…</p>';
+    Api.fixtureStats(fid).then(r=>{
+      box.dataset.loaded='1';
+      if(!r||!r.ok){ box.innerHTML='<p class="sub" style="font-size:.72rem;margin:0;">Stats unavailable.</p>'; return; }
+      const chip=s=>(s||'').split('').map(c=>`<span style="display:inline-block;width:17px;height:17px;line-height:17px;text-align:center;border-radius:4px;font-size:.6rem;font-weight:800;margin-right:3px;background:${c==='W'?'rgba(0,200,120,.2);color:var(--green)':c==='L'?'rgba(233,69,96,.2);color:var(--red)':'var(--surface-2);color:var(--sub)'};">${c}</span>`).join('')||'<span class="sub" style="font-size:.7rem;">—</span>';
+      const h2h=(r.h2h||[]).slice(0,5).map(m=>`<div style="display:flex;justify-content:space-between;font-size:.72rem;padding:4px 0;border-bottom:1px solid var(--border);"><span class="sub">${m.date}</span><span>${this.esc(m.home)} <b>${m.sh}–${m.sa}</b> ${this.esc(m.away)}</span></div>`).join('');
+      box.innerHTML=`<div style="font-size:.66rem;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Recent form (last 5)</div>
+        <div style="font-size:.72rem;margin-bottom:3px;">Home: ${chip(r.form&&r.form.home)}</div>
+        <div style="font-size:.72rem;margin-bottom:9px;">Away: ${chip(r.form&&r.form.away)}</div>
+        <div style="font-size:.66rem;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;">Head-to-head</div>
+        ${h2h||'<p class="sub" style="font-size:.72rem;margin:0;">No recent meetings.</p>'}`;
+    }).catch(()=>{ box.innerHTML='<p class="sub" style="font-size:.72rem;margin:0;">Could not load stats.</p>'; });
+  },
+  statsBtn(fid){ return `<button class="pill" style="font-size:.64rem;padding:4px 9px;" onclick="event.stopPropagation();App.toggleStats('${fid}')">📊 Stats</button><div id="st-${fid}" style="display:none;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);"></div>`; },
+  hubScroll(id,btn){
+    document.querySelectorAll('#hub-nav .pill').forEach(p=>p.classList.remove('active'));
+    if(btn)btn.classList.add('active');
+    const el=document.getElementById(id); if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+  },
+  loadHubScores(){
+    const el=document.getElementById('hub-scores'); if(!el)return;
+    if(!API_BASE){ el.innerHTML=''; return; }
+    Api.publicScores('football').then(r=>{
+      const list=(r&&r.scores)||[];
+      const done=list.filter(s=>s.score_home!=null);
+      const live=done.filter(s=>['1H','2H','HT','ET','LIVE'].includes(s.status));
+      const show=(live.length?live:done).slice(0,8);
+      if(!show.length){ el.innerHTML='<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">Scores appear here as matches finish. Fixtures update daily.</p></div>'; return; }
+      el.innerHTML=show.map(s=>{
+        const isLive=['1H','2H','HT','ET','LIVE'].includes(s.status);
+        return `<div class="card" style="padding:11px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:.6rem;font-weight:800;padding:3px 7px;border-radius:6px;flex-shrink:0;${isLive?'background:rgba(233,69,96,.18);color:var(--red);':'background:var(--surface-2);color:var(--sub);'}">${isLive?'LIVE':'FT'}</span>
+          <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.82rem;">${this.esc(s.home)} <span style="color:var(--green);">${s.score_home}</span> \u2013 <span style="color:var(--green);">${s.score_away}</span> ${this.esc(s.away)}</div>
+          <div class="sub" style="font-size:.64rem;">${this.esc(s.league||'')}</div></div></div>`;
+      }).join('');
+    }).catch(()=>{el.innerHTML='';});
+  },
+  loadHubNews(){
+    const el=document.getElementById('hub-realnews'); if(!el)return;
+    if(!API_BASE){ el.innerHTML=''; return; }
+    Api.publicNews().then(r=>{
+      const items=((r&&r.news)||[]).slice(0,6);
+      if(!items.length){ el.innerHTML='<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">News feed is loading \u2014 check back shortly.</p></div>'; return; }
+      el.innerHTML=items.map(n=>`<a href="${n.link}" target="_blank" rel="noopener" class="card" style="display:block;padding:12px 14px;margin-bottom:8px;text-decoration:none;color:inherit;">
+        <div style="font-weight:700;font-size:.84rem;line-height:1.35;">${this.esc(n.title)}</div>
+        <div class="sub" style="font-size:.64rem;margin-top:5px;">${this.esc(n.source)}${n.published?' \u00B7 '+new Date(n.published).toLocaleDateString():''} \u00B7 Read at source \u2197</div>
+      </a>`).join('');
+    }).catch(()=>{el.innerHTML='';});
+  },
   loadHubReviews(){
     const el=document.getElementById('hub-reviews'); if(!el)return;
     if(!API_BASE){ el.innerHTML=''; return; }
@@ -1541,10 +1612,13 @@ const App={
       fx.slice(0,14).forEach(f=>{ const d=new Date(f.start_ts); const key=d.toDateString()===today?'Today':'Tomorrow'; (groups[key]=groups[key]||[]).push(f); });
       el.innerHTML=Object.entries(groups).map(([g,list])=>`<div class="sub" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">${g}</div>`+list.map(f=>{
         const t=new Date(f.start_ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-        return `<div class="card" style="padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
-          <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
-          <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.82rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
-          <div class="sub" style="font-size:.64rem;">\u26BD ${this.esc(f.league||'')}</div></div>
+        return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
+            <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.82rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
+            <div class="sub" style="font-size:.64rem;">\u26BD ${this.esc(f.league||'')}</div></div>
+            ${f.id?this.statsBtn(f.id):''}
+          </div>
         </div>`;}).join('')).join('')
         + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.go('hub')">See our predictions \u2192</button>`;
     }).catch(()=>{const el=document.getElementById('home-matches')||document.getElementById('hub-matches');if(el)el.innerHTML='';});
@@ -1871,7 +1945,7 @@ const App={
             <div style="min-width:0;"><div style="font-weight:700;font-size:.86rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
             <div class="sub" style="font-size:.68rem;">${this.esc(f.league||'')} \u00B7 ${t}</div></div>
             <button class="btn btn-out btn-sm" style="height:32px;padding:0 12px;flex-shrink:0;" onclick="${mk('',null)}">+ Add</button>
-          </div>${chipHtml?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${chipHtml}</div>`:''}</div>`;
+          </div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;">${chipHtml}${this.statsBtn(f.id)}</div></div>`;
       }).join('')).join('');
     }).catch(()=>{const el=document.getElementById('fx-list');if(el)el.innerHTML='<p class="sub">Could not load games.</p>';});
   },
@@ -1888,8 +1962,20 @@ const App={
     if(!this._draftSels.length){ el.innerHTML=''; return; }
     el.innerHTML=`<div class="card" style="position:sticky;bottom:12px;padding:12px 14px;border:1px solid var(--green);display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--surface);">
       <span style="font-size:.82rem;font-weight:700;">\uD83E\uDDFE ${this._draftSels.length} game${this._draftSels.length>1?'s':''} selected</span>
-      <div style="display:flex;gap:6px;"><button class="btn btn-out btn-sm" style="height:34px;padding:0 10px;" onclick="App._draftSels=[];App.renderDraft()">Clear</button>
-      <button class="btn btn-green btn-sm" style="height:34px;padding:0 12px;" onclick="App.draftToTip()">Create tip \u2192</button></div></div>`;
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;"><button class="btn btn-out btn-sm" style="height:32px;padding:0 10px;font-size:.7rem;" onclick="App._draftSels=[];App.renderDraft()">Clear</button>
+      <button class="btn btn-out btn-sm" style="height:32px;padding:0 10px;font-size:.7rem;border-color:var(--green);color:var(--green);" onclick="App.draftToFree()">\uD83C\uDD93 Free prediction${this._draftSels.length>1?'s ('+this._draftSels.length+')':''}</button>
+      <button class="btn btn-gold btn-sm" style="height:32px;padding:0 10px;font-size:.7rem;" onclick="App.draftToTip()">\uD83D\uDD10 Paid tip \u2192</button></div></div>`;
+  },
+  // Free predictions: one per selected game (each needs a pick).
+  draftToFree(){
+    const sels=this._draftSels.filter(s=>s.pick&&s.pick.trim());
+    if(!sels.length){ this.toast('Tap an odds chip (1 / X / 2 / O2.5 / GG) so each game has a pick'); return; }
+    if(sels.length<this._draftSels.length) this.toast('Skipping '+(this._draftSels.length-sels.length)+' game(s) with no pick');
+    this.toast('Posting '+sels.length+' free prediction'+(sels.length>1?'s':'')+'…');
+    Api.adminBulkPredictions(sels,'Medium').then(r=>{
+      if(r&&r.ok){ this.toast('✅ '+r.created+' free prediction'+(r.created>1?'s':'')+' posted'); this._draftSels=[]; this.renderDraft(); this.loadPredictions&&this.loadPredictions(); }
+      else this.toast('Could not post — try again');
+    }).catch(()=>this.toast('Network error'));
   },
   draftToTip(){ this._editCode={selections:this._draftSels.slice()}; this._draftSels=[]; this.openSheet('editcode'); },
   _userFilter:'all', _userQ:'',
@@ -2552,27 +2638,6 @@ const App={
   toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(this._t);this._t=setTimeout(()=>t.classList.remove('show'),2300);},
   signal(kind,ic,m){const s=document.getElementById('signal');s.className='signal '+(kind==='win'?'win':kind==='pending'?'pending':'');document.getElementById('sig-ic').textContent=ic;document.getElementById('sig-msg').textContent=m;requestAnimationFrame(()=>s.classList.add('show'));clearTimeout(this._s);this._s=setTimeout(()=>s.classList.remove('show'),3200);}
 };
-// TEMP DEBUG TRAP — shows any runtime crash on screen so we can see the real cause.
-window.addEventListener('error',ev=>{
-  try{
-    let b=document.getElementById('err-bar');
-    if(!b){ b=document.createElement('div'); b.id='err-bar';
-      b.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#3a0d12;color:#ffb3bd;font:12px/1.4 monospace;padding:10px;max-height:40vh;overflow:auto;border-top:2px solid #ff5566;';
-      document.body.appendChild(b);
-    }
-    b.textContent += '❌ '+(ev.message||'error')+'  @'+(ev.filename||'').split('/').pop()+':'+(ev.lineno||'?')+':'+(ev.colno||'?')+'\n';
-  }catch(e){}
-});
-window.addEventListener('unhandledrejection',ev=>{
-  try{
-    let b=document.getElementById('err-bar');
-    if(!b){ b=document.createElement('div'); b.id='err-bar';
-      b.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#3a0d12;color:#ffb3bd;font:12px/1.4 monospace;padding:10px;max-height:40vh;overflow:auto;border-top:2px solid #ff5566;';
-      document.body.appendChild(b);
-    }
-    b.textContent += '⚠️ promise: '+(ev.reason&&(ev.reason.message||ev.reason))+'\n';
-  }catch(e){}
-});
 App.init();
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(App.refreshInstall)App.refreshInstall();});
