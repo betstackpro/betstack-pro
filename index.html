@@ -1919,42 +1919,68 @@ const App={
         <span class="sub" style="font-size:.75rem;">This week \u00B7 top leagues</span>
         <button class="btn btn-out btn-sm" style="height:32px;padding:0 12px;font-size:.7rem;" onclick="App.refreshFixtures()">\u21BB Refresh data</button>
       </div>
+      <input class="input" id="fx-q" placeholder="\uD83D\uDD0D Filter by league or team\u2026" style="margin-bottom:10px;" oninput="App._fxQ=this.value.toLowerCase();App.paintFixtures()">
       <div id="fx-list"><p class="sub">Loading games\u2026</p></div>
       <div id="fx-draft"></div>`;
     this.loadFixtures(); this.renderDraft();
   },
+  _fxQ:'', _fxAll:[],
   loadFixtures(){
-    Api.adminFixtures(this._fxSport).then(r=>{
-      const el=document.getElementById('fx-list'); if(!el)return;
-      const fx=(r&&r.fixtures)||[];
-      if(!fx.length){ el.innerHTML='<div class="card" style="padding:16px;text-align:center;"><p class="sub" style="margin:0;">No games stored yet for this sport.<br>Tap <b>\u21BB Refresh data</b> to pull this week\u2019s fixtures.</p></div>'; return; }
-      const days={};
-      fx.forEach(f=>{ const d=new Date(f.start_ts); const key=d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}); (days[key]=days[key]||[]).push(f); });
-      el.innerHTML=Object.entries(days).map(([day,list])=>`<div class="sec" style="margin:12px 0 8px;">${day}</div>`+list.map(f=>{
-        let odds={}; try{odds=JSON.parse(f.odds||'{}')}catch(e){}
-        const t=new Date(f.start_ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-        const dt=new Date(f.start_ts).toISOString().slice(0,10);
-        const chips=[];
-        if(odds.h2h){ if(odds.h2h.Home)chips.push(['1',odds.h2h.Home,f.home+' Win']); if(odds.h2h.Draw)chips.push(['X',odds.h2h.Draw,'Draw']); if(odds.h2h.Away)chips.push(['2',odds.h2h.Away,f.away+' Win']); }
-        if(odds.ou25)chips.push(['O2.5',odds.ou25,'Over 2.5 Goals']);
-        if(odds.btts&&odds.btts.Yes)chips.push(['GG',odds.btts.Yes,'BTTS \u2014 Yes']);
-        const mk=(pick,od)=>`App.addDraft('${this.esc(f.home)} vs ${this.esc(f.away)}','${pick.replace(/'/g,'')}',${od?Number(od):'null'},'${dt}','${t}')`;
-        const chipHtml=chips.map(([lab,od,pick])=>`<button class="pill" style="font-size:.68rem;padding:5px 10px;" onclick="${mk(pick,od)}">${lab} <b>${od}</b></button>`).join('');
-        return `<div class="card" style="padding:12px 14px;margin-bottom:8px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <div style="min-width:0;"><div style="font-weight:700;font-size:.86rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
-            <div class="sub" style="font-size:.68rem;">${this.esc(f.league||'')} \u00B7 ${t}</div></div>
-            <button class="btn btn-out btn-sm" style="height:32px;padding:0 12px;flex-shrink:0;" onclick="${mk('',null)}">+ Add</button>
-          </div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;">${chipHtml}${this.statsBtn(f.id)}</div></div>`;
-      }).join('')).join('');
-    }).catch(()=>{const el=document.getElementById('fx-list');if(el)el.innerHTML='<p class="sub">Could not load games.</p>';});
+    Api.adminFixtures(this._fxSport).then(r=>{ this._fxAll=(r&&r.fixtures)||[]; this.paintFixtures(); })
+      .catch(()=>{ const el=document.getElementById('fx-list'); if(el)el.innerHTML='<p class="sub">Could not load games.</p>'; });
+  },
+  paintFixtures(){
+    const el=document.getElementById('fx-list'); if(!el)return;
+    let fx=this._fxAll||[];
+    if(this._fxQ) fx=fx.filter(f=>((f.league||'')+(f.home||'')+(f.away||'')).toLowerCase().includes(this._fxQ));
+    const total=fx.length; fx=fx.slice(0,120);
+    if(!fx.length){
+      el.innerHTML=this._fxAll&&this._fxAll.length
+        ? '<p class="sub">No games match that filter.</p>'
+        : '<div class="card" style="padding:16px;text-align:center;"><p class="sub" style="margin:0;">No games stored yet for this sport.<br>Tap <b>\u21BB Refresh data</b> to pull this week\u2019s fixtures.</p></div>';
+      return;
+    }
+    const days={};
+    fx.forEach(f=>{ const key=new Date(f.start_ts).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}); (days[key]=days[key]||[]).push(f); });
+    el.innerHTML=`<p class="sub" style="font-size:.7rem;margin-bottom:6px;">${total} game${total>1?'s':''}${total>120?' \u00B7 showing first 120 \u2014 use the filter':''}</p>`
+    + Object.entries(days).map(([day,list])=>`<div class="sec" style="margin:12px 0 8px;">${day}</div>`+list.map(f=>{
+      let odds={}; try{ odds=JSON.parse(f.odds||'{}'); }catch(e){}
+      const t=new Date(f.start_ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      const dt=new Date(f.start_ts).toISOString().slice(0,10);
+      const chips=[];
+      if(odds.h2h){ if(odds.h2h.Home)chips.push(['1',odds.h2h.Home,f.home+' Win']); if(odds.h2h.Draw)chips.push(['X',odds.h2h.Draw,'Draw']); if(odds.h2h.Away)chips.push(['2',odds.h2h.Away,f.away+' Win']); }
+      if(odds.ou25)chips.push(['O2.5',odds.ou25,'Over 2.5 Goals']);
+      if(odds.btts&&odds.btts.Yes)chips.push(['GG',odds.btts.Yes,'BTTS \u2014 Yes']);
+      const mk=(pick,od)=>`App.addDraft('${this.esc(f.home)} vs ${this.esc(f.away)}','${String(pick).replace(/'/g,'')}',${od?Number(od):'null'},'${dt}','${t}')`;
+      const chipHtml=chips.map(([lab,od,pick])=>`<button class="pill" style="font-size:.68rem;padding:5px 10px;" onclick="${mk(pick,od)}">${lab} <b>${od}</b></button>`).join('');
+      return `<div class="card" style="padding:12px 14px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div style="min-width:0;"><div style="font-weight:700;font-size:.86rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
+          <div class="sub" style="font-size:.68rem;">${this.esc(f.league||'')} \u00B7 ${t}</div></div>
+          <button class="btn btn-out btn-sm" style="height:32px;padding:0 12px;flex-shrink:0;" onclick="${mk('',null)}">+ Add</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;">${chipHtml}${this.statsBtn(f.id)}</div>
+      </div>`;
+    }).join('')).join('');
   },
   refreshFixtures(){
     this.toast('Fetching this week\u2019s games\u2026');
     Api.adminFixturesRefresh(this._fxSport).then(r=>{
-      if(r&&r.ok){ this.toast(`Updated \u2713 ${r.saved||0} games stored`); this.loadFixtures(); }
-      else this.toast(r&&r.error==='no_key_or_sport'?'Add SPORTS_API_KEY in Worker settings first':'Refresh failed \u2014 try again');
-    }).catch(()=>this.toast('Network error'));
+      const box=document.getElementById('fx-list');
+      if(r&&r.ok){
+        this.toast(`Updated \u2713 ${r.saved||0} games stored`);
+        if(!r.saved && box){
+          box.innerHTML=`<div class="card" style="padding:14px;"><p class="sub" style="margin:0;font-size:.78rem;">
+            <b>0 games returned.</b><br>${r.api_error?('API says: <code style="color:var(--red);">'+this.esc(r.api_error)+'</code>'):(r.note||'No fixtures in range.')}
+          </p></div>`;
+        } else this.loadFixtures();
+      } else {
+        const msg = r&&r.error==='no_key' ? 'SPORTS_API_KEY is not set on the Worker'
+                  : (r&&(r.detail||r.error)) || 'Refresh failed';
+        this.toast('\u26A0\uFE0F '+msg);
+        if(box) box.innerHTML=`<div class="card" style="padding:14px;"><p class="sub" style="margin:0;font-size:.78rem;color:var(--red);">${this.esc(msg)}</p></div>`;
+      }
+    }).catch(e=>this.toast('Network error \u2014 '+String(e).slice(0,60)));
   },
   addDraft(match,pick,odds,date,time){ this._draftSels.push({match,pick,odds,date,time}); this.toast(`Added (${this._draftSels.length} game${this._draftSels.length>1?'s':''})`); this.renderDraft(); },
   renderDraft(){
