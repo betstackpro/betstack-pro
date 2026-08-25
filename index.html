@@ -2207,9 +2207,51 @@ const App={
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
             <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:.88rem;">${this.esc(f.home)} <span class="sub" style="font-weight:400;">vs</span> ${this.esc(f.away)}</div>
             <div class="sub" style="font-size:.66rem;margin-top:2px;">${day} \u00B7 ${t}</div></div>
-            <span class="pill" style="font-size:.62rem;padding:5px 10px;flex-shrink:0;">Pick \u2192</span>
-          </div></div>`;
+            <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">
+              ${f.odds?`<button class="pill" style="font-size:.6rem;padding:5px 9px;" onclick="event.stopPropagation();App.toggleOddsDetail('${f.id}',this)">\u25BE odds</button>`:''}
+              <span class="pill" style="font-size:.62rem;padding:5px 10px;">Pick \u2192</span>
+            </div>
+          </div>
+          <div id="odt-${f.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);" data-odds='${f.odds?JSON.stringify(f.odds).replace(/'/g,"&#39;"):""}'></div>
+          </div>`;
       }).join('')}`).join('');
+  },
+  toggleOddsDetail(fid,btn){
+    const box=document.getElementById('odt-'+fid); if(!box)return;
+    if(box.style.display==='block'){ box.style.display='none'; if(btn)btn.innerHTML='\u25BE odds'; return; }
+    box.style.display='block'; if(btn)btn.innerHTML='\u25B4 hide';
+    if(box.dataset.rendered){ return; }
+    let od={}; try{ od=JSON.parse((box.getAttribute('data-odds')||'{}').replace(/&#39;/g,"'")); }catch(e){}
+    const detail=od.detail||[];
+    if(!detail.length){
+      // fall back to the summary odds if no multi-book detail
+      let s='';
+      if(od.h2h){ s+=`<div style="font-size:.74rem;margin-bottom:4px;">1X2: ${od.h2h.Home?'Home '+od.h2h.Home:''} ${od.h2h.Draw?'· Draw '+od.h2h.Draw:''} ${od.h2h.Away?'· Away '+od.h2h.Away:''}</div>`; }
+      if(od.ou_over)s+=`<div style="font-size:.74rem;">Over ${od.ou_line||'2.5'}: ${od.ou_over}</div>`;
+      box.innerHTML=s||'<p class="sub" style="font-size:.72rem;margin:0;">No detailed odds available.</p>';
+      box.dataset.rendered='1'; return;
+    }
+    const mkName={h2h:'1X2 / Moneyline',totals:'Over/Under',spreads:'Handicap'};
+    box.innerHTML=`<div class="sub" style="font-size:.64rem;margin-bottom:6px;">\uD83D\uDCCA Odds from ${detail.length} bookmaker${detail.length>1?'s':''} \u00B7 tap any price to use</div>`+
+      detail.map(b=>`<div style="margin-bottom:9px;">
+        <div style="font-size:.68rem;font-weight:800;color:var(--gold);margin-bottom:3px;">${this.esc(b.book)}</div>
+        ${(b.markets||[]).map(m=>`<div style="font-size:.72rem;margin-bottom:2px;"><span class="sub">${mkName[m.key]||m.key}:</span> ${(m.outcomes||[]).map(o=>`<button class="pill" style="font-size:.64rem;padding:3px 8px;margin:2px 3px 0 0;" onclick="App.useDetailOdd('${this.esc((o.name+(o.point!=null?' '+o.point:'')))}',${Number(o.price)||0})">${this.esc(o.name)}${o.point!=null?' '+o.point:''} <b>${o.price}</b></button>`).join('')}</div>`).join('')}
+      </div>`).join('');
+    box.dataset.rendered='1';
+  },
+  useDetailOdd(pickName, price){
+    // Close picker, set pick + odds in whichever form is open
+    const mp=document.getElementById('match-picker'); if(mp)mp.remove();
+    const parent=this._pickMatch||{};
+    if(this._pickerTarget==='pred'){
+      const mEl=document.getElementById('pr-match'); if(mEl&&parent.match)mEl.value=parent.match;
+      const pEl=document.getElementById('pr-pick'); if(pEl)pEl.value=pickName;
+      const oEl=document.getElementById('pr-odds'); if(oEl)oEl.value=price||'';
+      this.toast('Pick + odds set');
+    } else {
+      this.addSelRow({match:parent.match, date:parent.date, time:parent.time, pick:pickName, odds:price||''});
+      this.toast('Game + pick + odds added');
+    }
   },
   choseMatch(match,date,time,odds){
     const ov=document.getElementById('match-picker'); if(ov)ov.remove();
