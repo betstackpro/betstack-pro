@@ -339,6 +339,33 @@ body.light .st{background:rgba(0,0,0,.04);}
 .navitem svg{width:23px;height:23px;}
 .navitem span{font-size:.62rem;font-weight:700;}
 .navitem.active{color:var(--red);}
+/* ===== In-place nav panel ===== */
+/* ===== Horizontal brand strip (cinematic, minimal height) ===== */
+.brand-strip{position:relative;width:100%;aspect-ratio:16/6;border-radius:16px;overflow:hidden;margin:0 0 14px;cursor:pointer;background:#0b0d0f;border:1px solid var(--border);}
+.brand-strip-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;aspect-ratio:1/1;border:0;pointer-events:none;}
+.brand-strip-tap{position:absolute;bottom:8px;right:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:.66rem;font-weight:700;padding:5px 11px;border-radius:100px;}
+@media (min-width:1024px){ .brand-strip{aspect-ratio:16/5;} .brand-strip-frame{width:auto;height:220%;aspect-ratio:1/1;} }
+/* Fullscreen clip viewer */
+#clip-viewer{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.9);display:none;flex-direction:column;padding:0;}
+#clip-viewer.open{display:flex;}
+.cv-head{display:flex;align-items:center;gap:12px;padding:14px 16px;}
+.cv-head b{flex:1;color:#fff;}
+.cv-frame-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:0 12px 20px;}
+.cv-frame-wrap iframe{width:100%;max-width:460px;aspect-ratio:1/1;border:0;border-radius:16px;background:#0b0d0f;}
+#nav-panel{position:fixed;inset:0;z-index:2500;pointer-events:none;opacity:0;transition:opacity .2s;}
+#nav-panel.nav-panel-open{pointer-events:auto;opacity:1;}
+#nav-panel .np-inner{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease;}
+#nav-panel.nav-panel-open .np-inner{transform:translateX(0);}
+.np-head{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:2;}
+.np-back{background:var(--surface);border:1px solid var(--border);color:var(--text);width:38px;height:38px;border-radius:50%;font-size:1.1rem;cursor:pointer;flex-shrink:0;}
+.np-title{flex:1;font-size:1.05rem;}
+.np-x{background:none;border:none;color:var(--sub);font-size:1.1rem;cursor:pointer;width:38px;height:38px;}
+.np-body{flex:1;overflow:auto;padding:16px;max-width:680px;margin:0 auto;width:100%;}
+/* Desktop: panel becomes a right-side pane, not full screen */
+@media (min-width:1024px){
+  #nav-panel{left:auto;right:0;width:min(46vw,620px);box-shadow:-8px 0 40px rgba(0,0,0,.5);}
+  #nav-panel .np-inner{border-left:1px solid var(--border);transform:translateX(100%);}
+}
 .pill{background:var(--surface);border:1px solid var(--border);color:var(--sub);padding:8px 14px;border-radius:100px;font-size:.74rem;font-weight:700;cursor:pointer;transition:.2s;font-family:inherit;}
 .pill.active{background:rgba(0,200,120,.12);border-color:var(--green);color:var(--green);}
 .bookbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;margin-top:12px;border:none;border-radius:14px;background:linear-gradient(135deg,#00c853,#00e676);color:#00210f;font-weight:800;font-size:1rem;font-family:inherit;cursor:pointer;box-shadow:0 6px 24px rgba(0,200,83,.35);animation:bookPulse 2.4s infinite;}
@@ -657,12 +684,16 @@ body.light .st{background:rgba(0,0,0,.04);}
       <button class="btn btn-out" onclick="App.openResults()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 3v18h18M7 16l4-4 3 3 5-6"/></svg> View our verified results</button>
       <div class="sec">Today's free predictions</div>
       <p class="sub" style="font-size:.78rem;margin:-6px 0 10px;">Free for everyone. Sign up and subscribe to unlock the full bet tips.</p>
+      <div class="brand-strip" onclick="App.openClip('09_brand_intro','Betstack Pro')">
+        <iframe class="brand-strip-frame" src="/clips/betstackpro_clip_09_brand_intro.html" loading="lazy" title="Betstack Pro" scrolling="no"></iframe>
+        <div class="brand-strip-tap">\u25B6 Watch how it works</div>
+      </div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
-        <button class="pill active" onclick="App.hubScroll('hub-preds',this)">🎯 Predictions</button>
-        <button class="pill" onclick="App.hubScroll('hub-matches',this)">📅 Fixtures</button>
-        <button class="pill" onclick="App.hubScroll('hub-scores',this)">⚡ Scores</button>
-        <button class="pill" onclick="App.hubScroll('hub-realnews',this)">📰 News</button>
-        <button class="pill" onclick="App.hubScroll('hub-reviews',this)">⭐ Reviews</button>
+        <button class="pill" onclick="App.openPanel('preds')">🎯 Predictions</button>
+        <button class="pill" onclick="App.openPanel('matches')">📅 Fixtures</button>
+        <button class="pill" onclick="App.openPanel('scores')">⚡ Scores</button>
+        <button class="pill" onclick="App.openPanel('news')">📰 News</button>
+        <button class="pill" onclick="App.openPanel('reviews')">⭐ Reviews</button>
       </div>
       <div id="hub-preds"><p class="sub" style="font-size:.8rem;">Loading today's predictions…</p></div>
       <div id="hub-statstrip"></div>
@@ -1542,6 +1573,69 @@ const App={
     }).catch(()=>{ box.innerHTML='<p class="sub" style="font-size:.72rem;margin:0;">Could not load stats.</p>'; });
   },
   statsBtn(fid){ return `<button class="pill" style="font-size:.64rem;padding:4px 9px;" onclick="event.stopPropagation();App.toggleStats('${fid}')">📊 Stats</button><div id="st-${fid}" style="display:none;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);"></div>`; },
+  // ===== IN-PLACE CONTENT PANEL (no more scroll-jumping) =====
+  // Mobile: full-screen slide-in with back arrow. Desktop: fills the right preview pane.
+  PANEL_TITLES: { preds:'🎯 Today\'s Predictions', matches:'📅 Fixtures', scores:'⚡ Live Scores', news:'📰 Football News', reviews:'⭐ Member Reviews' },
+  // Full-screen clip player (uses your branded animations)
+  CLIPS: [
+    ['09_brand_intro','\uD83C\uDFAC Brand intro'],
+    ['01_how_it_works','\u2139\uFE0F How it works'],
+    ['02_unlock_code','\uD83D\uDD13 Unlocking tips'],
+    ['03_verified_results','\u2705 Verified results'],
+    ['04_tier_ladder','\uD83C\uDFAF Membership tiers'],
+    ['07_keep_100','\uD83D\uDCB0 Keep 100% of wins'],
+    ['05_member_offer','\u2B50 Member offer'],
+    ['06_partner_program','\uD83E\uDD1D Partner program'],
+    ['14_referral_link','\uD83D\uDD17 Referral link'],
+    ['16_earnings_accumulate','\uD83D\uDCC8 Earnings'],
+    ['11_fund_wallet','\uD83D\uDCB3 Fund wallet'],
+    ['13_member_withdrawal','\uD83C\uDFE6 Withdrawals'],
+  ],
+  openClip(slug,title){
+    let v=document.getElementById('clip-viewer');
+    if(!v){ v=document.createElement('div'); v.id='clip-viewer'; document.body.appendChild(v); }
+    v.className='open';
+    v.innerHTML=`<div class="cv-head"><button class="np-back" onclick="App.closeClip()">\u2190</button><b>${this.esc(title||'')}</b><button class="np-x" onclick="App.closeClip()">\u2715</button></div>
+      <div class="cv-frame-wrap"><iframe src="/clips/betstackpro_clip_${slug}.html" title="${this.esc(title||'')}"></iframe></div>`;
+    document.body.style.overflow='hidden';
+  },
+  closeClip(){ const v=document.getElementById('clip-viewer'); if(v)v.className=''; document.body.style.overflow=''; },
+  clipGallery(){
+    return `<div style="display:flex;gap:10px;overflow-x:auto;padding:4px 0 10px;">${this.CLIPS.map(([slug,t])=>`
+      <div onclick="App.openClip('${slug}','${t.replace(/'/g,'')}')" style="flex-shrink:0;width:120px;cursor:pointer;">
+        <div style="width:120px;height:120px;border-radius:12px;overflow:hidden;border:1px solid var(--border);position:relative;background:#0b0d0f;">
+          <iframe src="/clips/betstackpro_clip_${slug}.html" loading="lazy" scrolling="no" style="width:120px;height:120px;border:0;pointer-events:none;"></iframe>
+        </div>
+        <div style="font-size:.66rem;font-weight:600;margin-top:5px;text-align:center;">${t}</div>
+      </div>`).join('')}</div>`;
+  },
+  openPanel(which){
+    this._panel=which;
+    let ov=document.getElementById('nav-panel');
+    if(!ov){ ov=document.createElement('div'); ov.id='nav-panel'; document.body.appendChild(ov); }
+    ov.className='nav-panel-open';
+    ov.innerHTML=`<div class="np-inner">
+      <div class="np-head">
+        <button class="np-back" onclick="App.closePanel()">\u2190</button>
+        <b class="np-title">${this.PANEL_TITLES[which]||''}</b>
+        <button class="np-x" onclick="App.closePanel()">\u2715</button>
+      </div>
+      <div class="np-body" id="np-body"><p class="sub">Loading\u2026</p></div>
+    </div>`;
+    document.body.style.overflow='hidden';
+    this.fillPanel(which);
+  },
+  closePanel(){ const ov=document.getElementById('nav-panel'); if(ov)ov.className=''; document.body.style.overflow=''; },
+  fillPanel(which){
+    const body=document.getElementById('np-body'); if(!body)return;
+    // Reuse existing loaders by temporarily pointing them at the panel body via a shared id.
+    body.id='np-body'; // keep
+    if(which==='preds'){ body.innerHTML='<div id="hub-preds"><p class="sub">Loading\u2026</p></div>'; this.renderHubPreds&&this.renderHubPreds(); }
+    else if(which==='matches'){ body.innerHTML='<div id="hub-matches"><p class="sub">Loading\u2026</p></div>'; this.loadHomeExtras&&this.loadHomeExtras(); }
+    else if(which==='scores'){ body.innerHTML='<div id="hub-scores"><p class="sub">Loading\u2026</p></div>'; this.loadHubScores&&this.loadHubScores(); }
+    else if(which==='news'){ body.innerHTML='<div id="hub-realnews"><p class="sub">Loading\u2026</p></div>'; this.loadHubNews&&this.loadHubNews(); }
+    else if(which==='reviews'){ body.innerHTML='<div id="hub-reviews"><p class="sub">Loading\u2026</p></div>'; this.loadHubReviews&&this.loadHubReviews(); }
+  },
   hubScroll(id,btn){
     document.querySelectorAll('#hub-nav .pill').forEach(p=>p.classList.remove('active'));
     if(btn)btn.classList.add('active');
