@@ -2203,7 +2203,7 @@ const App={
       ${list.map(f=>{
         const dt=new Date(f.start_ts), t=dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), dstr=dt.toISOString().slice(0,10);
         const day=dt.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
-        return `<div class="card" style="padding:12px 14px;margin-bottom:6px;cursor:pointer;" onclick="App.choseMatch('${this.esc(f.home)} vs ${this.esc(f.away)}','${dstr}','${t}')">
+        return `<div class="card" style="padding:12px 14px;margin-bottom:6px;cursor:pointer;" onclick='App.choseMatch("${this.esc(f.home)} vs ${this.esc(f.away)}","${dstr}","${t}",${f.odds?JSON.stringify(f.odds).replace(/"/g,"&quot;"):"null"})'>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
             <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:.88rem;">${this.esc(f.home)} <span class="sub" style="font-weight:400;">vs</span> ${this.esc(f.away)}</div>
             <div class="sub" style="font-size:.66rem;margin-top:2px;">${day} \u00B7 ${t}</div></div>
