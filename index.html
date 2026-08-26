@@ -347,11 +347,15 @@ body.light .st{background:rgba(0,0,0,.04);}
 .clip-thumb iframe{width:132px;height:132px;border:0;pointer-events:none;}
 .clip-thumb .lbl{font-size:.68rem;font-weight:600;margin-top:6px;text-align:center;line-height:1.25;}
 .clip-thumb .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6);}
-.brand-strip{position:relative;width:100%;aspect-ratio:16/6;border-radius:16px;overflow:hidden;margin:0 0 14px;cursor:pointer;background:#0b0d0f;border:1px solid var(--border);}
-.brand-strip-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;aspect-ratio:1/1;border:0;pointer-events:none;}
-.brand-strip-tap{position:absolute;bottom:8px;right:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:.66rem;font-weight:700;padding:5px 11px;border-radius:100px;}
-@media (min-width:1024px){ .brand-strip{aspect-ratio:16/5;} .brand-strip-frame{width:auto;height:220%;aspect-ratio:1/1;} }
+
+
+
+@media (min-width:1024px){   }
 /* Fullscreen clip viewer */
+/* Auto-playing brand reel — clip FITS inside the box (contain), cycles continuously */
+.brand-reel{position:relative;width:100%;aspect-ratio:16/7;border-radius:16px;overflow:hidden;margin:0 0 14px;background:radial-gradient(circle at 50% 40%,#141821,#0b0d0f);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;}
+.brand-reel iframe{height:100%;aspect-ratio:1/1;max-width:100%;border:0;pointer-events:none;display:block;}
+@media (min-width:1024px){ .brand-reel{aspect-ratio:16/5;} }
 #clip-viewer{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.9);display:none;flex-direction:column;padding:0;}
 #clip-viewer.open{display:flex;}
 .cv-head{display:flex;align-items:center;gap:12px;padding:14px 16px;}
@@ -690,10 +694,8 @@ body.light .st{background:rgba(0,0,0,.04);}
       <button class="btn btn-out" onclick="App.openResults()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 3v18h18M7 16l4-4 3 3 5-6"/></svg> View our verified results</button>
       <div class="sec">Today's free predictions</div>
       <p class="sub" style="font-size:.78rem;margin:-6px 0 10px;">Free for everyone. Sign up and subscribe to unlock the full bet tips.</p>
-      <div class="brand-strip" onclick="App.openClip('09_brand_intro','Betstack Pro')">
-        <iframe class="brand-strip-frame" src="/clips/betstackpro_clip_09_brand_intro.html" loading="lazy" title="Betstack Pro" scrolling="no"></iframe>
-        <div class="brand-strip-tap">\u25B6 Watch how it works</div>
-      </div>
+      
+      <div class="brand-reel"><iframe id="reel-frame" src="/clips/betstackpro_clip_09_brand_intro.html" title="Betstack Pro" scrolling="no"></iframe></div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
         <button class="pill" onclick="App.openPanel('preds')">🎯 Predictions</button>
         <button class="pill" onclick="App.openPanel('matches')">📅 Fixtures</button>
@@ -1351,7 +1353,7 @@ const App={
     if(document.getElementById('view-hub').classList.contains('active'))this.renderHubPreds();
     this.updateArenaBadges();
   },
-  renderHubPreds(){ this.loadHubExtras(); 
+  renderHubPreds(){ this.loadHubExtras(); this.startBrandReel(); 
     const el=document.getElementById('hub-preds'); if(!el)return;
     const sportIc=s=>({Football:'⚽',Basketball:'🏀',Tennis:'🎾'})[s]||'🏆';
     const draw=(list)=>{
@@ -1609,6 +1611,20 @@ const App={
         <div class="lbl">${t}</div>
       </div>`).join('');
   },
+  REEL_ORDER: ['09_brand_intro','01_how_it_works','03_verified_results','04_tier_ladder','02_unlock_code','07_keep_100','05_member_offer','08_acca_builder','06_partner_program','14_referral_link','16_earnings_accumulate','11_fund_wallet','12_spend_credit','13_member_withdrawal','10_verified_seal','15_share_engage','17_partner_withdrawal'],
+  _reelIdx:0, _reelTimer:null,
+  startBrandReel(){
+    const frame=document.getElementById('reel-frame'); if(!frame)return;
+    if(this._reelTimer){ clearInterval(this._reelTimer); }
+    // Each clip animation runs ~6.5s; advance a touch after so it loops cleanly.
+    this._reelTimer=setInterval(()=>{
+      const f=document.getElementById('reel-frame');
+      if(!f){ clearInterval(this._reelTimer); this._reelTimer=null; return; }
+      this._reelIdx=(this._reelIdx+1)%this.REEL_ORDER.length;
+      f.src='/clips/betstackpro_clip_'+this.REEL_ORDER[this._reelIdx]+'.html';
+    }, 7000);
+  },
+  stopBrandReel(){ if(this._reelTimer){ clearInterval(this._reelTimer); this._reelTimer=null; } },
   openClip(slug,title){
     let v=document.getElementById('clip-viewer');
     if(!v){ v=document.createElement('div'); v.id='clip-viewer'; document.body.appendChild(v); }
