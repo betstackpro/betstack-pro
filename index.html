@@ -358,7 +358,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .brand-reel .reel-layer.show{opacity:1;}
 .reel-controls{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:3;opacity:0;transition:opacity .2s;}
 .brand-reel:hover .reel-controls,.brand-reel:active .reel-controls,.brand-reel .reel-controls.always{opacity:1;}
-.reel-controls button{width:34px;height:34px;border-radius:50%;border:none;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.reel-controls button{width:38px;height:38px;border-radius:50%;border:none;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .reel-controls button:active{background:rgba(0,0,0,.8);}
 .reel-dots{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:3;}
 .reel-dots .rd{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .3s;}
@@ -707,9 +707,9 @@ body.light .st{background:rgba(0,0,0,.04);}
         <iframe id="reel-a" class="reel-layer show" src="/clips.html#09_brand_intro" title="Betstack Pro" scrolling="no" onload="App.checkReel&&App.checkReel()"></iframe>
         <iframe id="reel-b" class="reel-layer" scrolling="no"></iframe>
         <div class="reel-controls always">
-          <button onclick="App.reelPrev()" aria-label="Previous">\u25C0</button>
-          <button onclick="App.reelToggle()" id="reel-pp" aria-label="Pause">\u2759\u2759</button>
-          <button onclick="App.reelNext()" aria-label="Next">\u25B6</button>
+          <button onclick="App.reelPrev()" aria-label="Previous">‹</button>
+          <button onclick="App.reelToggle()" id="reel-pp" aria-label="Pause">❙❙</button>
+          <button onclick="App.reelNext()" aria-label="Next">›</button>
         </div>
         <div class="reel-dots" id="reel-dots"></div>
       </div>
@@ -1658,7 +1658,7 @@ const App={
   reelToggle(){
     this._reelPaused=!this._reelPaused;
     const btn=document.getElementById('reel-pp');
-    if(btn) btn.innerHTML=this._reelPaused?'\u25B6':'\u2759\u2759';
+    if(btn) btn.innerHTML=this._reelPaused?'▶':'❙❙';
   },
   renderReelDots(){
     const el=document.getElementById('reel-dots'); if(!el)return;
