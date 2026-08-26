@@ -356,12 +356,12 @@ body.light .st{background:rgba(0,0,0,.04);}
 .brand-reel{position:relative;width:100%;max-width:420px;margin:0 auto 16px;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#0b0d0f;border:1px solid var(--border);}
 .brand-reel .reel-layer{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;display:block;opacity:0;transition:opacity .6s ease;}
 .brand-reel .reel-layer.show{opacity:1;}
-.reel-edge{position:absolute;top:0;bottom:0;width:44px;border:none;background:transparent;color:rgba(255,255,255,.85);font-size:1.6rem;font-weight:700;cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center;text-shadow:0 2px 8px rgba(0,0,0,.7);}
-.reel-edge-l{left:0;}.reel-edge-r{right:0;}
+.reel-edge{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border:none;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);color:#fff;font-size:1.5rem;font-weight:700;cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center;border-radius:50%;line-height:1;}
+.reel-edge-l{left:8px;}.reel-edge-r{right:8px;}
 .reel-edge:active{background:rgba(0,0,0,.2);}
-.reel-center{position:absolute;left:44px;right:44px;top:0;bottom:0;z-index:3;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-.reel-playbtn{width:60px;height:60px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;font-size:1.5rem;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .25s;padding-left:4px;}
-.brand-reel.paused .reel-playbtn{opacity:1;}
+
+
+.brand-reel.paused 
 .reel-dots{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:4;}
 .reel-dots .rd{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .3s;}
 .reel-dots .rd.on{background:var(--green);}
@@ -737,7 +737,6 @@ body.light .st{background:rgba(0,0,0,.04);}
         <iframe id="reel-b" class="reel-layer" scrolling="no"></iframe>
         <button class="reel-edge reel-edge-l" onclick="event.stopPropagation();App.reelPrev()" aria-label="Previous">‹</button>
         <button class="reel-edge reel-edge-r" onclick="event.stopPropagation();App.reelNext()" aria-label="Next">›</button>
-        <div class="reel-center" id="reel-center" onclick="App.reelTapCenter()"><span class="reel-playbtn" id="reel-playbtn">▶</span></div>
         <div class="reel-dots" id="reel-dots"></div>
       </div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
@@ -1682,11 +1681,6 @@ const App={
   },
   reelNext(){ this.reelGoto((this._reelIdx||0)+1); },
   reelPrev(){ this.reelGoto((this._reelIdx||0)-1); },
-  reelTapCenter(){
-    this._reelPaused=!this._reelPaused;
-    const box=document.getElementById('brand-reel-box');
-    if(box) box.classList.toggle('paused', this._reelPaused);
-  },
   renderReelDots(){
     const el=document.getElementById('reel-dots'); if(!el)return;
     el.innerHTML=this.REEL_ORDER.map((_,i)=>`<span class="rd${i===this._reelIdx?' on':''}"></span>`).join('');
