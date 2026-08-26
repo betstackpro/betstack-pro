@@ -341,6 +341,12 @@ body.light .st{background:rgba(0,0,0,.04);}
 .navitem.active{color:var(--red);}
 /* ===== In-place nav panel ===== */
 /* ===== Horizontal brand strip (cinematic, minimal height) ===== */
+.clip-rail{display:flex;gap:10px;overflow-x:auto;padding:4px 0 12px;-webkit-overflow-scrolling:touch;}
+.clip-thumb{flex-shrink:0;width:132px;cursor:pointer;}
+.clip-thumb .cw{width:132px;height:132px;border-radius:14px;overflow:hidden;border:1px solid var(--border);position:relative;background:#0b0d0f;}
+.clip-thumb iframe{width:132px;height:132px;border:0;pointer-events:none;}
+.clip-thumb .lbl{font-size:.68rem;font-weight:600;margin-top:6px;text-align:center;line-height:1.25;}
+.clip-thumb .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6);}
 .brand-strip{position:relative;width:100%;aspect-ratio:16/6;border-radius:16px;overflow:hidden;margin:0 0 14px;cursor:pointer;background:#0b0d0f;border:1px solid var(--border);}
 .brand-strip-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;aspect-ratio:1/1;border:0;pointer-events:none;}
 .brand-strip-tap{position:absolute;bottom:8px;right:12px;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:.66rem;font-weight:700;padding:5px 11px;border-radius:100px;}
@@ -733,6 +739,9 @@ body.light .st{background:rgba(0,0,0,.04);}
     <div class="page" id="view-how">
       <div class="eyebrow">Guide</div><h2 class="h2" style="margin:4px 0 6px;">How It Works</h2>
       <p class="sub" style="margin-bottom:16px;">Betstack Pro is a sports-betting community: free daily tips, paid bet tips, and membership perks. We charge for picks and access — we never hold your stake or guarantee a result.</p>
+
+      <div class="sec" style="margin-top:6px;">\uD83C\uDFAC Watch &amp; learn</div>
+      <div id="how-clips" class="clip-rail"></div>
 
       <div class="sec" style="margin-top:6px;">Getting started</div>
       <div class="irow"><div class="ic">📝</div><div class="mid"><div class="t">1 · Create an account</div><div class="d">Register with your details, verify you're 18+, set a withdrawal PIN, and pick a membership plan. Browsing tips is free.</div></div></div>
@@ -1313,6 +1322,7 @@ const App={
     if(view==='wallet')this.renderWallet();
     if(view==='admin')this.renderAdmin();
     if(view==='hub')this.renderHubPreds();
+    if(view==='how'){ this.renderClipRail(); this.renderHowTiers&&this.renderHowTiers(); }
     if(view==='how'){const e=document.getElementById('how-tiers');if(e)e.innerHTML=this.tierCards('info');}
     if(view==='settings')this.updateTelegramConnect();
     this.show(view);
@@ -1591,6 +1601,14 @@ const App={
     ['11_fund_wallet','\uD83D\uDCB3 Fund wallet'],
     ['13_member_withdrawal','\uD83C\uDFE6 Withdrawals'],
   ],
+  renderClipRail(){
+    const el=document.getElementById('how-clips'); if(!el)return;
+    el.innerHTML=this.CLIPS.map(([slug,t])=>`
+      <div class="clip-thumb" onclick="App.openClip('${slug}','${t.replace(/'/g,'')}')">
+        <div class="cw"><iframe src="/clips/betstackpro_clip_${slug}.html" loading="lazy" scrolling="no"></iframe><div class="play">\u25B6</div></div>
+        <div class="lbl">${t}</div>
+      </div>`).join('');
+  },
   openClip(slug,title){
     let v=document.getElementById('clip-viewer');
     if(!v){ v=document.createElement('div'); v.id='clip-viewer'; document.body.appendChild(v); }
