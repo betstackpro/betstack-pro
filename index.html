@@ -356,14 +356,24 @@ body.light .st{background:rgba(0,0,0,.04);}
 .brand-reel{position:relative;width:100%;max-width:420px;margin:0 auto 16px;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#0b0d0f;border:1px solid var(--border);}
 .brand-reel .reel-layer{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;display:block;opacity:0;transition:opacity .6s ease;}
 .brand-reel .reel-layer.show{opacity:1;}
-.reel-controls{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:3;opacity:0;transition:opacity .2s;}
-.brand-reel:hover .reel-controls,.brand-reel:active .reel-controls,.brand-reel .reel-controls.always{opacity:1;}
-.reel-controls button{width:38px;height:38px;border-radius:50%;border:none;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.reel-controls button:active{background:rgba(0,0,0,.8);}
-.reel-dots{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:3;}
+.reel-edge{position:absolute;top:0;bottom:0;width:44px;border:none;background:transparent;color:rgba(255,255,255,.85);font-size:1.6rem;font-weight:700;cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center;text-shadow:0 2px 8px rgba(0,0,0,.7);}
+.reel-edge-l{left:0;}.reel-edge-r{right:0;}
+.reel-edge:active{background:rgba(0,0,0,.2);}
+.reel-center{position:absolute;left:44px;right:44px;top:0;bottom:0;z-index:3;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.reel-playbtn{width:60px;height:60px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;font-size:1.5rem;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .25s;padding-left:4px;}
+.brand-reel.paused .reel-playbtn{opacity:1;}
+.reel-dots{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:4;}
 .reel-dots .rd{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .3s;}
 .reel-dots .rd.on{background:var(--green);}
 @media (min-width:1024px){ .brand-reel{aspect-ratio:16/5;} }
+#age-gate{position:fixed;inset:0;z-index:9000;background:rgba(5,7,9,.92);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:22px;}
+#age-gate .ag-box{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:28px 24px;max-width:400px;width:100%;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.6);}
+#age-gate .ag-logo{display:flex;align-items:center;justify-content:center;gap:9px;font-size:1rem;letter-spacing:.02em;margin-bottom:18px;}
+#age-gate .ag-logo b{color:var(--green);}
+#age-gate .ag-badge{width:66px;height:66px;border-radius:50%;border:3px solid var(--green);color:var(--green);font-weight:800;font-size:1.3rem;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+#age-gate h2{font-size:1.4rem;margin:0 0 10px;}
+#age-gate p{color:var(--sub);font-size:.86rem;line-height:1.5;margin:0 0 22px;}
+#age-gate .ag-under{background:none;border:none;color:var(--sub);font-size:.85rem;margin-top:14px;cursor:pointer;padding:8px;width:100%;}
 #clip-viewer{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.9);display:none;flex-direction:column;padding:0;}
 #clip-viewer.open{display:flex;}
 .cv-head{display:flex;align-items:center;gap:12px;padding:14px 16px;}
@@ -554,6 +564,16 @@ body.light .st{background:rgba(0,0,0,.04);}
 </style>
 </head>
 <body>
+<div id="age-gate" style="display:none;">
+  <div class="ag-box">
+    <div class="ag-logo"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="3" y="13" width="3.5" height="8" rx="1" fill="#5b6470"/><rect x="8.3" y="9" width="3.5" height="12" rx="1" fill="#828b96"/><rect x="13.6" y="5.5" width="3.5" height="15.5" rx="1" fill="#1fd17a"/><rect x="18.9" y="2.5" width="3" height="18.5" rx="1" fill="#1fd17a"/></svg><span><b>BETSTACK</b> PRO</span></div>
+    <div class="ag-badge">18+</div>
+    <h2>Are you 18 or older?</h2>
+    <p>Betstack Pro is for adults only. You must be 18+ to use this platform. Please gamble responsibly.</p>
+    <button class="btn btn-green" style="width:100%;height:52px;font-size:1rem;" onclick="App.ageConfirm(true)">I am 18 years or older</button>
+    <button class="ag-under" onclick="App.ageConfirm(false)">I am under 18</button>
+  </div>
+</div>
 
 <!-- SPLASH (loads first) -->
 <div id="splash">
@@ -706,11 +726,9 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="brand-reel" id="brand-reel-box">
         <iframe id="reel-a" class="reel-layer show" src="/clips.html#09_brand_intro" title="Betstack Pro" scrolling="no" onload="App.checkReel&&App.checkReel()"></iframe>
         <iframe id="reel-b" class="reel-layer" scrolling="no"></iframe>
-        <div class="reel-controls always">
-          <button onclick="App.reelPrev()" aria-label="Previous">‹</button>
-          <button onclick="App.reelToggle()" id="reel-pp" aria-label="Pause">❙❙</button>
-          <button onclick="App.reelNext()" aria-label="Next">›</button>
-        </div>
+        <button class="reel-edge reel-edge-l" onclick="event.stopPropagation();App.reelPrev()" aria-label="Previous">\u2039</button>
+        <button class="reel-edge reel-edge-r" onclick="event.stopPropagation();App.reelNext()" aria-label="Next">\u203A</button>
+        <div class="reel-center" id="reel-center" onclick="App.reelTapCenter()"><span class="reel-playbtn" id="reel-playbtn">\u25B6</span></div>
         <div class="reel-dots" id="reel-dots"></div>
       </div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
@@ -1655,14 +1673,24 @@ const App={
   },
   reelNext(){ this.reelGoto((this._reelIdx||0)+1); },
   reelPrev(){ this.reelGoto((this._reelIdx||0)-1); },
-  reelToggle(){
+  reelTapCenter(){
     this._reelPaused=!this._reelPaused;
-    const btn=document.getElementById('reel-pp');
-    if(btn) btn.innerHTML=this._reelPaused?'▶':'❙❙';
+    const box=document.getElementById('brand-reel-box');
+    if(box) box.classList.toggle('paused', this._reelPaused);
   },
   renderReelDots(){
     const el=document.getElementById('reel-dots'); if(!el)return;
     el.innerHTML=this.REEL_ORDER.map((_,i)=>`<span class="rd${i===this._reelIdx?' on':''}"></span>`).join('');
+  },
+  checkAgeGate(){
+    var ok=false;
+    try{ ok=document.cookie.indexOf('bsp_age=1')>-1; }catch(e){}
+    if(!ok){ var g=document.getElementById('age-gate'); if(g)g.style.display='flex'; }
+  },
+  ageConfirm(yes){
+    if(!yes){ document.body.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:#8c919b;font-family:sans-serif;"><div><h2 style="color:#fff;">Sorry \u2014 you must be 18+</h2><p>You need to be 18 or older to use Betstack Pro.</p></div></div>'; return; }
+    try{ document.cookie='bsp_age=1;max-age='+(60*60*24*365)+';path=/'; }catch(e){}
+    var g=document.getElementById('age-gate'); if(g)g.style.display='none';
   },
   openClip(slug,title){
     let v=document.getElementById('clip-viewer');
@@ -2999,6 +3027,7 @@ const App={
   signal(kind,ic,m){const s=document.getElementById('signal');s.className='signal '+(kind==='win'?'win':kind==='pending'?'pending':'');document.getElementById('sig-ic').textContent=ic;document.getElementById('sig-msg').textContent=m;requestAnimationFrame(()=>s.classList.add('show'));clearTimeout(this._s);this._s=setTimeout(()=>s.classList.remove('show'),3200);}
 };
 App.init();
+App.checkAgeGate();
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(App.refreshInstall)App.refreshInstall();});
 window.addEventListener('appinstalled',()=>{deferredPrompt=null;if(App.refreshInstall)App.refreshInstall();App.toast('App installed');});
