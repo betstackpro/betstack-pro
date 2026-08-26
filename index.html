@@ -353,7 +353,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 @media (min-width:1024px){   }
 /* Fullscreen clip viewer */
 /* Auto-playing brand reel — clip FITS inside the box (contain), cycles continuously */
-.brand-reel{position:relative;width:100%;aspect-ratio:16/7;border-radius:16px;overflow:hidden;margin:0 0 14px;background:radial-gradient(circle at 50% 40%,#141821,#0b0d0f);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;}
+.brand-reel{position:relative;width:100%;max-width:420px;margin:0 auto 16px;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#0b0d0f;border:1px solid var(--border);}
 .brand-reel iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;display:block;}
 @media (min-width:1024px){ .brand-reel{aspect-ratio:16/5;} }
 #clip-viewer{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.9);display:none;flex-direction:column;padding:0;}
@@ -695,7 +695,7 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="sec">Today's free predictions</div>
       <p class="sub" style="font-size:.78rem;margin:-6px 0 10px;">Free for everyone. Sign up and subscribe to unlock the full bet tips.</p>
       
-      <div class="brand-reel"><iframe id="reel-frame" src="/clips/betstackpro_clip_09_brand_intro.html" title="Betstack Pro" scrolling="no"></iframe></div>
+      <div class="brand-reel" id="brand-reel-box"><iframe id="reel-frame" src="/clips.html#09_brand_intro" title="Betstack Pro" scrolling="no" onload="App.checkReel&&App.checkReel()"></iframe></div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
         <button class="pill" onclick="App.openPanel('preds')">🎯 Predictions</button>
         <button class="pill" onclick="App.openPanel('matches')">📅 Fixtures</button>
@@ -705,16 +705,6 @@ body.light .st{background:rgba(0,0,0,.04);}
       </div>
       <div id="hub-preds"><p class="sub" style="font-size:.8rem;">Loading today's predictions…</p></div>
       <div id="hub-statstrip"></div>
-      <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">📅 Match center <span class="sub" style="font-size:.68rem;font-weight:400;">today &amp; tomorrow</span></div>
-      <div id="hub-matches"><p class="sub" style="font-size:.8rem;">Loading matches…</p></div>
-      <div class="sec">⚡ Live scores &amp; results</div>
-      <div id="hub-scores"><p class="sub" style="font-size:.8rem;">Loading scores…</p></div>
-      <div class="sec">📰 Football news <span class="sub" style="font-size:.62rem;font-weight:400;">· transfers, injuries &amp; headlines</span></div>
-      <div id="hub-realnews"><p class="sub" style="font-size:.8rem;">Loading news…</p></div>
-      <div class="sec">⭐ What members say</div>
-      <div id="hub-reviews"><p class="sub" style="font-size:.8rem;">Loading…</p></div>
-      <div class="sec">📢 Platform updates</div>
-      <div id="hub-news"><p class="sub" style="font-size:.8rem;">Loading…</p></div>
     </div>
 
     <!-- SIGN IN -->
@@ -1353,7 +1343,7 @@ const App={
     if(document.getElementById('view-hub').classList.contains('active'))this.renderHubPreds();
     this.updateArenaBadges();
   },
-  renderHubPreds(){ this.loadHubExtras(); this.startBrandReel(); 
+  renderHubPreds(){ this.startBrandReel(); 
     const el=document.getElementById('hub-preds'); if(!el)return;
     const sportIc=s=>({Football:'⚽',Basketball:'🏀',Tennis:'🎾'})[s]||'🏆';
     const draw=(list)=>{
@@ -1607,12 +1597,22 @@ const App={
     const el=document.getElementById('how-clips'); if(!el)return;
     el.innerHTML=this.CLIPS.map(([slug,t])=>`
       <div class="clip-thumb" onclick="App.openClip('${slug}','${t.replace(/'/g,'')}')">
-        <div class="cw"><iframe src="/clips/betstackpro_clip_${slug}.html" loading="lazy" scrolling="no"></iframe><div class="play">\u25B6</div></div>
+        <div class="cw"><iframe src="/clips.html#${slug}" loading="lazy" scrolling="no"></iframe><div class="play">\u25B6</div></div>
         <div class="lbl">${t}</div>
       </div>`).join('');
   },
   REEL_ORDER: ['09_brand_intro','01_how_it_works','03_verified_results','04_tier_ladder','02_unlock_code','07_keep_100','05_member_offer','08_acca_builder','06_partner_program','14_referral_link','16_earnings_accumulate','11_fund_wallet','12_spend_credit','13_member_withdrawal','10_verified_seal','15_share_engage','17_partner_withdrawal'],
   _reelIdx:0, _reelTimer:null,
+  checkReel(){
+    try{
+      const f=document.getElementById('reel-frame'); const box=document.getElementById('brand-reel-box');
+      if(!f||!box)return;
+      const doc=f.contentDocument;
+      // If the clip is missing, the iframe shows a 404 page (no .bsp-clip element) -> hide the box + stop cycling.
+      if(doc && !doc.querySelector('.bsp-clip')){ box.style.display='none'; this.stopBrandReel&&this.stopBrandReel(); }
+      else { box.style.display=''; }
+    }catch(e){ /* cross-origin or fine — leave visible */ }
+  },
   startBrandReel(){
     const frame=document.getElementById('reel-frame'); if(!frame)return;
     if(this._reelTimer){ clearInterval(this._reelTimer); }
@@ -1621,7 +1621,7 @@ const App={
       const f=document.getElementById('reel-frame');
       if(!f){ clearInterval(this._reelTimer); this._reelTimer=null; return; }
       this._reelIdx=(this._reelIdx+1)%this.REEL_ORDER.length;
-      f.src='/clips/betstackpro_clip_'+this.REEL_ORDER[this._reelIdx]+'.html';
+      f.src='about:blank'; const slug=this.REEL_ORDER[this._reelIdx]; setTimeout(()=>{ const ff=document.getElementById('reel-frame'); if(ff)ff.src='/clips.html#'+slug; },30);
     }, 7000);
   },
   stopBrandReel(){ if(this._reelTimer){ clearInterval(this._reelTimer); this._reelTimer=null; } },
@@ -1630,7 +1630,7 @@ const App={
     if(!v){ v=document.createElement('div'); v.id='clip-viewer'; document.body.appendChild(v); }
     v.className='open';
     v.innerHTML=`<div class="cv-head"><button class="np-back" onclick="App.closeClip()">\u2190</button><b>${this.esc(title||'')}</b><button class="np-x" onclick="App.closeClip()">\u2715</button></div>
-      <div class="cv-frame-wrap"><iframe src="/clips/betstackpro_clip_${slug}.html" title="${this.esc(title||'')}"></iframe></div>`;
+      <div class="cv-frame-wrap"><iframe src="/clips.html#${slug}" title="${this.esc(title||'')}"></iframe></div>`;
     document.body.style.overflow='hidden';
   },
   closeClip(){ const v=document.getElementById('clip-viewer'); if(v)v.className=''; document.body.style.overflow=''; },
@@ -1638,7 +1638,7 @@ const App={
     return `<div style="display:flex;gap:10px;overflow-x:auto;padding:4px 0 10px;">${this.CLIPS.map(([slug,t])=>`
       <div onclick="App.openClip('${slug}','${t.replace(/'/g,'')}')" style="flex-shrink:0;width:120px;cursor:pointer;">
         <div style="width:120px;height:120px;border-radius:12px;overflow:hidden;border:1px solid var(--border);position:relative;background:#0b0d0f;">
-          <iframe src="/clips/betstackpro_clip_${slug}.html" loading="lazy" scrolling="no" style="width:120px;height:120px;border:0;pointer-events:none;"></iframe>
+          <iframe src="/clips.html#${slug}" loading="lazy" scrolling="no" style="width:120px;height:120px;border:0;pointer-events:none;"></iframe>
         </div>
         <div style="font-size:.66rem;font-weight:600;margin-top:5px;text-align:center;">${t}</div>
       </div>`).join('')}</div>`;
@@ -1662,13 +1662,15 @@ const App={
   closePanel(){ const ov=document.getElementById('nav-panel'); if(ov)ov.className=''; document.body.style.overflow=''; },
   fillPanel(which){
     const body=document.getElementById('np-body'); if(!body)return;
-    // Reuse existing loaders by temporarily pointing them at the panel body via a shared id.
-    body.id='np-body'; // keep
-    if(which==='preds'){ body.innerHTML='<div id="hub-preds"><p class="sub">Loading\u2026</p></div>'; this.renderHubPreds&&this.renderHubPreds(); }
-    else if(which==='matches'){ body.innerHTML='<div id="hub-matches"><p class="sub">Loading\u2026</p></div>'; this.loadHomeExtras&&this.loadHomeExtras(); }
-    else if(which==='scores'){ body.innerHTML='<div id="hub-scores"><p class="sub">Loading\u2026</p></div>'; this.loadHubScores&&this.loadHubScores(); }
-    else if(which==='news'){ body.innerHTML='<div id="hub-realnews"><p class="sub">Loading\u2026</p></div>'; this.loadHubNews&&this.loadHubNews(); }
-    else if(which==='reviews'){ body.innerHTML='<div id="hub-reviews"><p class="sub">Loading\u2026</p></div>'; this.loadHubReviews&&this.loadHubReviews(); }
+    const targets={preds:'hub-preds',matches:'hub-matches',scores:'hub-scores',news:'hub-realnews',reviews:'hub-reviews'};
+    body.innerHTML='<div id="'+targets[which]+'"><p class="sub">Loading\u2026</p></div>';
+    try{
+      if(which==='preds') this.renderHubPreds&&this.renderHubPreds();
+      else if(which==='matches') this.loadHomeExtras&&this.loadHomeExtras();
+      else if(which==='scores') this.loadHubScores&&this.loadHubScores();
+      else if(which==='news') this.loadHubNews&&this.loadHubNews();
+      else if(which==='reviews') this.loadHubReviews&&this.loadHubReviews();
+    }catch(e){ const t=document.getElementById(targets[which]); if(t)t.innerHTML='<p class="sub">Could not load.</p>'; }
   },
   hubScroll(id,btn){
     document.querySelectorAll('#hub-nav .pill').forEach(p=>p.classList.remove('active'));
