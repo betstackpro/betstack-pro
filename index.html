@@ -354,7 +354,15 @@ body.light .st{background:rgba(0,0,0,.04);}
 /* Fullscreen clip viewer */
 /* Auto-playing brand reel — clip FITS inside the box (contain), cycles continuously */
 .brand-reel{position:relative;width:100%;max-width:420px;margin:0 auto 16px;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#0b0d0f;border:1px solid var(--border);}
-.brand-reel iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;display:block;}
+.brand-reel .reel-layer{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;display:block;opacity:0;transition:opacity .6s ease;}
+.brand-reel .reel-layer.show{opacity:1;}
+.reel-controls{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:3;opacity:0;transition:opacity .2s;}
+.brand-reel:hover .reel-controls,.brand-reel:active .reel-controls,.brand-reel .reel-controls.always{opacity:1;}
+.reel-controls button{width:34px;height:34px;border-radius:50%;border:none;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);color:#fff;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.reel-controls button:active{background:rgba(0,0,0,.8);}
+.reel-dots{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:3;}
+.reel-dots .rd{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .3s;}
+.reel-dots .rd.on{background:var(--green);}
 @media (min-width:1024px){ .brand-reel{aspect-ratio:16/5;} }
 #clip-viewer{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.9);display:none;flex-direction:column;padding:0;}
 #clip-viewer.open{display:flex;}
@@ -695,7 +703,16 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="sec">Today's free predictions</div>
       <p class="sub" style="font-size:.78rem;margin:-6px 0 10px;">Free for everyone. Sign up and subscribe to unlock the full bet tips.</p>
       
-      <div class="brand-reel" id="brand-reel-box"><iframe id="reel-frame" src="/clips.html#09_brand_intro" title="Betstack Pro" scrolling="no" onload="App.checkReel&&App.checkReel()"></iframe></div>
+      <div class="brand-reel" id="brand-reel-box">
+        <iframe id="reel-a" class="reel-layer show" src="/clips.html#09_brand_intro" title="Betstack Pro" scrolling="no" onload="App.checkReel&&App.checkReel()"></iframe>
+        <iframe id="reel-b" class="reel-layer" scrolling="no"></iframe>
+        <div class="reel-controls always">
+          <button onclick="App.reelPrev()" aria-label="Previous">\u25C0</button>
+          <button onclick="App.reelToggle()" id="reel-pp" aria-label="Pause">\u2759\u2759</button>
+          <button onclick="App.reelNext()" aria-label="Next">\u25B6</button>
+        </div>
+        <div class="reel-dots" id="reel-dots"></div>
+      </div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
         <button class="pill" onclick="App.openPanel('preds')">🎯 Predictions</button>
         <button class="pill" onclick="App.openPanel('matches')">📅 Fixtures</button>
@@ -1605,7 +1622,7 @@ const App={
   _reelIdx:0, _reelTimer:null,
   checkReel(){
     try{
-      const f=document.getElementById('reel-frame'); const box=document.getElementById('brand-reel-box');
+      const f=document.getElementById('reel-a'); const box=document.getElementById('brand-reel-box');
       if(!f||!box)return;
       const doc=f.contentDocument;
       // If the clip is missing, the iframe shows a 404 page (no .bsp-clip element) -> hide the box + stop cycling.
@@ -1613,19 +1630,40 @@ const App={
       else { box.style.display=''; }
     }catch(e){ /* cross-origin or fine — leave visible */ }
   },
+  _reelActive:'a', _reelPaused:false,
   startBrandReel(){
-    const frame=document.getElementById('reel-frame'); if(!frame)return;
-    if(this._reelTimer){ clearInterval(this._reelTimer); }
-    // Each clip animation runs ~6.5s; advance a touch after so it loops cleanly.
-    this._reelTimer=setInterval(()=>{
-      const f=document.getElementById('reel-frame');
-      if(!f){ clearInterval(this._reelTimer); this._reelTimer=null; return; }
-      this._reelIdx=(this._reelIdx+1)%this.REEL_ORDER.length;
-      const slug=this.REEL_ORDER[this._reelIdx];
-      f.src='/clips.html?v='+Date.now()+'#'+slug;
-    }, 7000);
+    if(!document.getElementById('reel-a'))return;
+    this._reelIdx=this._reelIdx||0;
+    this.renderReelDots();
+    this.stopBrandReel();
+    // Advance on a comfortable fixed interval; crossfade makes it feel smooth.
+    this._reelTimer=setInterval(()=>{ if(!this._reelPaused) this.reelNext(); }, 6500);
   },
   stopBrandReel(){ if(this._reelTimer){ clearInterval(this._reelTimer); this._reelTimer=null; } },
+  reelGoto(idx){
+    const a=document.getElementById('reel-a'), b=document.getElementById('reel-b');
+    if(!a||!b)return;
+    const n=this.REEL_ORDER.length;
+    this._reelIdx=((idx%n)+n)%n;
+    const slug=this.REEL_ORDER[this._reelIdx];
+    // Load into the hidden layer, then crossfade it in.
+    const showing=this._reelActive==='a'?a:b;
+    const hidden=this._reelActive==='a'?b:a;
+    hidden.src='/clips.html?v='+Date.now()+'#'+slug;
+    hidden.onload=()=>{ hidden.classList.add('show'); showing.classList.remove('show'); this._reelActive=(this._reelActive==='a'?'b':'a'); };
+    this.renderReelDots();
+  },
+  reelNext(){ this.reelGoto((this._reelIdx||0)+1); },
+  reelPrev(){ this.reelGoto((this._reelIdx||0)-1); },
+  reelToggle(){
+    this._reelPaused=!this._reelPaused;
+    const btn=document.getElementById('reel-pp');
+    if(btn) btn.innerHTML=this._reelPaused?'\u25B6':'\u2759\u2759';
+  },
+  renderReelDots(){
+    const el=document.getElementById('reel-dots'); if(!el)return;
+    el.innerHTML=this.REEL_ORDER.map((_,i)=>`<span class="rd${i===this._reelIdx?' on':''}"></span>`).join('');
+  },
   openClip(slug,title){
     let v=document.getElementById('clip-viewer');
     if(!v){ v=document.createElement('div'); v.id='clip-viewer'; document.body.appendChild(v); }
