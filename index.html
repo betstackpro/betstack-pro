@@ -366,14 +366,23 @@ body.light .st{background:rgba(0,0,0,.04);}
 .reel-dots .rd{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .3s;}
 .reel-dots .rd.on{background:var(--green);}
 @media (min-width:1024px){ .brand-reel{aspect-ratio:16/5;} }
-#age-gate{position:fixed;inset:0;z-index:9000;background:rgba(5,7,9,.92);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:22px;}
-#age-gate .ag-box{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:28px 24px;max-width:400px;width:100%;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.6);}
-#age-gate .ag-logo{display:flex;align-items:center;justify-content:center;gap:9px;font-size:1rem;letter-spacing:.02em;margin-bottom:18px;}
-#age-gate .ag-logo b{color:var(--green);}
-#age-gate .ag-badge{width:66px;height:66px;border-radius:50%;border:3px solid var(--green);color:var(--green);font-weight:800;font-size:1.3rem;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
-#age-gate h2{font-size:1.4rem;margin:0 0 10px;}
-#age-gate p{color:var(--sub);font-size:.86rem;line-height:1.5;margin:0 0 22px;}
-#age-gate .ag-under{background:none;border:none;color:var(--sub);font-size:.85rem;margin-top:14px;cursor:pointer;padding:8px;width:100%;}
+#age-gate{position:fixed;inset:0;z-index:9000;background:rgba(6,8,10,.96);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px;animation:agfade .4s ease;}
+@keyframes agfade{from{opacity:0;}to{opacity:1;}}
+#age-gate .ag-box{max-width:380px;width:100%;text-align:center;}
+#age-gate .ag-bars{display:flex;gap:5px;justify-content:center;align-items:flex-end;height:44px;margin-bottom:26px;}
+#age-gate .ag-bars span{width:9px;border-radius:3px;background:var(--green);animation:agbar 1.1s ease-in-out infinite;}
+#age-gate .ag-bars span:nth-child(1){height:40%;background:#3a4048;animation-delay:0s;}
+#age-gate .ag-bars span:nth-child(2){height:60%;background:#5b6470;animation-delay:.12s;}
+#age-gate .ag-bars span:nth-child(3){height:80%;animation-delay:.24s;}
+#age-gate .ag-bars span:nth-child(4){height:100%;animation-delay:.36s;}
+@keyframes agbar{0%,100%{transform:scaleY(.7);}50%{transform:scaleY(1);}}
+#age-gate .ag-h{font-size:1.5rem;margin:0 0 12px;letter-spacing:-.01em;}
+#age-gate .ag-p{color:var(--sub);font-size:.9rem;line-height:1.55;margin:0 0 26px;}
+#age-gate .ag-p b{color:var(--text);}
+#age-gate .ag-yes{width:100%;height:54px;font-size:1rem;border-radius:14px;}
+#age-gate .ag-under{background:none;border:none;color:var(--sub);font-size:.85rem;margin-top:16px;cursor:pointer;padding:8px;width:100%;transition:color .2s;}
+#age-gate .ag-under:active{color:var(--text);}
+#age-gate .ag-foot{margin-top:24px;font-size:.68rem;color:var(--sub);letter-spacing:.03em;opacity:.7;}
 #clip-viewer{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.9);display:none;flex-direction:column;padding:0;}
 #clip-viewer.open{display:flex;}
 .cv-head{display:flex;align-items:center;gap:12px;padding:14px 16px;}
@@ -566,12 +575,12 @@ body.light .st{background:rgba(0,0,0,.04);}
 <body>
 <div id="age-gate" style="display:none;">
   <div class="ag-box">
-    <div class="ag-logo"><svg viewBox="0 0 24 24" width="26" height="26" fill="none"><rect x="3" y="13" width="3.5" height="8" rx="1" fill="#5b6470"/><rect x="8.3" y="9" width="3.5" height="12" rx="1" fill="#828b96"/><rect x="13.6" y="5.5" width="3.5" height="15.5" rx="1" fill="#1fd17a"/><rect x="18.9" y="2.5" width="3" height="18.5" rx="1" fill="#1fd17a"/></svg><span><b>BETSTACK</b> PRO</span></div>
-    <div class="ag-badge">18+</div>
-    <h2>Are you 18 or older?</h2>
-    <p>Betstack Pro is for adults only. You must be 18+ to use this platform. Please gamble responsibly.</p>
-    <button class="btn btn-green" style="width:100%;height:52px;font-size:1rem;" onclick="App.ageConfirm(true)">I am 18 years or older</button>
-    <button class="ag-under" onclick="App.ageConfirm(false)">I am under 18</button>
+    <div class="ag-bars"><span></span><span></span><span></span><span></span></div>
+    <h2 class="ag-h">Welcome to Betstack Pro</h2>
+    <p class="ag-p">To continue, please confirm that you are <b>18 years or older</b>. We’re committed to responsible play.</p>
+    <button class="btn btn-green ag-yes" onclick="App.ageConfirm(true)">I'm 18 or older &nbsp;→</button>
+    <button class="ag-under" onclick="App.ageConfirm(false)">I'm under 18</button>
+    <div class="ag-foot">18+ · Play responsibly · begambleaware.org</div>
   </div>
 </div>
 
@@ -726,9 +735,9 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="brand-reel" id="brand-reel-box">
         <iframe id="reel-a" class="reel-layer show" src="/clips.html#09_brand_intro" title="Betstack Pro" scrolling="no" onload="App.checkReel&&App.checkReel()"></iframe>
         <iframe id="reel-b" class="reel-layer" scrolling="no"></iframe>
-        <button class="reel-edge reel-edge-l" onclick="event.stopPropagation();App.reelPrev()" aria-label="Previous">\u2039</button>
-        <button class="reel-edge reel-edge-r" onclick="event.stopPropagation();App.reelNext()" aria-label="Next">\u203A</button>
-        <div class="reel-center" id="reel-center" onclick="App.reelTapCenter()"><span class="reel-playbtn" id="reel-playbtn">\u25B6</span></div>
+        <button class="reel-edge reel-edge-l" onclick="event.stopPropagation();App.reelPrev()" aria-label="Previous">‹</button>
+        <button class="reel-edge reel-edge-r" onclick="event.stopPropagation();App.reelNext()" aria-label="Next">›</button>
+        <div class="reel-center" id="reel-center" onclick="App.reelTapCenter()"><span class="reel-playbtn" id="reel-playbtn">▶</span></div>
         <div class="reel-dots" id="reel-dots"></div>
       </div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
@@ -767,7 +776,7 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="eyebrow">Guide</div><h2 class="h2" style="margin:4px 0 6px;">How It Works</h2>
       <p class="sub" style="margin-bottom:16px;">Betstack Pro is a sports-betting community: free daily tips, paid bet tips, and membership perks. We charge for picks and access — we never hold your stake or guarantee a result.</p>
 
-      <div class="sec" style="margin-top:6px;">\uD83C\uDFAC Watch &amp; learn</div>
+      <div class="sec" style="margin-top:6px;">🎬 Watch &amp; learn</div>
       <div id="how-clips" class="clip-rail"></div>
 
       <div class="sec" style="margin-top:6px;">Getting started</div>
@@ -1632,7 +1641,7 @@ const App={
     const el=document.getElementById('how-clips'); if(!el)return;
     el.innerHTML=this.CLIPS.map(([slug,t])=>`
       <div class="clip-thumb" onclick="App.openClip('${slug}','${t.replace(/'/g,'')}')">
-        <div class="cw"><iframe src="/clips.html#${slug}" loading="lazy" scrolling="no"></iframe><div class="play">\u25B6</div></div>
+        <div class="cw"><iframe src="/clips.html#${slug}" loading="lazy" scrolling="no"></iframe><div class="play">▶</div></div>
         <div class="lbl">${t}</div>
       </div>`).join('');
   },
@@ -1696,7 +1705,7 @@ const App={
     let v=document.getElementById('clip-viewer');
     if(!v){ v=document.createElement('div'); v.id='clip-viewer'; document.body.appendChild(v); }
     v.className='open';
-    v.innerHTML=`<div class="cv-head"><button class="np-back" onclick="App.closeClip()">\u2190</button><b>${this.esc(title||'')}</b><button class="np-x" onclick="App.closeClip()">\u2715</button></div>
+    v.innerHTML=`<div class="cv-head"><button class="np-back" onclick="App.closeClip()">←</button><b>${this.esc(title||'')}</b><button class="np-x" onclick="App.closeClip()">✕</button></div>
       <div class="cv-frame-wrap"><iframe src="/clips.html#${slug}" title="${this.esc(title||'')}"></iframe></div>`;
     document.body.style.overflow='hidden';
   },
@@ -1717,9 +1726,9 @@ const App={
     ov.className='nav-panel-open';
     ov.innerHTML=`<div class="np-inner">
       <div class="np-head">
-        <button class="np-back" onclick="App.closePanel()">\u2190</button>
+        <button class="np-back" onclick="App.closePanel()">←</button>
         <b class="np-title">${this.PANEL_TITLES[which]||''}</b>
-        <button class="np-x" onclick="App.closePanel()">\u2715</button>
+        <button class="np-x" onclick="App.closePanel()">✕</button>
       </div>
       <div class="np-body" id="np-body"><p class="sub">Loading\u2026</p></div>
     </div>`;
@@ -1770,7 +1779,7 @@ const App={
       if(!items.length){ el.innerHTML='<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">News feed is loading \u2014 check back shortly.</p></div>'; return; }
       el.innerHTML=items.map(n=>`<a href="${n.link}" target="_blank" rel="noopener" class="card" style="display:block;padding:12px 14px;margin-bottom:8px;text-decoration:none;color:inherit;">
         <div style="font-weight:700;font-size:.84rem;line-height:1.35;">${this.esc(n.title)}</div>
-        <div class="sub" style="font-size:.64rem;margin-top:5px;">${this.esc(n.source)}${n.published?' \u00B7 '+new Date(n.published).toLocaleDateString():''} \u00B7 Read at source \u2197</div>
+        <div class="sub" style="font-size:.64rem;margin-top:5px;">${this.esc(n.source)}${n.published?' \u00B7 '+new Date(n.published).toLocaleDateString():''} \u00B7 Read at source ↗</div>
       </a>`).join('');
     }).catch(()=>{el.innerHTML='';});
   },
@@ -1817,7 +1826,7 @@ const App={
             ${f.id?this.statsBtn(f.id):''}
           </div>
         </div>`;}).join('')).join('')
-        + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.openPanel('preds')">See our predictions \u2192</button>`;
+        + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.openPanel('preds')">See our predictions →</button>`;
     }).catch(()=>{const el=document.getElementById('home-matches')||document.getElementById('hub-matches');if(el)el.innerHTML='';});
     // News & updates — real platform notifications
     Api.getNotifications().then(r=>{
@@ -2191,7 +2200,7 @@ const App={
       <span style="font-size:.82rem;font-weight:700;">\uD83E\uDDFE ${this._draftSels.length} game${this._draftSels.length>1?'s':''} selected</span>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;"><button class="btn btn-out btn-sm" style="height:32px;padding:0 10px;font-size:.7rem;" onclick="App._draftSels=[];App.renderDraft()">Clear</button>
       <button class="btn btn-out btn-sm" style="height:32px;padding:0 10px;font-size:.7rem;border-color:var(--green);color:var(--green);" onclick="App.draftToFree()">\uD83C\uDD93 Free prediction${this._draftSels.length>1?'s ('+this._draftSels.length+')':''}</button>
-      <button class="btn btn-gold btn-sm" style="height:32px;padding:0 10px;font-size:.7rem;" onclick="App.draftToTip()">\uD83D\uDD10 Paid tip \u2192</button></div></div>`;
+      <button class="btn btn-gold btn-sm" style="height:32px;padding:0 10px;font-size:.7rem;" onclick="App.draftToTip()">\uD83D\uDD10 Paid tip →</button></div></div>`;
   },
   // Free predictions: one per selected game (each needs a pick).
   draftToFree(){
@@ -2371,7 +2380,7 @@ const App={
       <div id="mp-list" style="flex:1;overflow:auto;padding:8px 16px 24px;"><p class="sub">Loading matches\u2026</p></div>
     </div>`;
     Api.adminFixtures('football').then(r=>{ this._mpAll=(r&&r.fixtures)||[]; this.paintPickerDays(); this.paintPicker(); })
-      .catch(()=>{ const el=document.getElementById('mp-list'); if(el)el.innerHTML='<p class="sub">Could not load matches. Open Games \u2192 Refresh data first.</p>'; });
+      .catch(()=>{ const el=document.getElementById('mp-list'); if(el)el.innerHTML='<p class="sub">Could not load matches. Open Games → Refresh data first.</p>'; });
   },
   paintPickerDays(){
     const el=document.getElementById('mp-days'); if(!el)return;
@@ -2405,8 +2414,8 @@ const App={
             <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:.88rem;">${this.esc(f.home)} <span class="sub" style="font-weight:400;">vs</span> ${this.esc(f.away)}</div>
             <div class="sub" style="font-size:.66rem;margin-top:2px;">${day} \u00B7 ${t}</div></div>
             <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">
-              ${f.odds?`<button class="pill" style="font-size:.6rem;padding:5px 9px;" onclick="event.stopPropagation();App.toggleOddsDetail('${f.id}',this)">\u25BE odds</button>`:''}
-              <span class="pill" style="font-size:.62rem;padding:5px 10px;">Pick \u2192</span>
+              ${f.odds?`<button class="pill" style="font-size:.6rem;padding:5px 9px;" onclick="event.stopPropagation();App.toggleOddsDetail('${f.id}',this)">▾ odds</button>`:''}
+              <span class="pill" style="font-size:.62rem;padding:5px 10px;">Pick →</span>
             </div>
           </div>
           <div id="odt-${f.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);" data-odds='${f.odds?JSON.stringify(f.odds).replace(/'/g,"&#39;"):""}'></div>
@@ -2415,8 +2424,8 @@ const App={
   },
   toggleOddsDetail(fid,btn){
     const box=document.getElementById('odt-'+fid); if(!box)return;
-    if(box.style.display==='block'){ box.style.display='none'; if(btn)btn.innerHTML='\u25BE odds'; return; }
-    box.style.display='block'; if(btn)btn.innerHTML='\u25B4 hide';
+    if(box.style.display==='block'){ box.style.display='none'; if(btn)btn.innerHTML='▾ odds'; return; }
+    box.style.display='block'; if(btn)btn.innerHTML='▴ hide';
     if(box.dataset.rendered){ return; }
     let od={}; try{ od=JSON.parse((box.getAttribute('data-odds')||'{}').replace(/&#39;/g,"'")); }catch(e){}
     const detail=od.detail||[];
@@ -2630,7 +2639,7 @@ const App={
         const copyTxt=sels.map(s=>`${s.match} \u2014 ${s.pick} @ ${(Number(s.odds)||0).toFixed(2)}`).join('\n');
         h+=`<div class="code-box" style="text-align:left;"><div class="code-label" style="text-align:center;">Selected games \u00B7 combined @ ${c.odds.toFixed(2)}</div>${selRows||'<p class="sub" style="text-align:center;margin-top:8px;">Games loading\u2026</p>'}<button class="btn btn-out btn-sm" style="margin-top:12px;width:100%;" onclick="App.copySelections('${c.id}')">Copy all picks</button></div>
         <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Rebuild these picks at <b>any bookmaker in your country</b>, stake your own money, and keep 100% of what you win \u2014 we never hold your funds.</p></div>`;
-        h+=`<button class="bookbtn" onclick="window.open(API_BASE+'/go/bet','_blank','noopener')">\u26A1 Book these games now \u2192</button>
+        h+=`<button class="bookbtn" onclick="window.open(API_BASE+'/go/bet','_blank','noopener')">\u26A1 Book these games now →</button>
         <div class="book-sub">Opens our recommended bookmaker for your country \u00B7 Affiliate link \u00B7 18+ \u00B7 Bet responsibly</div>`;
       }else{
         h+=`<div class="locked-note" style="margin-bottom:14px;">${svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>')}<span>Unlock with your plan to reveal every selected game — teams, markets and odds you can place at any bookmaker in your country.</span></div>
@@ -2897,7 +2906,7 @@ const App={
     if(/withdraw|payout|cash/.test(s))return 'Members don\u2019t hold a balance with us, so there\u2019s nothing to withdraw — you pay per code and bet on your own bookmaker account. Partners can withdraw earned commission from the Wallet tab using their 4-digit PIN.';
     if(/member|tier|plan|upgrade|vip|gold|silver/.test(s))return 'Memberships unlock features only \u2014 more daily tips, VIP \u201csure\u201d specials and faster support. They\u2019re not an investment, make no return promise, and never take a cut of your winnings. Compare them from \u201cYour membership\u201d on Home.';
     if(/responsib|limit|self.?exclu|addict|problem|help/.test(s))return 'You\u2019ll find deposit limits, reality-check reminders and self-exclusion in Settings \u2192 Responsible Gambling, plus links to free support like BeGambleAware and GamCare. Only stake what you can afford to lose.';
-    if(/2fa|two.?factor|secur|password|pin/.test(s))return 'Turn on two-factor authentication and set a withdrawal PIN in Settings \u2192 Security. Use a strong, unique password and never share your login.';
+    if(/2fa|two.?factor|secur|password|pin/.test(s))return 'Turn on two-factor authentication and set a withdrawal PIN in Settings → Security. Use a strong, unique password and never share your login.';
     if(/refund/.test(s))return 'Because a code reveals paid information immediately, purchases are generally non-refundable once revealed. If something went wrong, use Contact support and we\u2019ll review it.';
     return 'I can help with bet tips, memberships, withdrawals, security and responsible gambling. For anything account-specific, please use Contact support \u2014 I can\u2019t access your account.';
   },
