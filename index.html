@@ -1601,7 +1601,7 @@ const App={
         <div class="lbl">${t}</div>
       </div>`).join('');
   },
-  REEL_ORDER: ['09_brand_intro','01_how_it_works','03_verified_results','04_tier_ladder','02_unlock_code','07_keep_100','05_member_offer','08_acca_builder','06_partner_program','14_referral_link','16_earnings_accumulate','11_fund_wallet','12_spend_credit','13_member_withdrawal','10_verified_seal','15_share_engage','17_partner_withdrawal'],
+  REEL_ORDER: ['09_brand_intro','01_how_it_works','03_verified_results','04_tier_ladder','07_keep_100','02_unlock_code','05_member_offer','08_acca_builder','06_partner_program','14_referral_link','16_earnings_accumulate','11_fund_wallet','12_spend_credit','13_member_withdrawal','10_verified_seal','15_share_engage','17_partner_withdrawal'],
   _reelIdx:0, _reelTimer:null,
   checkReel(){
     try{
@@ -1621,7 +1621,8 @@ const App={
       const f=document.getElementById('reel-frame');
       if(!f){ clearInterval(this._reelTimer); this._reelTimer=null; return; }
       this._reelIdx=(this._reelIdx+1)%this.REEL_ORDER.length;
-      f.src='about:blank'; const slug=this.REEL_ORDER[this._reelIdx]; setTimeout(()=>{ const ff=document.getElementById('reel-frame'); if(ff)ff.src='/clips.html#'+slug; },30);
+      const slug=this.REEL_ORDER[this._reelIdx];
+      f.src='/clips.html?v='+Date.now()+'#'+slug;
     }, 7000);
   },
   stopBrandReel(){ if(this._reelTimer){ clearInterval(this._reelTimer); this._reelTimer=null; } },
@@ -1750,7 +1751,7 @@ const App={
             ${f.id?this.statsBtn(f.id):''}
           </div>
         </div>`;}).join('')).join('')
-        + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.go('hub')">See our predictions \u2192</button>`;
+        + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.openPanel('preds')">See our predictions \u2192</button>`;
     }).catch(()=>{const el=document.getElementById('home-matches')||document.getElementById('hub-matches');if(el)el.innerHTML='';});
     // News & updates — real platform notifications
     Api.getNotifications().then(r=>{
