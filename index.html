@@ -2236,7 +2236,9 @@ const App={
         <div style="font-weight:700;font-size:.9rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
         <div class="sub" style="font-size:.68rem;margin-bottom:8px;">${this.esc(f.league||'')} \u00B7 ${t}</div>
         <div class="sub" style="font-size:.64rem;margin-bottom:5px;">\uD83D\uDC47 Tap a pick to add it to your slip:</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${picksHtml}${this.statsBtn(f.id)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${picksHtml}
+          <button class="pill" style="font-size:.7rem;padding:6px 11px;border-color:var(--green);color:var(--green);" onclick='App.openAllMarkets(${JSON.stringify({m:this.esc(f.home)+" vs "+this.esc(f.away),d:new Date(f.start_ts).toISOString().slice(0,10),t:t,odds:f.odds||null}).replace(/'/g,"&#39;")})'>\uFF0B All markets</button>
+          ${this.statsBtn(f.id)}</div>
       </div>`;
     }).join('')).join('');
   },
@@ -2449,7 +2451,7 @@ const App={
   addCode(){ this._editCode=null; this.openSheet('editcode'); },
   selRows(){ return Array.from(document.querySelectorAll('#sel-rows .selrow')); },
   openMatchPicker(target){
-    this._pickerTarget=target; this._mpDay='all'; this._mpQ='';
+    this._pickerTarget=target; this._pickToSlip=false; this._mpDay='all'; this._mpQ='';
     let ov=document.getElementById('match-picker');
     if(!ov){ ov=document.createElement('div'); ov.id='match-picker';
       ov.style.cssText='position:fixed;inset:0;z-index:3000;background:var(--bg);display:flex;flex-direction:column;';
@@ -2634,6 +2636,8 @@ const App={
       const pEl=document.getElementById('pr-pick'); if(pEl){ pEl.value=pick; }
       const oEl=document.getElementById('pr-odds'); if(oEl){ oEl.value=odd; oEl.focus(); }
       this.toast(odd?'Pick + odds set \u2014 edit the odds if needed':'Pick set \u2014 now type the odds');
+    } else if(this._pickToSlip){
+      this.addDraft(match, pick, odd, date, time);
     } else {
       this.addSelRow({match, date, time, pick, odds:odd});
       // focus the odds input of the row we just added so you can adjust it
