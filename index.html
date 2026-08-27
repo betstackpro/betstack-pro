@@ -377,6 +377,17 @@ body.light .st{background:rgba(0,0,0,.04);}
 .mk-refresh{flex-shrink:0;height:34px;padding:0 12px;font-size:.7rem;}
 .mk-list{padding-bottom:80px;}
 /* Persistent slip tray — bottom sheet on mobile */
+/* Market picker — bookmaker-style categories with odds slots */
+.mkt-cat{border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;}
+.mkt-cat-h{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;font-weight:700;font-size:.82rem;background:var(--surface);}
+.mkt-cat-h .mkt-chev{color:var(--sub);transition:transform .2s;}
+.mkt-cat.open .mkt-cat-h .mkt-chev{transform:rotate(180deg);}
+.mkt-cat-body{max-height:0;overflow:hidden;transition:max-height .25s ease;padding:0 12px;}
+.mkt-cat.open .mkt-cat-body{max-height:600px;padding:12px;}
+.mkt-pick{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:78px;padding:8px 10px;border-radius:9px;border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:border-color .15s;}
+.mkt-pick:active{border-color:var(--green);}
+.mkt-pick .mp-name{font-size:.68rem;color:var(--sub);text-align:center;line-height:1.2;}
+.mkt-pick .mp-odd{font-size:.82rem;font-weight:800;color:var(--green);}
 .slip-tray{position:fixed;left:0;right:0;bottom:0;z-index:1500;background:var(--surface);border-top:1px solid var(--border);border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.4);transform:translateY(calc(100% - 52px));transition:transform .28s ease;max-height:78vh;display:flex;flex-direction:column;}
 .slip-tray.has{transform:translateY(calc(100% - 52px));}
 .slip-tray.open{transform:translateY(0);}
@@ -2539,6 +2550,25 @@ const App={
     this._pickMatch={match,date,time,odds:od};
     this.openMarketPicker();
   },
+  // Full bookmaker market catalog (1xBet/MSport-grade). Odds fill from the API;
+  // until then each pick shows "—" (never a fake number).
+  MARKETS: {
+    "1X2 — Match Result": ["Home Win","Draw","Away Win"],
+    "Double Chance": ["Home or Draw (1X)","Home or Away (12)","Draw or Away (X2)"],
+    "Draw No Bet": ["Home (DNB)","Away (DNB)"],
+    "Both Teams to Score": ["BTTS - Yes","BTTS - No"],
+    "Total Goals (Over/Under)": ["Over 0.5","Over 1.5","Over 2.5","Over 3.5","Over 4.5","Under 1.5","Under 2.5","Under 3.5"],
+    "Asian Handicap": ["Home -0.5","Home -1.0","Home -1.5","Home -2.0","Away +0.5","Away +1.0","Away +1.5","Away +2.0"],
+    "European Handicap": ["Home -1","Home -2","Away +1","Away +2","Handicap Draw"],
+    "Team Totals": ["Home Over 0.5","Home Over 1.5","Home Over 2.5","Away Over 0.5","Away Over 1.5","Home Under 1.5","Away Under 1.5"],
+    "Half Time / Full Time": ["HT Home","HT Draw","HT Away","HT/FT Home/Home","HT/FT Draw/Home","HT/FT Away/Away","HT Over 0.5","HT Over 1.5"],
+    "Correct Score": ["1-0","2-0","2-1","3-0","3-1","0-0","1-1","2-2","0-1","1-2","0-2","Other"],
+    "Combos (Result & Goals)": ["Home & Over 2.5","Away & Over 2.5","Home & BTTS","Away & BTTS","Draw & Under 2.5","Over 2.5 & BTTS"],
+    "Corners": ["Over 7.5","Over 8.5","Over 9.5","Over 10.5","Under 9.5","Under 10.5","Home Most Corners","Away Most Corners","Corner Handicap Home -2.5"],
+    "Cards / Bookings": ["Over 2.5 Cards","Over 3.5 Cards","Over 4.5 Cards","Under 3.5 Cards","Home Over 1.5 Cards","Away Over 1.5 Cards","Red Card - Yes","Red Card - No"],
+    "Goals Timing / Multigoal": ["Multigoal 1-3","Multigoal 2-4","Multigoal 1-2","First Half More Goals","Second Half More Goals","Goal in Both Halves - Yes"],
+    "Player Props": ["Anytime Goalscorer","First Goalscorer","Home Player to Score","Away Player to Score","Player to be Booked"]
+  },
   openMarketPicker(){
     const {match}=this._pickMatch||{};
     let ov=document.getElementById('market-picker');
@@ -2554,9 +2584,21 @@ const App={
       if(od.ou_over&&od.ou_line!=null)chips.push(['Over '+od.ou_line,od.ou_over]);
       liveOdds=`<div class="sec" style="margin:8px 0;">\u26A1 Live odds (tap to use)</div><div style="display:flex;gap:7px;flex-wrap:wrap;">${chips.map(([p,o])=>`<button class="pill" style="font-size:.74rem;padding:7px 12px;border-color:var(--green);color:var(--green);" onclick="App.chosePickOdds('${p.replace(/'/g,"")}','${o}')">${p} <b>@${Number(o).toFixed(2)}</b></button>`).join('')}</div>`;
     }
-    const cats=Object.entries(this.MARKETS).map(([cat,picks])=>`
-      <div class="sec" style="margin:14px 0 8px;">${cat}</div>
-      <div style="display:flex;gap:7px;flex-wrap:wrap;">${picks.map(p=>`<button class="pill" style="font-size:.72rem;padding:7px 12px;" onclick="App.chosePick('${p.replace(/'/g,"")}')">${p}</button>`).join('')}</div>`).join('');
+    const od2=(this._pickMatch&&this._pickMatch.odds)||{};
+    // Map a few known picks to live odds if present (rest show "—" until API fills them).
+    const priceFor=(p)=>{
+      if(od2.h2h){ if(p==='Home Win')return od2.h2h.Home; if(p==='Draw')return od2.h2h.Draw; if(p==='Away Win')return od2.h2h.Away; }
+      if(od2.ou_over&&p==='Over '+(od2.ou_line||'2.5'))return od2.ou_over;
+      return null;
+    };
+    const cats=Object.entries(this.MARKETS).map(([cat,picks],ci)=>`
+      <div class="mkt-cat${ci===0?' open':''}">
+        <div class="mkt-cat-h" onclick="this.parentNode.classList.toggle('open')"><span>${cat}</span><span class="mkt-chev">▾</span></div>
+        <div class="mkt-cat-body"><div style="display:flex;gap:7px;flex-wrap:wrap;">${picks.map(p=>{
+          const pr=priceFor(p);
+          return `<button class="mkt-pick" onclick="App.chosePick('${p.replace(/'/g,"")}',${pr?Number(pr):'null'})"><span class="mp-name">${p}</span><span class="mp-odd">${pr?pr:'—'}</span></button>`;
+        }).join('')}</div></div>
+      </div>`).join('');
     ov.innerHTML=`<div style="background:var(--bg);flex:1;display:flex;flex-direction:column;max-width:640px;margin:0 auto;width:100%;">
       <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;"><b style="font-size:.95rem;">${this.esc(match||'')}</b><div class="sub" style="font-size:.68rem;">Tap a market for your pick</div></div>
@@ -2581,20 +2623,22 @@ const App={
       this.toast('Game + pick + odds added \u2713');
     }
   },
-  chosePick(pick){
+  chosePick(pick, price){
     if(!pick)return;
     const ov=document.getElementById('market-picker'); if(ov)ov.remove();
     const {match,date,time}=this._pickMatch||{};
+    // price is prefilled if the API had a real odd; otherwise blank for you to type.
+    const odd = (price && Number(price)) ? Number(price) : '';
     if(this._pickerTarget==='pred'){
       const mEl=document.getElementById('pr-match'); if(mEl)mEl.value=match;
       const pEl=document.getElementById('pr-pick'); if(pEl){ pEl.value=pick; }
-      const oEl=document.getElementById('pr-odds'); if(oEl){ oEl.focus(); }
-      this.toast('Pick set \u2014 now type the odds');
+      const oEl=document.getElementById('pr-odds'); if(oEl){ oEl.value=odd; oEl.focus(); }
+      this.toast(odd?'Pick + odds set \u2014 edit the odds if needed':'Pick set \u2014 now type the odds');
     } else {
-      this.addSelRow({match, date, time, pick, odds:''});
-      // focus the odds input of the row we just added
+      this.addSelRow({match, date, time, pick, odds:odd});
+      // focus the odds input of the row we just added so you can adjust it
       setTimeout(()=>{ const rows=this.selRows(); const last=rows[rows.length-1]; const o=last&&last.querySelector('.s-odds'); if(o)o.focus(); },50);
-      this.toast('Game + pick added \u2014 type the odds');
+      this.toast(odd?'Game + pick + odds added \u2014 adjust if needed':'Game + pick added \u2014 type the odds');
     }
   },
   addSelRow(v){
