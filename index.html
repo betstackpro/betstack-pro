@@ -409,6 +409,11 @@ body.light .st{background:rgba(0,0,0,.04);}
   .slip-tray .slip-body{display:block!important;}
   .mk-list{padding-bottom:20px;}
 }
+.social-sep{display:flex;align-items:center;gap:12px;margin:20px 0 16px;color:var(--sub);font-size:.75rem;}
+.social-sep::before,.social-sep::after{content:"";flex:1;height:1px;background:var(--border);}
+.social-btns{display:flex;gap:10px;}
+.social-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:.85rem;cursor:pointer;transition:border-color .15s;}
+.social-btn:active{border-color:var(--green);}
 #age-gate{position:fixed;inset:0;z-index:9000;background:rgba(6,8,10,.96);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:24px;animation:agfade .4s ease;}
 @keyframes agfade{from{opacity:0;}to{opacity:1;}}
 #age-gate .ag-box{max-width:380px;width:100%;text-align:center;}
@@ -975,6 +980,7 @@ const Api={
   // Server generates, stores (hashed, with expiry) and sends the code. NEVER do this in the browser.
   requestCode(channel,dest){ return this.post('/api/auth/request-code',{channel,dest}); },
   // Server compares the code, checks expiry + attempt limits, and returns {ok:true} + a session.
+  telegramAuth(data){ return this.post('/api/auth/telegram', data); },
   verifyCode(dest,code){ return this.post('/api/auth/verify-code',{dest,code}); },
   // Server creates a hosted invoice for one item at the SERVER-side price and returns {invoice_url, order_id}.
   // method is gateway-agnostic ('nowpayments' today; cards etc. can be added later) — server picks the gateway.
@@ -1188,6 +1194,43 @@ const App={
   liveValidate(){const e=document.getElementById('pw-reqs');if(e)e.innerHTML=this.pwReqs((document.getElementById('su-pw')||{}).value||'');},
   togglePw(id,btn){const inp=document.getElementById(id);if(!inp)return;const show=inp.type==='password';inp.type=show?'text':'password';btn.innerHTML=svg(show?EYE_HIDE:EYE_SHOW);btn.setAttribute('aria-label',show?'Hide password':'Show password');},
   hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return 'p'+h.toString(16);},
+  // Telegram Login Widget — opens Telegram OAuth, verifies via worker, logs in.
+  BOT_USERNAME: 'BetstackPro_Bot',
+  telegramLogin(){
+    if(!window.Telegram||!window.Telegram.Login){
+      // Load the widget script on demand, then trigger auth
+      const s=document.createElement('script');
+      s.src='https://telegram.org/js/telegram-widget.js?22';
+      s.onload=()=>this._tgAuth();
+      s.onerror=()=>this.toast('Could not reach Telegram \u2014 check connection');
+      document.head.appendChild(s);
+    } else { this._tgAuth(); }
+  },
+  _tgAuth(){
+    try{
+      window.Telegram.Login.auth(
+        { bot_id: this.BOT_USERNAME, request_access: true },
+        (data)=>{
+          if(!data){ this.toast('Telegram sign-in cancelled'); return; }
+          this.toast('Verifying with Telegram\u2026');
+          Api.telegramAuth(data).then(r=>{
+            if(r&&r.ok&&r.token){ this.afterLogin(r); }
+            else this.toast('Telegram sign-in failed \u2014 try email instead');
+          }).catch(()=>this.toast('Network error during Telegram sign-in'));
+        }
+      );
+    }catch(e){ this.toast('Telegram widget needs setup \u2014 use email for now'); }
+  },
+  googleLogin(){
+    this.toast('Google sign-in is coming soon \u2014 please use email or Telegram');
+  },
+  afterLogin(data){
+    if(data.token)setToken(data.token);
+    State.isAdmin=!!(data.user&&data.user.role==='admin');
+    State.tier=(data.user&&data.user.tier)||'none';
+    this.toast('Signed in \u2713');
+    this.login('Member',true);
+  },
   doLogin(role){
     const email=(document.getElementById('li-id').value||'').trim();
     const pw=(document.getElementById('li-pw')||{}).value||'';
@@ -1222,6 +1265,11 @@ const App={
       <div class="field"><label>Email Address</label><input class="input" id="li-id" type="email" placeholder="you@email.com"></div>
       <div class="field"><label>Password</label><div class="pw-wrap"><input class="input" id="li-pw" type="password" placeholder="••••••••"><button type="button" class="pw-eye" onclick="App.togglePw('li-pw',this)" aria-label="Show password">${svg(EYE_SHOW)}</button></div></div>
       <button class="btn btn-green" onclick="App.doLogin('${role}')">${svg('<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>')} SIGN IN</button>
+      <div class="social-sep"><span>or continue with</span></div>
+      <div class="social-btns">
+        <button class="social-btn" onclick="App.telegramLogin()"><svg viewBox="0 0 24 24" width="18" height="18" fill="#29a9eb"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.24l-1.86 8.78c-.14.62-.5.77-1.02.48l-2.82-2.08-1.36 1.31c-.15.15-.28.28-.56.28l.2-2.87 5.23-4.72c.23-.2-.05-.32-.35-.12l-6.46 4.07-2.78-.87c-.6-.19-.62-.6.13-.89l10.86-4.19c.5-.18.94.12.78.89z"/></svg>Telegram</button>
+        <button class="social-btn" onclick="App.googleLogin()"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Google</button>
+      </div>
       <p class="center mt" style="margin-top:14px;"><a style="color:var(--muted);font-weight:600;font-size:.85rem;" onclick="App.openSheet('forgot')">Forgot password?</a></p>
       <p class="center muted mt" style="font-size:.85rem;">Don't have an account?</p>
       <p class="center mt" style="margin-top:8px;"><a style="color:var(--green);font-weight:700;" onclick="App.signup('${role}')">Create ${role.toLowerCase()} account →</a></p>`;
@@ -1236,7 +1284,12 @@ const App={
       <div class="field"><label>Username</label><input class="input" id="su-user" placeholder="e.g. SkyHawk_7" oninput="App.liveValidate()"><div class="sub" style="font-size:.7rem;margin-top:6px;">8+ characters, at least one capital letter. Letters, numbers and underscore only.</div></div>
       <div class="field"><label>Password</label><div class="pw-wrap"><input class="input" id="su-pw" type="password" placeholder="Create a strong password" oninput="App.liveValidate()"><button type="button" class="pw-eye" onclick="App.togglePw('su-pw',this)" aria-label="Show password">${svg(EYE_SHOW)}</button></div></div>
       <div id="pw-reqs" class="pw-reqs">${this.pwReqs('')}</div>
-      <button class="btn btn-green" onclick="App.toStep2('${role}')">${svg('<path d="M5 12h14M13 5l7 7-7 7"/>')} CONTINUE</button>`
+      <button class="btn btn-green" onclick="App.toStep2('${role}')">${svg('<path d="M5 12h14M13 5l7 7-7 7"/>')} CONTINUE</button>
+      <div class="social-sep"><span>or sign up with</span></div>
+      <div class="social-btns">
+        <button class="social-btn" onclick="App.telegramLogin()"><svg viewBox="0 0 24 24" width="18" height="18" fill="#29a9eb"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.24l-1.86 8.78c-.14.62-.5.77-1.02.48l-2.82-2.08-1.36 1.31c-.15.15-.28.28-.56.28l.2-2.87 5.23-4.72c.23-.2-.05-.32-.35-.12l-6.46 4.07-2.78-.87c-.6-.19-.62-.6.13-.89l10.86-4.19c.5-.18.94.12.78.89z"/></svg>Telegram</button>
+        <button class="social-btn" onclick="App.googleLogin()"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Google</button>
+      </div>`
       : step===2 ? `
       <p class="sub" style="margin-bottom:14px;">Enter the 6-digit code we sent to your ${phone?'phone':'email'}.</p>
       <div class="field"><label>Verification code</label><input class="input" id="su-code" inputmode="numeric" maxlength="6" placeholder="6-digit code"></div>
@@ -2571,6 +2624,12 @@ const App={
     "Goals Timing / Multigoal": ["Multigoal 1-3","Multigoal 2-4","Multigoal 1-2","First Half More Goals","Second Half More Goals","Goal in Both Halves - Yes"],
     "Player Props": ["Anytime Goalscorer","First Goalscorer","Home Player to Score","Away Player to Score","Player to be Booked"]
   },
+  openAllMarkets(info){
+    let o=info; if(typeof info==='string'){ try{ o=JSON.parse(info.replace(/&#39;/g,"'")); }catch(e){ o={}; } }
+    this._pickerTarget='tip'; this._pickToSlip=true;
+    this._pickMatch={ match:o.m, date:o.d, time:o.t, odds:o.odds||null };
+    this.openMarketPicker();
+  },
   openMarketPicker(){
     const {match}=this._pickMatch||{};
     let ov=document.getElementById('market-picker');
@@ -3169,5 +3228,1290 @@ if('serviceWorker' in navigator){
   if(window.caches&&caches.keys){ caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{}); }
 }
 </script>
+
+
+<!-- ═══════════ MATCH CENTER · installed 2026-08-28 ═══════════ -->
+<!-- ============================================================================
+     BETSTACK PRO · MATCH CENTER  (MSport-style Selector + Details + Bet Assist)
+     ============================================================================
+     Self-contained. On load it creates the #view-matches page inside #content,
+     adds a "Matches" item to the bottom nav, and wraps App.go() so
+     App.go('matches') works. It touches no existing function; delete this whole
+     block to remove it cleanly.
+
+     WHAT IT READS (all already in your worker)
+       GET /api/fixtures/public?sport=football   -> {ok, fixtures:[...]}
+       GET /api/fixture/stats?id=<fixture id>    -> {ok, h2h:[], form:{home,away}}
+       fixture.odds (JSON string in D1)          -> {h2h:{Home,Draw,Away}, ou25,
+                                                     ou_line, ou_over, ou_under,
+                                                     btts:{Yes,No}, detail:[...]}
+
+     WHAT IT IS READY FOR (fills in automatically the day the API sends it —
+     no code change needed, the panels are already built and wired):
+       fixture.minute            live clock            -> scorebox
+       fixture.ht_home / ht_away half-time score       -> HT column
+       fixture.corners {h,a}     corner counts         -> flag column
+       fixture.cards  {hy,ay,hr,ar} cards             -> card column
+       fixture.commentary []     {min,type,text,team}  -> Commentary tab
+       stats.goalDist {home[6],away[6]}                -> Distribution of Goals
+       stats.momentum []         {min,h,a}             -> Momentum chart
+       stats.general  []         {label,h,a}           -> General Statistics
+       fixture.odds.detail[]     per-bookmaker markets -> every market card
+     ========================================================================= -->
+<style>
+/* ---- tokens: inherits your theme, adds only what's new ---- */
+#view-matches, #mc-detail{
+  --mc-acc:var(--green);          /* selected / active            */
+  --mc-odd:var(--gold);           /* price text (MSport uses gold) */
+  --mc-row:var(--surface);
+  --mc-row2:var(--surface-2);
+  --mc-line:var(--border);
+}
+/* ---- selector bar ---- */
+.mc-selbar{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--mc-line);border-radius:14px;padding:9px 10px;margin-bottom:10px;}
+.mc-selbar .mc-seltitle{font-family:var(--d);font-weight:800;font-size:.95rem;flex:1;letter-spacing:-.01em;}
+.mc-drop{display:flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:10px;background:var(--surface-3);border:1px solid var(--mc-line);font-size:.75rem;font-weight:600;color:var(--text);white-space:nowrap;}
+.mc-drop.on{color:var(--mc-acc);border-color:var(--mc-acc);}
+.mc-drop i{font-style:normal;font-size:.6rem;transition:transform .2s;}
+.mc-drop.on i{transform:rotate(180deg);}
+.mc-panel{display:none;background:var(--surface-2);border:1px solid var(--mc-line);border-radius:14px;padding:14px;margin-bottom:10px;}
+.mc-panel.open{display:block;animation:mcfade .22s ease;}
+@keyframes mcfade{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:none;}}
+.mc-lab{font-size:.64rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 9px;}
+.mc-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;}
+.mc-chips::-webkit-scrollbar{display:none;}
+.mc-chip{flex-shrink:0;min-width:74px;padding:9px 12px;border-radius:12px;background:var(--surface-3);border:1px solid var(--mc-line);text-align:center;line-height:1.3;}
+.mc-chip .d{font-size:.76rem;font-weight:700;}
+.mc-chip .n{font-size:.66rem;color:var(--muted);margin-top:2px;}
+.mc-chip.on{border-color:var(--mc-acc);background:rgba(31,209,122,.10);}
+.mc-chip.on .d{color:var(--mc-acc);}
+.mc-grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px;}
+.mc-range{padding:11px 8px;border-radius:12px;background:var(--surface-3);border:1px solid var(--mc-line);font-size:.76rem;font-weight:600;text-align:center;}
+.mc-range.on{border-color:var(--mc-acc);background:rgba(31,209,122,.10);color:var(--mc-acc);}
+.mc-hoursrow{display:flex;align-items:baseline;gap:9px;margin-bottom:6px;}
+.mc-hoursrow b{font-size:.76rem;font-weight:600;color:var(--muted);}
+.mc-hoursrow span{font-family:var(--d);font-weight:800;color:var(--mc-acc);font-size:.9rem;}
+.mc-slider{width:100%;-webkit-appearance:none;appearance:none;height:5px;border-radius:99px;background:var(--surface-3);outline:none;}
+.mc-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--mc-acc);border:3px solid var(--bg);cursor:pointer;}
+.mc-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--mc-acc);border:3px solid var(--bg);cursor:pointer;border-width:3px;}
+.mc-ticks{display:flex;justify-content:space-between;font-size:.62rem;color:var(--faint);margin-top:7px;}
+.mc-oddrow{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.mc-oddrow .input{height:44px;text-align:center;font-family:var(--d);font-weight:700;}
+.mc-oddrow em{color:var(--faint);font-style:normal;font-size:.8rem;}
+/* ---- league tree ---- */
+.mc-tree{max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px;}
+.mc-grouphead{display:flex;align-items:center;gap:9px;padding:11px 2px;font-family:var(--d);font-weight:700;font-size:.86rem;border-bottom:1px solid var(--mc-line);}
+.mc-grouphead .cnt{margin-left:auto;color:var(--muted);font-size:.76rem;font-weight:600;}
+.mc-grouphead .car{font-size:.6rem;color:var(--muted);transition:transform .2s;}
+.mc-grouphead.open .car{transform:rotate(90deg);}
+.mc-lgrow{display:flex;align-items:center;gap:10px;padding:11px 2px 11px 14px;border-bottom:1px solid var(--mc-line);font-size:.82rem;}
+.mc-lgrow .star{color:var(--faint);font-size:.9rem;flex-shrink:0;}
+.mc-lgrow .star.on{color:var(--mc-odd);}
+.mc-lgrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mc-lgrow .cnt{color:var(--muted);font-size:.76rem;font-weight:600;}
+.mc-box{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--border-2);flex-shrink:0;display:grid;place-items:center;font-size:.62rem;color:var(--bg);}
+.mc-box.on{background:var(--mc-acc);border-color:var(--mc-acc);}
+.mc-applybar{display:flex;gap:10px;margin-top:14px;}
+.mc-applybar .btn{height:46px;}
+/* ---- match rows ---- */
+.mc-lgsec{display:flex;align-items:center;gap:8px;margin:16px 2px 8px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
+.mc-lgsec .n{margin-left:auto;letter-spacing:0;text-transform:none;font-weight:600;}
+.mc-m{display:flex;align-items:center;gap:11px;background:var(--mc-row);border:1px solid var(--mc-line);border-radius:14px;padding:12px 13px;margin-bottom:7px;}
+.mc-m:active{transform:scale(.99);}
+.mc-m .tcol{width:46px;flex-shrink:0;text-align:center;}
+.mc-m .tcol .t{font-family:var(--d);font-weight:700;font-size:.78rem;}
+.mc-m .tcol .dd{font-size:.6rem;color:var(--faint);margin-top:2px;}
+.mc-m .teams{flex:1;min-width:0;}
+.mc-m .teams div{font-size:.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mc-m .teams div+div{margin-top:4px;}
+.mc-m .sc{width:26px;text-align:right;font-family:var(--d);font-weight:800;font-size:.86rem;color:var(--mc-odd);}
+.mc-live{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:5px;animation:mcpulse 1.4s infinite;}
+@keyframes mcpulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+.mc-o3{display:flex;gap:5px;flex-shrink:0;}
+.mc-o{min-width:52px;height:42px;border-radius:9px;background:var(--surface-3);border:1px solid var(--mc-line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0 6px;}
+.mc-o .k{font-size:.56rem;color:var(--muted);}
+.mc-o .v{font-family:var(--d);font-weight:700;font-size:.78rem;color:var(--mc-odd);}
+.mc-o.picked{background:var(--mc-acc);border-color:var(--mc-acc);}
+.mc-o.picked .k,.mc-o.picked .v{color:#04140b;}
+.mc-o.dead .v{color:var(--faint);}
+/* ---- detail overlay ---- */
+#mc-detail{position:fixed;inset:0;z-index:60;background:var(--bg);display:none;flex-direction:column;max-width:460px;margin:0 auto;}
+#mc-detail.show{display:flex;animation:mcslide .26s cubic-bezier(.16,.84,.44,1);}
+@media(min-width:1024px){#mc-detail{max-width:1080px;}}
+@keyframes mcslide{from{opacity:0;transform:translateX(22px);}to{opacity:1;transform:none;}}
+.mc-dhead{flex-shrink:0;display:flex;align-items:center;gap:12px;padding:max(calc(env(safe-area-inset-top,0px) + 12px),16px) 15px 12px;background:var(--surface);border-bottom:1px solid var(--mc-line);}
+.mc-dhead .bk{font-size:1.3rem;line-height:1;color:var(--text);}
+.mc-dhead .ti{flex:1;font-family:var(--d);font-weight:800;font-size:1rem;}
+.mc-dhead .ch{font-size:.72rem;color:var(--muted);font-weight:600;}
+.mc-dbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 15px calc(96px + var(--safe));}
+.mc-lgline{display:flex;align-items:center;gap:8px;font-size:.74rem;color:var(--muted);margin-bottom:10px;}
+.mc-lgline u{text-decoration:underline;color:var(--text);font-weight:600;}
+.mc-best{background:rgba(31,209,122,.14);color:var(--mc-acc);font-size:.56rem;font-weight:800;letter-spacing:.08em;padding:3px 7px;border-radius:5px;text-transform:uppercase;}
+/* scorebox */
+.mc-score{background:var(--surface);border:1px solid var(--mc-line);border-radius:16px;padding:12px 14px;margin-bottom:12px;}
+.mc-scorehead{display:flex;align-items:center;font-size:.68rem;color:var(--muted);margin-bottom:9px;font-weight:600;}
+.mc-scorehead .clk{color:var(--mc-odd);font-family:var(--d);font-weight:800;font-size:.8rem;flex:1;}
+.mc-scorehead .col{width:34px;text-align:center;}
+.mc-scorehead .col.ft{color:var(--mc-odd);font-weight:800;}
+.mc-srow{display:flex;align-items:center;background:var(--surface-2);border-radius:10px;padding:9px 12px;margin-bottom:5px;}
+.mc-srow .nm{flex:1;font-size:.86rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mc-srow .col{width:34px;text-align:center;font-family:var(--d);font-weight:700;font-size:.82rem;color:var(--mc-odd);}
+.mc-srow .col.pl{color:var(--text);}
+.mc-srow .col.ft{background:var(--surface-3);border-radius:99px;padding:3px 0;}
+.mc-srow .col.na{color:var(--faint);font-weight:400;}
+/* tabs */
+.mc-tabs{display:flex;background:var(--surface-2);border-radius:14px;padding:4px;margin-bottom:12px;}
+.mc-tab{flex:1;height:40px;border-radius:11px;font-size:.82rem;font-weight:700;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:5px;}
+.mc-tab.on{background:var(--surface);color:var(--text);box-shadow:0 2px 10px rgba(0,0,0,.3);}
+.mc-tab.on::after{content:'';position:absolute;}
+.mc-subtabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;margin-bottom:4px;scrollbar-width:none;}
+.mc-subtabs::-webkit-scrollbar{display:none;}
+.mc-sub{flex-shrink:0;height:34px;padding:0 16px;border-radius:99px;background:var(--surface-2);border:1px solid var(--mc-line);font-size:.76rem;font-weight:600;display:flex;align-items:center;}
+.mc-sub.on{background:var(--mc-acc);border-color:var(--mc-acc);color:#04140b;font-weight:800;}
+/* market card */
+.mc-mk{background:var(--surface);border:1px solid var(--mc-line);border-radius:16px;padding:13px 14px;margin-bottom:9px;}
+.mc-mkhead{display:flex;align-items:center;gap:7px;margin-bottom:11px;}
+.mc-mkhead .car{font-size:.6rem;color:var(--muted);transition:transform .2s;}
+.mc-mkhead.closed .car{transform:rotate(-90deg);}
+.mc-mkhead .nm{font-family:var(--d);font-weight:700;font-size:.88rem;}
+.mc-mkhead .inf{width:14px;height:14px;border-radius:50%;background:var(--surface-3);color:var(--muted);font-size:.56rem;display:grid;place-items:center;font-weight:700;}
+.mc-mkhead .rt{margin-left:auto;display:flex;gap:11px;color:var(--faint);font-size:.82rem;}
+.mc-mkhead .rt .star.on{color:var(--mc-odd);}
+.mc-mkbody{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.mc-mkbody.c2{grid-template-columns:repeat(2,1fr);}
+.mc-mkbody.ou{grid-template-columns:.8fr 1fr 1fr;}
+.mc-mkbody.closed{display:none;}
+.mc-pick{height:52px;border-radius:11px;background:var(--surface-2);border:1px solid var(--mc-line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 6px;text-align:center;}
+.mc-pick .k{font-size:.66rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+.mc-pick .v{font-family:var(--d);font-weight:700;font-size:.9rem;color:var(--mc-odd);}
+.mc-pick.on{background:var(--mc-acc);border-color:var(--mc-acc);}
+.mc-pick.on .k,.mc-pick.on .v{color:#04140b;}
+.mc-pick.dead{opacity:.45;pointer-events:none;}
+.mc-pick.dead .v{color:var(--faint);}
+.mc-linelab{height:52px;border-radius:11px;background:var(--surface-3);display:grid;place-items:center;font-family:var(--d);font-weight:700;font-size:.86rem;}
+.mc-ouhead{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:7px;margin-bottom:6px;font-size:.66rem;color:var(--muted);text-align:center;}
+/* bet assist */
+.mc-ai{background:var(--surface);border:1px solid var(--mc-line);border-radius:16px;padding:14px;margin-bottom:9px;}
+.mc-aitop{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.mc-aitop .ring{position:relative;width:46px;height:46px;flex-shrink:0;}
+.mc-aitop .ring svg{transform:rotate(-90deg);}
+.mc-aitop .ring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--d);font-weight:800;font-size:.78rem;}
+.mc-aitop .mid{flex:1;min-width:0;}
+.mc-aitop .mid .p{font-family:var(--d);font-weight:800;font-size:.95rem;}
+.mc-aitop .mid .s{font-size:.7rem;color:var(--muted);margin-top:2px;}
+.mc-aitop .od{text-align:right;flex-shrink:0;}
+.mc-aitop .od .v{font-family:var(--d);font-weight:800;font-size:1.05rem;color:var(--mc-odd);}
+.mc-aitop .od .l{font-size:.58rem;color:var(--faint);}
+.mc-why{list-style:none;margin:0 0 12px;padding:0;}
+.mc-why li{display:flex;gap:8px;font-size:.76rem;color:var(--muted);line-height:1.5;margin-bottom:5px;}
+.mc-why li s{text-decoration:none;color:var(--mc-acc);flex-shrink:0;}
+.mc-edge{display:inline-flex;align-items:center;gap:5px;font-size:.64rem;font-weight:700;padding:4px 9px;border-radius:6px;}
+.mc-edge.pos{background:rgba(31,209,122,.13);color:var(--mc-acc);}
+.mc-edge.neg{background:rgba(245,73,92,.12);color:var(--red);}
+.mc-edge.flat{background:var(--surface-3);color:var(--muted);}
+.mc-bar{height:5px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin-top:8px;}
+.mc-bar i{display:block;height:100%;background:var(--mc-acc);border-radius:99px;transition:width .5s;}
+.mc-note{background:var(--surface-2);border:1px dashed var(--border-2);border-radius:12px;padding:12px 13px;font-size:.74rem;color:var(--muted);line-height:1.55;}
+.mc-note b{color:var(--text);}
+/* stats */
+.mc-sechead{display:flex;align-items:center;gap:9px;margin:18px 0 10px;}
+.mc-sechead i{width:4px;height:17px;border-radius:2px;background:var(--mc-odd);display:block;}
+.mc-sechead h4{font-family:var(--d);font-weight:800;font-size:1rem;}
+.mc-statrow{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:.78rem;}
+.mc-statrow .v{width:38px;text-align:center;font-family:var(--d);font-weight:700;}
+.mc-statrow .lb{flex:1;text-align:center;color:var(--muted);font-size:.72rem;}
+.mc-statbar{display:flex;gap:3px;height:4px;margin-bottom:2px;}
+.mc-statbar i{display:block;height:100%;border-radius:99px;}
+/* commentary */
+.mc-cm{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--mc-line);}
+.mc-cm .mn{width:36px;flex-shrink:0;font-family:var(--d);font-weight:700;font-size:.74rem;color:var(--mc-odd);}
+.mc-cm .tx{flex:1;font-size:.79rem;line-height:1.5;}
+.mc-cm .tx b{display:block;font-size:.66rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px;}
+/* betslip fab */
+.mc-fab{position:fixed;right:14px;bottom:calc(84px + var(--safe));z-index:70;width:62px;height:62px;border-radius:18px;background:var(--surface);border:1.5px solid var(--mc-acc);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:var(--shadow);}
+.mc-fab.show{display:flex;}
+.mc-fab b{width:26px;height:26px;border-radius:50%;background:var(--mc-acc);color:#04140b;display:grid;place-items:center;font-family:var(--d);font-weight:800;font-size:.8rem;}
+.mc-fab span{font-size:.55rem;color:var(--muted);font-weight:700;}
+.mc-empty{text-align:center;padding:34px 16px;color:var(--muted);font-size:.84rem;line-height:1.6;}
+</style>
+
+<script>
+(function(){
+'use strict';
+if(window.MC) return;
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1 · POISSON / DEVIG ENGINE  — the maths behind Bet Assist
+   Works today from 1X2 + Over-2.5 prices (which your D1 already stores).
+   Everything else (BTTS, DC, DNB, every O/U line, halves, correct score)
+   is derived, so no extra API quota is spent.
+   ══════════════════════════════════════════════════════════════════════════ */
+var Eng = {
+  fact:[1,1,2,6,24,120,720,5040,40320,362880,3628800],
+  pois:function(k,l){ return Math.exp(-l)*Math.pow(l,k)/this.fact[k]; },
+  // strip the bookmaker margin off a set of prices -> true probabilities
+  devig:function(odds){
+    var raw=odds.map(function(o){ return o>1 ? 1/o : 0; });
+    var sum=raw.reduce(function(a,b){return a+b;},0);
+    if(sum<=0) return null;
+    return raw.map(function(p){ return p/sum; });
+  },
+  // total-goals expectation implied by an Over line price
+  muFromOver:function(line, pOver){
+    var lo=0.2, hi=6.5, i, mid;
+    for(i=0;i<48;i++){
+      mid=(lo+hi)/2;
+      if(this.pOver(mid,line) < pOver) lo=mid; else hi=mid;
+    }
+    return (lo+hi)/2;
+  },
+  pOver:function(mu,line){
+    var n=Math.floor(line), s=0, k;
+    for(k=0;k<=n;k++) s+=this.pois(k,mu);
+    return 1-s;
+  },
+  // split total goals into home/away so the model reproduces the 1X2 skew
+  split:function(mu, p1, p2){
+    var target=p1-p2, lo=0.05*mu, hi=0.95*mu, i, mid, d;
+    for(i=0;i<40;i++){
+      mid=(lo+hi)/2;
+      d=this.skew(mid, mu-mid);
+      if(d < target) lo=mid; else hi=mid;
+    }
+    var lh=(lo+hi)/2;
+    return { lh:lh, la:mu-lh };
+  },
+  skew:function(lh,la){ var g=this.grid(lh,la); return g.p1-g.p2; },
+  // full score matrix 0-8 goals each side
+  grid:function(lh,la){
+    var m=[], p1=0,px=0,p2=0, i, j, p, ph=[], pa=[];
+    for(i=0;i<9;i++){ ph.push(this.pois(i,lh)); pa.push(this.pois(i,la)); }
+    for(i=0;i<9;i++){ m[i]=[]; for(j=0;j<9;j++){ p=ph[i]*pa[j]; m[i][j]=p;
+      if(i>j)p1+=p; else if(i===j)px+=p; else p2+=p; } }
+    return { m:m, p1:p1, px:px, p2:p2, lh:lh, la:la };
+  },
+  over:function(g,line){ var s=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++) if(i+j>line) s+=g.m[i][j]; return s; },
+  btts:function(g){ var s=0,i,j; for(i=1;i<9;i++)for(j=1;j<9;j++) s+=g.m[i][j]; return s; },
+  teamOver:function(g,side,line){ var s=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++){ var v=side==='h'?i:j; if(v>line) s+=g.m[i][j]; } return s; },
+  scores:function(g,n){
+    var out=[],i,j;
+    for(i=0;i<6;i++)for(j=0;j<6;j++) out.push({ s:i+'-'+j, p:g.m[i][j] });
+    out.sort(function(a,b){return b.p-a.p;});
+    return out.slice(0,n||6);
+  },
+  /* Read odds.detail[] (up to 6 books, written by enrichFootballOdds) and split
+     it into CONSENSUS prices (the average — what the market really thinks) and
+     BEST prices (the highest available — what you can actually take).
+     The model is fitted to consensus; edge is measured against best. That is
+     the only way an edge can honestly be positive. */
+  books:function(od, home, away){
+    var det=(od&&od.detail)||[], acc={h2h:{},tot:{}}, n=0;
+    var push=function(bag,key,price){
+      if(!(price>1)) return;
+      var b=bag[key]=bag[key]||{sum:0,n:0,best:0,bestBook:''};
+      b.sum+=price; b.n++;
+      if(price>b.best){ b.best=price; }
+    };
+    det.forEach(function(bk){
+      var used=false;
+      (bk.markets||[]).forEach(function(m){
+        (m.outcomes||[]).forEach(function(o){
+          var p=parseFloat(o.price); if(!(p>1)) return;
+          if(m.key==='h2h'){
+            var k = /draw/i.test(o.name) ? 'Draw'
+                  : (home && sameTeam(o.name,home)) ? 'Home'
+                  : (away && sameTeam(o.name,away)) ? 'Away' : null;
+            if(k){ push(acc.h2h,k,p); used=true;
+                   if(acc.h2h[k].best===p) acc.h2h[k].bestBook=bk.book||''; }
+          } else if(m.key==='totals' && o.point!=null){
+            var side=/over/i.test(o.name)?'Over':/under/i.test(o.name)?'Under':null;
+            if(side){ var kk=o.point+'|'+side; push(acc.tot,kk,p); used=true;
+                      if(acc.tot[kk].best===p) acc.tot[kk].bestBook=bk.book||''; }
+          }
+        });
+      });
+      if(used) n++;
+    });
+    var avg=function(b){ return (b&&b.n) ? b.sum/b.n : 0; };
+    // consensus odds object in the same shape model() expects
+    var cons={ h2h:{ Home:avg(acc.h2h.Home), Draw:avg(acc.h2h.Draw), Away:avg(acc.h2h.Away) } };
+    // choose the totals line most books quote
+    var lines={}, k;
+    for(k in acc.tot){ var L=k.split('|')[0]; lines[L]=(lines[L]||0)+acc.tot[k].n; }
+    var pick=Object.keys(lines).sort(function(a,b){ return lines[b]-lines[a]; })[0];
+    if(pick){
+      cons.ou_line=parseFloat(pick);
+      cons.ou_over =avg(acc.tot[pick+'|Over']);
+      cons.ou_under=avg(acc.tot[pick+'|Under']);
+    }
+    // fall back to the single-book summary fields when there is no detail
+    if(!(cons.h2h.Home>1) && od && od.h2h) cons.h2h=od.h2h;
+    if(!(cons.ou_over>1)){ cons.ou_line=od.ou_line; cons.ou_over=od.ou_over||od.ou25; cons.ou_under=od.ou_under; }
+    cons.btts=od&&od.btts;
+    return { cons:cons, raw:acc, nBooks:n,
+      best:function(market, key){
+        var b = market==='h2h' ? acc.h2h[key] : acc.tot[key];
+        return b && b.best>1 ? { price:b.best, book:b.bestBook, n:b.n } : null;
+      } };
+  },
+  /* Build the model for one fixture. Returns null only if there is literally
+     nothing to work with — never invents a number without flagging it. */
+  model:function(od){
+    od = od || {};
+    var h=num(od.h2h&&od.h2h.Home), d=num(od.h2h&&od.h2h.Draw), a=num(od.h2h&&od.h2h.Away);
+    var quality=[], mu=null, p=null;
+    if(h&&d&&a){ p=this.devig([h,d,a]); quality.push('1X2 prices'); }
+    var ovLine = num(od.ou_line) || 2.5;
+    var ovPrice= num(od.ou_over) || num(od.ou25);
+    var unPrice= num(od.ou_under);
+    if(ovPrice&&unPrice){ var q=this.devig([ovPrice,unPrice]); mu=this.muFromOver(ovLine,q[0]); quality.push('Over/Under '+ovLine); }
+    else if(ovPrice){ mu=this.muFromOver(ovLine, Math.min(0.93, 1/ovPrice/1.06)); quality.push('Over '+ovLine+' price'); }
+    if(!p && !mu) return null;
+    if(!mu) mu = 2.62;                        // league-neutral fallback
+    if(!p)  p  = [0.42,0.27,0.31];            // home-advantage neutral fallback
+    var sp=this.split(mu, p[0], p[2]);
+    var g=this.grid(sp.lh, sp.la);
+    return { g:g, mu:mu, lh:sp.lh, la:sp.la, mkt:{p1:p[0],px:p[1],p2:p[2]},
+             quality:quality, estimated:(quality.length<2) };
+  }
+};
+function num(v){ v=parseFloat(v); return (isFinite(v)&&v>1) ? v : 0; }
+// bookmakers spell clubs differently ("Man Utd" / "Manchester United") — match on a stem
+function sameTeam(a,b){
+  var n=function(s){ return String(s||'').toLowerCase().replace(/[^a-z]/g,''); };
+  var x=n(a), y=n(b);
+  if(!x||!y) return false;
+  return x===y || x.indexOf(y)===0 || y.indexOf(x)===0 ||
+         (x.length>4&&y.length>4&&(x.indexOf(y.slice(0,5))>=0||y.indexOf(x.slice(0,5))>=0));
+}
+function pc(x){ return Math.round(x*100); }
+function dec(p){ return p>0 ? (1/p) : 0; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2 · BET ASSIST — ranks every derivable market by model edge
+   ══════════════════════════════════════════════════════════════════════════ */
+var Assist = {
+  build:function(fx, od, stats){
+    var B=Eng.books(od, fx.home, fx.away);
+    var M=Eng.model(B.cons);
+    if(!M) return { ok:false, reason:'no_odds' };
+    var g=M.g, out=[], form=(stats&&stats.form)||{}, h2h=(stats&&stats.h2h)||[];
+    var HN=fx.home, AN=fx.away, multi=B.nBooks>1;
+    var add=function(market,sel,prob,price,why,src){
+      out.push({ market:market, sel:sel, prob:prob, price:price||0,
+                 edge: price? (prob*price-1) : null, why:why||[], book:(src&&src.book)||'' });
+    };
+    // take the best available price, and say which book it came from
+    var bh=function(k){ var b=B.best('h2h',k); return b||{price:num(B.cons.h2h&&B.cons.h2h[k]),book:''}; };
+    var bt=function(L,side){
+      var b=B.best('tot',L+'|'+side);
+      if(b) return b;
+      if(num(B.cons.ou_line)===L) return { price:num(side==='Over'?B.cons.ou_over:B.cons.ou_under), book:'' };
+      return { price:0, book:'' };
+    };
+    var beat=function(b){
+      return (multi&&b.book) ? ['Best price is '+b.price.toFixed(2)+' at '+b.book+' across '+B.nBooks+' books'] : [];
+    };
+    /* --- match result --- */
+    var h1=bh('Home'), hx=bh('Draw'), h2=bh('Away');
+    add('1X2', HN+' win', g.p1, h1.price,
+        ['Model expects '+M.lh.toFixed(2)+' goals for '+HN+' vs '+M.la.toFixed(2)+' away'].concat(beat(h1)), h1);
+    add('1X2', 'Draw', g.px, hx.price, beat(hx), hx);
+    add('1X2', AN+' win', g.p2, h2.price,
+        ['Model expects '+M.la.toFixed(2)+' goals for '+AN].concat(beat(h2)), h2);
+    /* --- double chance (derived, no extra quota) --- */
+    add('Double Chance','1X — '+HN+' or draw', g.p1+g.px, 0, ['Covers two of three outcomes']);
+    add('Double Chance','X2 — draw or '+AN, g.px+g.p2, 0, []);
+    add('Double Chance','12 — either team', g.p1+g.p2, 0, ['Only a draw loses']);
+    /* --- draw no bet --- */
+    add('Draw No Bet', HN+' DNB', g.p1/(g.p1+g.p2), 0, ['Stake returned on a draw']);
+    add('Draw No Bet', AN+' DNB', g.p2/(g.p1+g.p2), 0, []);
+    /* --- totals --- */
+    [0.5,1.5,2.5,3.5,4.5].forEach(function(L){
+      var pv=Eng.over(g,L), bo=bt(L,'Over'), bu=bt(L,'Under');
+      add('Total Goals','Over '+L, pv, bo.price,
+          (L===2.5?['Total goals expectation '+M.mu.toFixed(2)]:[]).concat(beat(bo)), bo);
+      add('Total Goals','Under '+L, 1-pv, bu.price, beat(bu), bu);
+    });
+    /* --- BTTS --- */
+    var pb=Eng.btts(g);
+    add('Both Teams to Score','Yes', pb, num(od.btts&&od.btts.Yes),
+        pb>0.55?['Both sides project above 0.9 expected goals']:[]);
+    add('Both Teams to Score','No', 1-pb, num(od.btts&&od.btts.No), []);
+    /* --- team totals --- */
+    add('Team Total', HN+' over 0.5', Eng.teamOver(g,'h',0.5), 0, []);
+    add('Team Total', AN+' over 0.5', Eng.teamOver(g,'a',0.5), 0, []);
+    add('Team Total', HN+' over 1.5', Eng.teamOver(g,'h',1.5), 0, []);
+    add('Team Total', AN+' over 1.5', Eng.teamOver(g,'a',1.5), 0, []);
+    /* --- form colour, when /api/fixture/stats has it --- */
+    var fw=function(s){ if(!s) return null; var w=(s.match(/W/g)||[]).length; return w/s.length; };
+    var fh=fw(form.home), fa=fw(form.away);
+    if(fh!=null||fa!=null){
+      out.forEach(function(o){
+        if(o.market==='1X2'&&o.sel.indexOf(HN)===0&&fh!=null&&fh>=0.6) o.why.push(HN+' has won '+pc(fh)+'% of the last '+form.home.length);
+        if(o.market==='1X2'&&o.sel.indexOf(AN)===0&&fa!=null&&fa>=0.6) o.why.push(AN+' has won '+pc(fa)+'% of the last '+form.away.length);
+      });
+    }
+    if(h2h.length){
+      var tot=h2h.reduce(function(s,m){return s+(m.sh||0)+(m.sa||0);},0)/h2h.length;
+      out.forEach(function(o){
+        if(o.market==='Total Goals'&&o.sel==='Over 2.5'&&tot>2.5) o.why.push('Last '+h2h.length+' meetings averaged '+tot.toFixed(1)+' goals');
+        if(o.market==='Total Goals'&&o.sel==='Under 2.5'&&tot<2.5) o.why.push('Last '+h2h.length+' meetings averaged '+tot.toFixed(1)+' goals');
+      });
+    }
+    /* --- rank: prefer priced value, then raw confidence --- */
+    var priced=out.filter(function(o){ return o.price>1; });
+    priced.sort(function(a,b){ return b.edge-a.edge; });
+    var unpriced=out.filter(function(o){ return !(o.price>1) && o.prob>=0.62; });
+    unpriced.sort(function(a,b){ return b.prob-a.prob; });
+    return { ok:true, model:M, nBooks:B.nBooks, multi:multi,
+             value:priced.slice(0,5), safe:unpriced.slice(0,5),
+             scores:Eng.scores(g,6), all:out };
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3 · MATCH CENTER
+   ══════════════════════════════════════════════════════════════════════════ */
+var MC = window.MC = {
+  fx:[], loaded:false, err:null,
+  open:null,                       // which selector panel is expanded
+  slip:[],
+  // draft filters (what the panel is showing) vs applied filters (what the list uses)
+  draft:{ day:'all', range:'all', hours:0, oMin:'', oMax:'', leagues:{} },
+  live :{ day:'all', range:'all', hours:0, oMin:'', oMax:'', leagues:{} },
+  q:'', fav:{},
+  det:null, detStats:null, tab:'markets', sub:'main',
+
+  /* ---------- install ---------- */
+  install:function(){
+    var content=document.getElementById('content'); if(!content) return;
+    if(!document.getElementById('view-matches')){
+      var p=document.createElement('div');
+      p.className='page'; p.id='view-matches';
+      content.appendChild(p);
+    }
+    var nav=document.getElementById('nav');
+    if(nav && !nav.querySelector('[data-nav="matches"]')){
+      var it=document.createElement('div');
+      it.className='navitem'; it.setAttribute('data-nav','matches');
+      it.onclick=function(){ App.go('matches'); };
+      it.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+        '<circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/>'+
+        '<path d="M12 8.5 9 11l1.2 3.6h3.6L15 11z"/></svg><span>Matches</span>';
+      // slot it in second so Home stays first
+      nav.insertBefore(it, nav.children[1]||null);
+    }
+    if(!document.getElementById('mc-detail')){
+      var d=document.createElement('div'); d.id='mc-detail'; document.body.appendChild(d);
+      var f=document.createElement('div'); f.className='mc-fab'; f.id='mc-fab';
+      f.onclick=function(){ MC.openSlip(); };
+      f.innerHTML='<b id="mc-fabn">0</b><span>Betslip</span>';
+      document.body.appendChild(f);
+    }
+    // wrap the router without touching it
+    if(App && !App._mcWrapped){
+      var orig=App.go.bind(App);
+      App.go=function(v){
+        if(v==='matches'){
+          MC.render(); MC.load();
+          App.show('matches');
+          var n=document.getElementById('nav'); if(n)n.classList.remove('hide');
+          document.querySelectorAll('.navitem').forEach(function(x){ x.classList.toggle('active', x.dataset.nav==='matches'); });
+          return;
+        }
+        MC.closeDetail();
+        return orig(v);
+      };
+      App._mcWrapped=true;
+    }
+  },
+
+  /* ---------- data ---------- */
+  load:function(force){
+    if(this.loaded && !force) return;
+    var self=this;
+    if(typeof Api==='undefined' || !Api.publicFixtures){ this.err='api_missing'; this.paint(); return; }
+    Api.publicFixtures('football').then(function(r){
+      self.fx = ((r&&r.fixtures)||[]).map(function(f){
+        var od={}; try{ od = typeof f.odds==='string' ? JSON.parse(f.odds||'{}') : (f.odds||{}); }catch(e){}
+        f._od=od;
+        f._lg=f.league||'Other';
+        f._co=(f.country||f._lg.split(/[-–—]/)[0]||'').trim();
+        return f;
+      });
+      self.loaded=true; self.err=null; self.paint();
+    }).catch(function(){ self.err='load_failed'; self.paint(); });
+  },
+
+  /* ---------- filter maths (also drives every count badge) ---------- */
+  dayKey:function(ts){ return new Date(ts).toISOString().slice(0,10); },
+  days:function(){
+    var out=[], i, d, today=new Date(); today.setHours(0,0,0,0);
+    for(i=0;i<7;i++){
+      d=new Date(today.getTime()+i*86400000);
+      out.push({ k:d.toISOString().slice(0,10),
+                 lab: i===0?'Today': d.toLocaleDateString(undefined,{weekday:'short'}).toUpperCase() });
+    }
+    return out;
+  },
+  match:function(f, skip){
+    skip=skip||{};
+    var s=this.draft, now=Date.now();
+    if(!skip.day && s.day!=='all' && this.dayKey(f.start_ts)!==s.day) return false;
+    if(!skip.range && s.range!=='all'){
+      var end;
+      if(s.range==='3d') end=now+3*86400000;
+      else if(s.range==='7d') end=now+7*86400000;
+      else if(s.range==='wknd'){
+        var d=new Date(f.start_ts).getDay();
+        if(d!==0&&d!==6) return false;
+        end=now+7*86400000;
+      }
+      if(end && f.start_ts>end) return false;
+    }
+    if(!skip.hours && s.hours>0 && f.start_ts > now+s.hours*3600000) return false;
+    if(!skip.odds && (s.oMin||s.oMax)){
+      var o=f._od&&f._od.h2h, arr=o?[num(o.Home),num(o.Draw),num(o.Away)].filter(Boolean):[];
+      if(!arr.length) return false;
+      var lo=Math.min.apply(null,arr), hi=Math.max.apply(null,arr);
+      if(s.oMin && hi < parseFloat(s.oMin)) return false;
+      if(s.oMax && lo > parseFloat(s.oMax)) return false;
+    }
+    if(!skip.league){
+      var keys=Object.keys(s.leagues).filter(function(k){return s.leagues[k];});
+      if(keys.length && !s.leagues[f._lg]) return false;
+    }
+    if(this.q && ((f._lg+f.home+f.away).toLowerCase().indexOf(this.q)<0)) return false;
+    return true;
+  },
+  count:function(skip, extra){
+    var self=this, n=0;
+    this.fx.forEach(function(f){
+      if(!self.match(f, skip)) return;
+      if(extra && !extra(f)) return;
+      n++;
+    });
+    return n;
+  },
+  applied:function(){
+    // list uses `live`, so temporarily swap
+    var d=this.draft; this.draft=this.live;
+    var out=this.fx.filter(this.match.bind(this));
+    this.draft=d;
+    return out.sort(function(a,b){ return a.start_ts-b.start_ts; });
+  },
+  activeCount:function(){
+    var s=this.draft, n=0;
+    if(s.day!=='all')n++; if(s.range!=='all')n++; if(s.hours>0)n++;
+    if(s.oMin||s.oMax)n++;
+    n+=Object.keys(s.leagues).filter(function(k){return s.leagues[k];}).length;
+    return n;
+  },
+
+  /* ---------- render: page shell ---------- */
+  render:function(){
+    var el=document.getElementById('view-matches'); if(!el) return;
+    el.innerHTML =
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">'+
+        '<h2 class="h2">Match Center</h2>'+
+        '<button class="pill" style="font-size:.66rem;padding:5px 10px;" onclick="MC.load(true)">&#8635; Refresh</button>'+
+      '</div>'+
+      '<input class="input" style="height:46px;margin-bottom:10px;" placeholder="&#128269; Search league or team&hellip;" '+
+        'oninput="MC.q=this.value.toLowerCase();MC.paint()">'+
+      '<div class="mc-selbar">'+
+        '<span class="mc-seltitle">Selector</span>'+
+        '<button class="mc-drop" id="mc-d-time" onclick="MC.panel(\'time\')">Start Time <i>&#9660;</i></button>'+
+        '<button class="mc-drop" id="mc-d-odds" onclick="MC.panel(\'odds\')">Odds Range <i>&#9660;</i></button>'+
+      '</div>'+
+      '<div class="mc-panel" id="mc-p-time"></div>'+
+      '<div class="mc-panel" id="mc-p-odds"></div>'+
+      '<div class="mc-panel" id="mc-p-lg"></div>'+
+      '<div id="mc-list"><p class="sub">Loading matches&hellip;</p></div>';
+    this.paintFab();
+  },
+  panel:function(which){
+    this.open = (this.open===which) ? null : which;
+    // opening any panel also reveals the league tree, exactly like MSport
+    ['time','odds'].forEach(function(k){
+      var b=document.getElementById('mc-d-'+k), p=document.getElementById('mc-p-'+k);
+      if(b)b.classList.toggle('on', MC.open===k);
+      if(p)p.classList.toggle('open', MC.open===k);
+    });
+    var lg=document.getElementById('mc-p-lg');
+    if(lg) lg.classList.toggle('open', !!this.open);
+    if(this.open){ this.draft=JSON.parse(JSON.stringify(this.live)); }
+    this.paintPanels();
+  },
+  paintPanels:function(){
+    if(!this.open) return;
+    var t=document.getElementById('mc-p-time'), o=document.getElementById('mc-p-odds'), l=document.getElementById('mc-p-lg');
+    if(t&&this.open==='time') t.innerHTML=this.tplTime();
+    if(o&&this.open==='odds') o.innerHTML=this.tplOdds();
+    if(l) l.innerHTML=this.tplLeagues()+this.tplApply();
+  },
+  tplTime:function(){
+    var self=this, s=this.draft;
+    var chips=this.days().map(function(d){
+      var n=self.count({day:true}, function(f){ return self.dayKey(f.start_ts)===d.k; });
+      return '<button class="mc-chip'+(s.day===d.k?' on':'')+'" onclick="MC.setF(\'day\',\''+d.k+'\')">'+
+             '<div class="d">'+d.lab+'</div><div class="n">('+n+')</div></button>';
+    }).join('');
+    var all=this.count({day:true,range:true,hours:true});
+    var r=function(key,lab,extra){
+      var n=self.count({day:true,range:true,hours:true}, extra);
+      return '<button class="mc-range'+(s.range===key?' on':'')+'" onclick="MC.setF(\'range\',\''+key+'\')">'+lab+' ('+n+')</button>';
+    };
+    var now=Date.now();
+    return '<p class="mc-lab">Daily</p><div class="mc-chips">'+
+      '<button class="mc-chip'+(s.day==='all'?' on':'')+'" onclick="MC.setF(\'day\',\'all\')"><div class="d">All</div><div class="n">('+all+')</div></button>'+
+      chips+'</div>'+
+      '<p class="mc-lab">Range</p><div class="mc-grid2">'+
+        r('all','All')+
+        r('3d','Next 3 days', function(f){ return f.start_ts<=now+3*86400000; })+
+        r('7d','Next 7 days', function(f){ return f.start_ts<=now+7*86400000; })+
+        r('wknd','This weekend', function(f){ var d=new Date(f.start_ts).getDay(); return d===0||d===6; })+
+      '</div>'+
+      '<div class="mc-hoursrow"><b>Next hours</b><span id="mc-hrsv">'+s.hours+'</span></div>'+
+      '<input type="range" class="mc-slider" min="0" max="24" step="3" value="'+s.hours+'" '+
+        'oninput="document.getElementById(\'mc-hrsv\').textContent=this.value" '+
+        'onchange="MC.setF(\'hours\',parseInt(this.value,10))">'+
+      '<div class="mc-ticks"><span>0h</span><span>3h</span><span>6h</span><span>9h</span><span>12h</span><span>24h</span></div>';
+  },
+  tplOdds:function(){
+    var s=this.draft;
+    var quick=[['','',"Any"],['1','1.5','1.00 – 1.50'],['1.5','2.5','1.50 – 2.50'],['2.5','','2.50 +']];
+    return '<p class="mc-lab">Odds range</p>'+
+      '<div class="mc-oddrow">'+
+        '<input class="input" id="mc-omin" inputmode="decimal" placeholder="min" value="'+s.oMin+'">'+
+        '<em>to</em>'+
+        '<input class="input" id="mc-omax" inputmode="decimal" placeholder="max" value="'+s.oMax+'">'+
+      '</div>'+
+      '<div class="mc-grid2">'+quick.map(function(q){
+        var on=(s.oMin===q[0]&&s.oMax===q[1]);
+        return '<button class="mc-range'+(on?' on':'')+'" onclick="MC.setOdds(\''+q[0]+'\',\''+q[1]+'\')">'+q[2]+'</button>';
+      }).join('')+'</div>'+
+      '<p class="sub" style="font-size:.7rem;margin-top:12px;">Filters on the 1X2 prices stored for each match. '+
+      'Matches without prices yet are hidden while an odds range is set.</p>';
+  },
+  tplLeagues:function(){
+    var self=this, s=this.draft;
+    var byLg={}, byCo={};
+    this.fx.forEach(function(f){
+      if(!self.match(f,{league:true})) return;
+      byLg[f._lg]=(byLg[f._lg]||0)+1;
+      var c=f._co||'Other'; (byCo[c]=byCo[c]||{})[f._lg]=(byCo[c][f._lg]||0)+1;
+    });
+    var TOP=['Premier League','LaLiga','La Liga','Primera Division','Serie A','Bundesliga','Ligue 1',
+             'UEFA Champions League','Championship','Primeira Liga','Eredivisie','Campeonato Brasileiro Série A'];
+    var isTop=function(n){ return TOP.some(function(t){ return n.toLowerCase().indexOf(t.toLowerCase())>=0; }) || self.fav[n]; };
+    var tops=Object.keys(byLg).filter(isTop).sort();
+    var rest=Object.keys(byCo).sort();
+    var topN=tops.reduce(function(a,k){return a+byLg[k];},0);
+    var row=function(name,n){
+      return '<div class="mc-lgrow">'+
+        '<span class="star'+(self.fav[name]?' on':'')+'" onclick="MC.togFav(\''+esc(name)+'\')">&#9733;</span>'+
+        '<span class="nm" onclick="MC.togLg(\''+esc(name)+'\')">'+esc(name)+'</span>'+
+        '<span class="cnt">'+n+'</span>'+
+        '<span class="mc-box'+(s.leagues[name]?' on':'')+'" onclick="MC.togLg(\''+esc(name)+'\')">&#10003;</span></div>';
+    };
+    var h='<div class="mc-tree">';
+    h+='<div class="mc-grouphead open" onclick="MC.togGroup(this)"><span class="car">&#9654;</span>Top Leagues &#127942;<span class="cnt">'+topN+'</span></div>';
+    h+='<div>'+(tops.length?tops.map(function(k){return row(k,byLg[k]);}).join('')
+        :'<p class="sub" style="padding:12px 2px;font-size:.76rem;">No top-league games in this window.</p>')+'</div>';
+    h+='<div class="mc-grouphead" style="margin-top:6px;">Countries A&ndash;Z<span class="cnt">'+rest.length+'</span></div>';
+    rest.forEach(function(c){
+      var lgs=Object.keys(byCo[c]).sort(), tot=lgs.reduce(function(a,k){return a+byCo[c][k];},0);
+      h+='<div class="mc-grouphead" onclick="MC.togGroup(this)" style="padding-left:2px;font-size:.8rem;font-weight:600;">'+
+         '<span class="car">&#9654;</span>'+esc(c)+'<span class="cnt">'+tot+'</span></div>';
+      h+='<div style="display:none;">'+lgs.map(function(k){return row(k,byCo[c][k]);}).join('')+'</div>';
+    });
+    h+='</div>';
+    return h;
+  },
+  tplApply:function(){
+    var n=this.activeCount();
+    return '<div class="mc-applybar">'+
+      '<button class="btn btn-out" onclick="MC.clearF()">Clear</button>'+
+      '<button class="btn btn-green" onclick="MC.applyF()">Apply ('+n+')</button></div>';
+  },
+  togGroup:function(el){
+    el.classList.toggle('open');
+    var nx=el.nextElementSibling;
+    if(nx) nx.style.display = el.classList.contains('open') ? 'block' : 'none';
+  },
+  togFav:function(n){ this.fav[n]=!this.fav[n]; event.stopPropagation(); this.paintPanels(); },
+  togLg:function(n){ this.draft.leagues[n]=!this.draft.leagues[n]; this.paintPanels(); },
+  setF:function(k,v){ this.draft[k]=v; this.paintPanels(); },
+  setOdds:function(a,b){ this.draft.oMin=a; this.draft.oMax=b; this.paintPanels(); },
+  clearF:function(){
+    this.draft={ day:'all', range:'all', hours:0, oMin:'', oMax:'', leagues:{} };
+    this.paintPanels();
+  },
+  applyF:function(){
+    var mn=document.getElementById('mc-omin'), mx=document.getElementById('mc-omax');
+    if(mn) this.draft.oMin=mn.value.trim();
+    if(mx) this.draft.oMax=mx.value.trim();
+    this.live=JSON.parse(JSON.stringify(this.draft));
+    this.open=null;
+    ['time','odds'].forEach(function(k){
+      var b=document.getElementById('mc-d-'+k), p=document.getElementById('mc-p-'+k);
+      if(b)b.classList.remove('on'); if(p)p.classList.remove('open');
+    });
+    var lg=document.getElementById('mc-p-lg'); if(lg)lg.classList.remove('open');
+    this.paint();
+  },
+
+  /* ---------- render: match list ---------- */
+  paint:function(){
+    var el=document.getElementById('mc-list'); if(!el) return;
+    if(this.err){
+      el.innerHTML='<div class="mc-empty">Could not reach the match feed.<br>'+
+        '<button class="pill" style="margin-top:10px;" onclick="MC.load(true)">Try again</button></div>';
+      return;
+    }
+    if(!this.loaded){ el.innerHTML='<p class="sub">Loading matches&hellip;</p>'; return; }
+    var list=this.applied();
+    if(!list.length){
+      el.innerHTML='<div class="mc-empty">'+(this.fx.length
+        ? 'No matches fit these filters.<br><button class="pill" style="margin-top:10px;" onclick="MC.clearF();MC.applyF()">Clear filters</button>'
+        : 'No games stored yet. Run a fixtures refresh from the admin console.')+'</div>';
+      return;
+    }
+    var byLg={};
+    list.forEach(function(f){ (byLg[f._lg]=byLg[f._lg]||[]).push(f); });
+    el.innerHTML='<p class="sub" style="font-size:.7rem;margin:2px 2px 4px;">'+list.length+' match'+(list.length>1?'es':'')+'</p>'+
+      Object.keys(byLg).map(function(lg){
+        return '<div class="mc-lgsec">&#9917; '+esc(lg)+'<span class="n">'+byLg[lg].length+'</span></div>'+
+          byLg[lg].map(function(f){ return MC.rowHtml(f); }).join('');
+      }).join('');
+    this.paintFab();
+  },
+  rowHtml:function(f){
+    var d=new Date(f.start_ts);
+    var live=(f.status||'').match(/LIVE|IN_PLAY|PAUSED|1H|2H|HT/i);
+    var fin =(f.status||'').match(/FINISHED|FT|ENDED/i);
+    var od=f._od||{}, h=od.h2h||{};
+    var o=function(k,v){
+      var val=num(v);
+      return '<button class="mc-o'+(val?'':' dead')+'" onclick="event.stopPropagation();'+
+        (val?'MC.pick(\''+esc(f.id)+'\',\''+k+'\','+val+')':'')+'">'+
+        '<span class="k">'+k+'</span><span class="v">'+(val?val.toFixed(2):'&mdash;')+'</span></button>';
+    };
+    var timeCol = live
+      ? '<div class="t" style="color:var(--red)"><span class="mc-live"></span>'+(f.minute?f.minute+"'":'LIVE')+'</div>'
+      : '<div class="t">'+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</div>'+
+        '<div class="dd">'+d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</div>';
+    var sh=(f.score_home!=null?f.score_home:''), sa=(f.score_away!=null?f.score_away:'');
+    var scoreCol=(live||fin) ? '<div class="sc">'+sh+'<br>'+sa+'</div>' : '';
+    return '<div class="mc-m" onclick="MC.openDetail(\''+esc(f.id)+'\')">'+
+      '<div class="tcol">'+timeCol+'</div>'+
+      '<div class="teams"><div>'+esc(f.home)+'</div><div>'+esc(f.away)+'</div></div>'+
+      scoreCol+
+      '<div class="mc-o3">'+o('1',h.Home)+o('X',h.Draw)+o('2',h.Away)+'</div></div>';
+  },
+
+  /* ---------- betslip ---------- */
+  pick:function(fid, key, price){
+    var f=this.fx.filter(function(x){return String(x.id)===String(fid);})[0]; if(!f) return;
+    var label={'1':f.home+' Win','X':'Draw','2':f.away+' Win'}[key]||key;
+    this.addSel(f, label, price);
+  },
+  addSel:function(f, label, price){
+    var id=f.id+'|'+label;
+    var i=this.slip.map(function(s){return s.id;}).indexOf(id);
+    if(i>=0){ this.slip.splice(i,1); }
+    else {
+      this.slip.push({ id:id, fid:f.id, match:f.home+' vs '+f.away, pick:label,
+                       odds:price||0, date:new Date(f.start_ts).toISOString().slice(0,10),
+                       time:new Date(f.start_ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) });
+    }
+    this.paintFab();
+    if(this.det) this.paintDetail();
+    else this.paint();
+    if(App&&App.toast) App.toast(i>=0?'Removed from slip':'Added to slip');
+  },
+  has:function(fid,label){ var id=fid+'|'+label; return this.slip.some(function(s){return s.id===id;}); },
+  paintFab:function(){
+    var f=document.getElementById('mc-fab'), n=document.getElementById('mc-fabn');
+    if(!f||!n) return;
+    n.textContent=this.slip.length;
+    f.classList.toggle('show', this.slip.length>0);
+  },
+  openSlip:function(){
+    var tot=this.slip.reduce(function(a,s){ return a*(s.odds>1?s.odds:1); },1);
+    var body='<h3 class="h2" style="margin-bottom:4px;">Your slip</h3>'+
+      '<p class="sub" style="font-size:.78rem;margin-bottom:14px;">'+this.slip.length+' selection'+(this.slip.length>1?'s':'')+
+      (tot>1?' &middot; combined odds <b style="color:var(--gold)">'+tot.toFixed(2)+'</b>':'')+'</p>'+
+      this.slip.map(function(s,i){
+        return '<div class="card" style="padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">'+
+          '<div style="flex:1;min-width:0;"><div style="font-size:.84rem;font-weight:700;">'+esc(s.pick)+'</div>'+
+          '<div class="sub" style="font-size:.68rem;margin-top:2px;">'+esc(s.match)+' &middot; '+s.time+'</div></div>'+
+          (s.odds>1?'<b style="color:var(--gold);font-family:var(--d);">'+s.odds.toFixed(2)+'</b>':'')+
+          '<button class="pill" style="font-size:.66rem;padding:4px 9px;" onclick="MC.dropSel('+i+')">&times;</button></div>';
+      }).join('')+
+      '<div style="display:flex;gap:9px;margin-top:14px;">'+
+        '<button class="btn btn-out" onclick="MC.clearSlip()">Clear</button>'+
+        (App.State&&App.State.isAdmin||window.State&&State.isAdmin
+          ? '<button class="btn btn-green" onclick="MC.toDraft()">Send to tip builder</button>'
+          : '<button class="btn btn-green" onclick="MC.copySlip()">Copy selections</button>')+
+      '</div>'+
+      '<p class="sub" style="font-size:.7rem;margin-top:12px;text-align:center;">'+
+      'Rebuild these at any bookmaker. 18+ &middot; bet responsibly.</p>';
+    var ov=document.getElementById('overlay'), sh=document.getElementById('sheet');
+    if(ov&&sh){ sh.innerHTML='<div class="grab"></div>'+body; ov.classList.add('show'); }
+  },
+  dropSel:function(i){ this.slip.splice(i,1); this.paintFab(); this.openSlip(); if(this.det)this.paintDetail(); else this.paint(); },
+  clearSlip:function(){ this.slip=[]; this.paintFab(); if(App&&App.closeSheet)App.closeSheet(); this.det?this.paintDetail():this.paint(); },
+  copySlip:function(){
+    var t=this.slip.map(function(s){ return s.match+' — '+s.pick+(s.odds>1?' @'+s.odds.toFixed(2):''); }).join('\n');
+    try{ navigator.clipboard.writeText(t); if(App&&App.toast)App.toast('Selections copied'); }
+    catch(e){ if(App&&App.toast)App.toast('Copy not available'); }
+  },
+  toDraft:function(){
+    if(!App||!App.addDraft) return;
+    this.slip.forEach(function(s){ App.addDraft(s.match, s.pick, s.odds||null, s.date, s.time); });
+    if(App.closeSheet)App.closeSheet();
+    if(App.toast)App.toast(this.slip.length+' selection(s) sent to the builder');
+  },
+
+  /* ---------- detail ---------- */
+  openDetail:function(fid){
+    var f=this.fx.filter(function(x){return String(x.id)===String(fid);})[0]; if(!f) return;
+    this.det=f; this.detStats=null; this.tab='markets'; this.sub='main';
+    var el=document.getElementById('mc-detail');
+    el.classList.add('show');
+    this.paintDetail();
+    if(typeof Api!=='undefined'&&Api.fixtureStats){
+      Api.fixtureStats(fid).then(function(r){
+        if(r&&r.ok){ MC.detStats=r; if(MC.det&&String(MC.det.id)===String(fid)) MC.paintDetail(); }
+      }).catch(function(){});
+    }
+  },
+  closeDetail:function(){
+    var el=document.getElementById('mc-detail');
+    if(el)el.classList.remove('show');
+    this.det=null;
+  },
+  setTab:function(t){ this.tab=t; this.paintDetail(); },
+  setSub:function(s){ this.sub=s; this.paintDetail(); },
+  paintDetail:function(){
+    var el=document.getElementById('mc-detail'); if(!el||!this.det) return;
+    var f=this.det;
+    el.innerHTML =
+      '<div class="mc-dhead">'+
+        '<span class="bk" onclick="MC.closeDetail()">&#8249;</span>'+
+        '<span class="ti">Details</span>'+
+        '<span class="ch" onclick="MC.closeDetail()">Change Match &#9662;</span>'+
+      '</div>'+
+      '<div class="mc-dbody">'+
+        this.tplLgLine(f)+
+        this.tplScore(f)+
+        '<div class="mc-tabs">'+
+          '<button class="mc-tab'+(this.tab==='markets'?' on':'')+'" onclick="MC.setTab(\'markets\')">Markets</button>'+
+          '<button class="mc-tab'+(this.tab==='comm'?' on':'')+'" onclick="MC.setTab(\'comm\')">Commentary</button>'+
+          '<button class="mc-tab'+(this.tab==='assist'?' on':'')+'" onclick="MC.setTab(\'assist\')">Bet Assist</button>'+
+        '</div>'+
+        (this.tab==='markets' ? this.tplMarkets(f)
+         : this.tab==='comm'  ? this.tplComm(f)
+         : this.tplAssist(f))+
+      '</div>';
+    this.paintFab();
+  },
+  tplLgLine:function(f){
+    var best=f._od&&f._od.detail&&f._od.detail.length;
+    return '<div class="mc-lgline">'+(f._co?esc(f._co)+' &ndash; ':'')+'<u>'+esc(f._lg)+'</u>'+
+      (best?'<span class="mc-best">&#128077; '+f._od.detail.length+' books</span>':'')+'</div>';
+  },
+  tplScore:function(f){
+    var live=(f.status||'').match(/LIVE|IN_PLAY|PAUSED|1H|2H|HT/i);
+    var fin =(f.status||'').match(/FINISHED|FT|ENDED/i);
+    var d=new Date(f.start_ts);
+    var clock = live ? (f.minute? f.minute+"'" : 'LIVE')
+              : fin ? 'FT'
+              : d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'})+' '+
+                d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    var c=f.corners||{}, cd=f.cards||{};
+    var na=function(v){ return v==null? '<span class="col na">&ndash;</span>' : '<span class="col">'+v+'</span>'; };
+    var row=function(name, corners, cards, ht, ft){
+      return '<div class="mc-srow"><span class="nm">'+esc(name)+'</span>'+
+        na(corners)+na(cards)+
+        (ht==null?'<span class="col pl na">&ndash;</span>':'<span class="col pl">'+ht+'</span>')+
+        '<span class="col ft">'+(ft==null?'&ndash;':ft)+'</span></div>';
+    };
+    return '<div class="mc-score">'+
+      '<div class="mc-scorehead"><span class="clk">'+clock+'</span>'+
+        '<span class="col">&#128681;</span><span class="col">&#127991;</span>'+
+        '<span class="col">HT</span><span class="col ft">FT</span></div>'+
+      row(f.home, c.h, cd.h, f.ht_home, f.score_home)+
+      row(f.away, c.a, cd.a, f.ht_away, f.score_away)+
+      (live||fin ? '' :
+        '<p class="sub" style="font-size:.68rem;margin-top:9px;text-align:center;">'+
+        'Live clock, corners and cards appear here automatically once your feed sends them.</p>')+
+    '</div>';
+  },
+
+  /* --- markets --- */
+  tplMarkets:function(f){
+    var od=f._od||{}, subs=[['main','Main'],['builder','Bet Builder'],['goals','Goals'],['half','Half'],['stats','Stats']];
+    var h='<div class="mc-subtabs">'+subs.map(function(s){
+      return '<button class="mc-sub'+(MC.sub===s[0]?' on':'')+'" onclick="MC.setSub(\''+s[0]+'\')">'+s[1]+'</button>';
+    }).join('')+'</div>';
+    if(this.sub==='stats') return h+this.tplStats(f);
+    var B=Eng.books(od, f.home, f.away);
+    var M=Eng.model(B.cons);
+    var groups=this.marketGroups(f, B.cons, M, B)[this.sub]||[];
+    if(B.nBooks>1){
+      h+='<p class="sub" style="font-size:.68rem;margin:-4px 2px 8px;">Showing the best of '+B.nBooks+' bookmakers.</p>';
+    }
+    h+=groups.map(function(g){ return MC.mkCard(f,g); }).join('');
+    if(M && M.estimated){
+      h+='<div class="mc-note" style="margin-top:10px;">Prices marked &mdash; are not in your feed yet. '+
+         '<b>Bet Assist still models them</b> from the prices that are, so the market is live the moment your API sends it.</div>';
+    }
+    return h;
+  },
+  /* Every market MSport shows. Priced from the feed where available, modelled
+     where not, blank where neither — never a fabricated number. */
+  marketGroups:function(f, od, M, B){
+    var h=od.h2h||{}, g=M&&M.g;
+    var P=function(prob){ return (g&&prob!=null) ? prob : null; };
+    var bp=function(kind,key,fallback){
+      var b=B&&B.best(kind,key); return b? b.price : num(fallback);
+    };
+    var lineRow=function(L){
+      var pv = g? Eng.over(g,L) : null;
+      var priced = (num(od.ou_line)===L);
+      return { line:String(L),
+        over : { lab:'Over '+L,  price: bp('tot',L+'|Over',  priced?od.ou_over :0), model:pv },
+        under: { lab:'Under '+L, price: bp('tot',L+'|Under', priced?od.ou_under:0), model: pv!=null?1-pv:null } };
+    };
+    return {
+      main:[
+        { t:'1X2', k:'three', picks:[
+          {k:'Home', lab:f.home+' win', price:bp('h2h','Home',h.Home), model:P(g&&g.p1)},
+          {k:'Draw', lab:'Draw',        price:bp('h2h','Draw',h.Draw), model:P(g&&g.px)},
+          {k:'Away', lab:f.away+' win', price:bp('h2h','Away',h.Away), model:P(g&&g.p2)} ]},
+        { t:'Double Chance', k:'three', picks:[
+          {k:'1X', lab:'1X', price:0, model:P(g&&(g.p1+g.px))},
+          {k:'12', lab:'12', price:0, model:P(g&&(g.p1+g.p2))},
+          {k:'X2', lab:'X2', price:0, model:P(g&&(g.px+g.p2))} ]},
+        { t:'Draw No Bet', k:'two', picks:[
+          {k:'H DNB', lab:f.home+' DNB', price:0, model:g?g.p1/(g.p1+g.p2):null},
+          {k:'A DNB', lab:f.away+' DNB', price:0, model:g?g.p2/(g.p1+g.p2):null} ]},
+        { t:'Over/Under', k:'ou', lines:[lineRow(1.5),lineRow(2.5),lineRow(3.5)] },
+        { t:'Both Teams to Score', k:'two', picks:[
+          {k:'Yes', lab:'Yes', price:num(od.btts&&od.btts.Yes), model:g?Eng.btts(g):null},
+          {k:'No',  lab:'No',  price:num(od.btts&&od.btts.No),  model:g?1-Eng.btts(g):null} ]}
+      ],
+      goals:[
+        { t:'Over/Under', k:'ou', lines:[lineRow(0.5),lineRow(1.5),lineRow(2.5),lineRow(3.5),lineRow(4.5)] },
+        { t:f.home+' Total Goals', k:'two', picks:[
+          {k:'Over 0.5', lab:'Over 0.5', price:0, model:g?Eng.teamOver(g,'h',0.5):null},
+          {k:'Over 1.5', lab:'Over 1.5', price:0, model:g?Eng.teamOver(g,'h',1.5):null} ]},
+        { t:f.away+' Total Goals', k:'two', picks:[
+          {k:'Over 0.5', lab:'Over 0.5', price:0, model:g?Eng.teamOver(g,'a',0.5):null},
+          {k:'Over 1.5', lab:'Over 1.5', price:0, model:g?Eng.teamOver(g,'a',1.5):null} ]},
+        { t:'Correct Score', k:'grid', picks:(g?Eng.scores(g,9):[]).map(function(s){
+            return {k:s.s, lab:s.s, price:0, model:s.p}; }) }
+      ],
+      half:[
+        { t:'Half Time Result', k:'three', picks:(function(){
+            if(!g) return [{k:'Home',lab:'Home',price:0,model:null},{k:'Draw',lab:'Draw',price:0,model:null},{k:'Away',lab:'Away',price:0,model:null}];
+            var hg=Eng.grid(M.lh*0.44, M.la*0.44);
+            return [{k:'Home',lab:'Home',price:0,model:hg.p1},{k:'Draw',lab:'Draw',price:0,model:hg.px},{k:'Away',lab:'Away',price:0,model:hg.p2}];
+          })() },
+        { t:'Half Time Over/Under', k:'ou', lines:(function(){
+            if(!g) return [];
+            var hg=Eng.grid(M.lh*0.44, M.la*0.44);
+            return [0.5,1.5].map(function(L){
+              var pv=Eng.over(hg,L);
+              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} };
+            });
+          })() },
+        { t:'Second Half Over/Under', k:'ou', lines:(function(){
+            if(!g) return [];
+            var sg=Eng.grid(M.lh*0.56, M.la*0.56);
+            return [0.5,1.5,2.5].map(function(L){
+              var pv=Eng.over(sg,L);
+              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} };
+            });
+          })() }
+      ],
+      builder:[
+        { t:'Popular combinations', k:'builder', picks:(function(){
+            if(!g) return [];
+            var combos=[
+              [f.home+' win & Over 1.5', g.p1*Eng.over(g,1.5)],
+              [f.home+' or draw & Over 1.5', (g.p1+g.px)*Eng.over(g,1.5)],
+              ['BTTS & Over 2.5', Eng.btts(g)*Eng.over(g,2.5)],
+              [f.away+' or draw & Under 3.5', (g.px+g.p2)*(1-Eng.over(g,3.5))],
+              [f.home+' win & BTTS', g.p1*Eng.btts(g)],
+              ['Over 2.5 & BTTS No', Eng.over(g,2.5)*(1-Eng.btts(g))]
+            ];
+            return combos.map(function(c){ return {k:c[0], lab:c[0], price:0, model:c[1]}; });
+          })() }
+      ]
+    };
+  },
+  mkCard:function(f, grp){
+    var body='';
+    if(grp.k==='ou'){
+      if(!grp.lines.length) return '';
+      body='<div class="mc-ouhead"><span></span><span>Over</span><span>Under</span></div>'+
+        '<div class="mc-mkbody ou">'+grp.lines.map(function(L){
+          return '<div class="mc-linelab">'+L.line+'</div>'+MC.pickBtn(f,L.over)+MC.pickBtn(f,L.under);
+        }).join('')+'</div>';
+    } else {
+      if(!grp.picks || !grp.picks.length) return '';
+      var cls = grp.k==='two' ? 'mc-mkbody c2'
+              : grp.k==='builder' ? 'mc-mkbody c2'
+              : 'mc-mkbody';
+      body='<div class="'+cls+'">'+grp.picks.map(function(p){ return MC.pickBtn(f,p); }).join('')+'</div>';
+    }
+    var id='mk'+Math.random().toString(36).slice(2,7);
+    return '<div class="mc-mk">'+
+      '<div class="mc-mkhead" onclick="MC.togMk(this)"><span class="car">&#9660;</span>'+
+        '<span class="nm">'+esc(grp.t)+'</span><span class="inf">i</span>'+
+        '<span class="rt"><span>&#128200;</span><span class="star">&#9734;</span></span></div>'+
+      body+'</div>';
+  },
+  togMk:function(el){
+    el.classList.toggle('closed');
+    var b=el.nextElementSibling;
+    while(b && !b.classList.contains('mc-mkbody')) b=b.nextElementSibling;
+    if(b) b.classList.toggle('closed');
+    var oh=el.parentNode.querySelector('.mc-ouhead');
+    if(oh) oh.style.display = el.classList.contains('closed')?'none':'grid';
+  },
+  pickBtn:function(f,p){
+    var lab=p.lab, price=p.price||0, on=this.has(f.id,lab);
+    var val = price>1 ? price.toFixed(2)
+            : (p.model!=null ? '~'+dec(p.model).toFixed(2) : '&mdash;');
+    var dead = !(price>1) && p.model==null;
+    var sub = (price>1||p.model==null) ? '' :
+      '<span style="position:absolute;top:3px;right:5px;font-size:.5rem;color:var(--faint);">model</span>';
+    return '<button class="mc-pick'+(on?' on':'')+(dead?' dead':'')+'" style="position:relative;" '+
+      'onclick="MC.addSel(MC.det,\''+esc(lab)+'\','+(price>1?price:(p.model!=null?dec(p.model).toFixed(2):0))+')">'+
+      sub+'<span class="k">'+esc(lab)+'</span><span class="v">'+val+'</span></button>';
+  },
+
+  /* --- commentary --- */
+  tplComm:function(f){
+    // /api/fixture/stats is the richer source; the fixtures list carries a
+    // copy for matches the live pass has already touched.
+    var cm=(this.detStats&&this.detStats.commentary)||f.commentary||[];
+    if(!cm.length){
+      var pro=this.detStats&&this.detStats.deep;
+      return '<div class="mc-note">No commentary for this match yet.<br><br>'+
+        (pro ? 'Deep stats are enabled, so this fills in once the match kicks off and events start arriving.'
+             : 'Commentary comes from api-sports match events, which are off on the free tier. '+
+               'Set <b>SPORTS_TIER=pro</b> on the Worker after upgrading and this populates automatically — '+
+               'no other change needed.')+'</div>';
+    }
+    var ic={goal:'&#9917;',yellow:'&#129000;',red:'&#128308;',sub:'&#8646;',corner:'&#128681;',
+            pen:'&#9917;',var:'&#128250;',ht:'&#9209;',ft:'&#9202;'};
+    return '<div>'+cm.map(function(c){
+      return '<div class="mc-cm"><span class="mn">'+(c.min!=null?c.min+"'":'')+'</span>'+
+        '<span class="tx"><b>'+(ic[c.type]||'')+' '+esc(c.type||'')+'</b>'+esc(c.text||'')+'</span></div>';
+    }).join('')+'</div>';
+  },
+
+  /* --- bet assist --- */
+  tplAssist:function(f){
+    var A=Assist.build(f, f._od||{}, this.detStats);
+    if(!A.ok){
+      return '<div class="mc-note">Bet Assist needs at least one priced market on this fixture.<br><br>'+
+        'It reads <b>odds.h2h</b> and <b>odds.ou_over / ou25</b>, then derives every other market itself &mdash; '+
+        'so a single odds pull unlocks the whole panel. Run an odds refresh in the admin console.</div>';
+    }
+    var M=A.model;
+    var ring=function(p){
+      var r=19, c=2*Math.PI*r, off=c*(1-p);
+      return '<div class="ring"><svg width="46" height="46" viewBox="0 0 46 46">'+
+        '<circle cx="23" cy="23" r="'+r+'" fill="none" stroke="var(--surface-3)" stroke-width="4"/>'+
+        '<circle cx="23" cy="23" r="'+r+'" fill="none" stroke="var(--green)" stroke-width="4" '+
+        'stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'+
+        '</svg><b>'+pc(p)+'%</b></div>';
+    };
+    var card=function(o, showEdge){
+      var e=o.edge;
+      var badge = (e==null) ? '<span class="mc-edge flat">no price yet</span>'
+        : e>0.02 ? '<span class="mc-edge pos">&#9650; '+pc(e)+'% edge</span>'
+        : e<-0.02 ? '<span class="mc-edge neg">&#9660; '+pc(Math.abs(e))+'% under</span>'
+        : '<span class="mc-edge flat">fair price</span>';
+      return '<div class="mc-ai">'+
+        '<div class="mc-aitop">'+ring(o.prob)+
+          '<div class="mid"><div class="p">'+esc(o.sel)+'</div><div class="s">'+esc(o.market)+'</div></div>'+
+          '<div class="od"><div class="v">'+(o.price>1?o.price.toFixed(2):'~'+dec(o.prob).toFixed(2))+'</div>'+
+          '<div class="l">'+(o.price>1?esc(o.book||'market'):'fair')+'</div></div></div>'+
+        (showEdge?'<div style="margin-bottom:10px;">'+badge+'</div>':'')+
+        (o.why.length?'<ul class="mc-why">'+o.why.map(function(w){return '<li><s>&#9656;</s>'+esc(w)+'</li>';}).join('')+'</ul>':'')+
+        '<button class="btn btn-out btn-sm" style="width:100%;height:40px;" '+
+          'onclick="MC.addSel(MC.det,\''+esc(o.sel)+'\','+(o.price>1?o.price:dec(o.prob).toFixed(2))+')">'+
+          (MC.has(f.id,o.sel)?'In your slip':'Add to slip')+'</button>'+
+      '</div>';
+    };
+    var h='';
+    h+='<div class="mc-ai" style="padding:13px 14px;">'+
+       '<div style="display:flex;gap:14px;text-align:center;">'+
+         '<div style="flex:1;"><div class="sub" style="font-size:.62rem;">Expected goals</div>'+
+           '<div style="font-family:var(--d);font-weight:800;font-size:1.15rem;color:var(--gold);">'+M.mu.toFixed(2)+'</div></div>'+
+         '<div style="flex:1;"><div class="sub" style="font-size:.62rem;">'+esc(f.home)+'</div>'+
+           '<div style="font-family:var(--d);font-weight:800;font-size:1.15rem;">'+M.lh.toFixed(2)+'</div></div>'+
+         '<div style="flex:1;"><div class="sub" style="font-size:.62rem;">'+esc(f.away)+'</div>'+
+           '<div style="font-family:var(--d);font-weight:800;font-size:1.15rem;">'+M.la.toFixed(2)+'</div></div>'+
+       '</div>'+
+       '<p class="sub" style="font-size:.66rem;margin-top:10px;text-align:center;">'+
+       (M.estimated ? 'Partly estimated &mdash; based on '+(M.quality.join(' + ')||'defaults')+'. Accuracy rises as your feed adds markets.'
+                    : 'Modelled from '+M.quality.join(' + ')+', margin removed.')+'</p></div>';
+    if(A.value.length){
+      // With one book the model is fitted to that book, so an "edge" would be
+      // circular. Only claim value when several books disagree.
+      h+='<div class="mc-sechead"><i></i><h4>'+(A.multi?'Best value':'Market read')+'</h4></div>'+
+         (A.multi ? '' : '<p class="sub" style="font-size:.68rem;margin:-4px 2px 10px;">'+
+            'Only one bookmaker is stored for this match, so these are fair-price comparisons, not value calls. '+
+            'Pull more books and the edge column goes live.</p>')+
+         A.value.map(function(o){ return card(o, A.multi); }).join('');
+    }
+    if(A.safe.length){
+      h+='<div class="mc-sechead"><i></i><h4>Highest confidence</h4></div>'+
+         A.safe.map(function(o){ return card(o,false); }).join('');
+    }
+    h+='<div class="mc-sechead"><i></i><h4>Most likely scores</h4></div><div class="mc-ai">'+
+       A.scores.map(function(s){
+         return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px;">'+
+           '<b style="font-family:var(--d);width:38px;">'+s.s+'</b>'+
+           '<div class="mc-bar" style="flex:1;margin:0;"><i style="width:'+(s.p/A.scores[0].p*100).toFixed(0)+'%"></i></div>'+
+           '<span class="sub" style="font-size:.72rem;width:36px;text-align:right;">'+(s.p*100).toFixed(1)+'%</span></div>';
+       }).join('')+'</div>';
+    h+='<p class="sub" style="font-size:.68rem;margin-top:14px;line-height:1.6;">'+
+       'Bet Assist is a probability model, not a prediction. It shows where a price looks generous '+
+       'relative to the market and why. Outcomes are never guaranteed. 18+ &middot; bet responsibly.</p>';
+    return h;
+  },
+
+  /* --- stats --- */
+  tplStats:function(f){
+    var s=this.detStats||{}, h='';
+    /* Distribution of Goals */
+    h+='<div class="mc-sechead"><i></i><h4>Distribution of Goals</h4></div>';
+    h+= s.goalDist ? this.goalChart(f, s.goalDist)
+       : '<div class="mc-note">'+(s.deep
+           ? 'Only available for api-sports fixtures (ids starting fb-). This match came from another source.'
+           : 'Season goal timings come from api-sports team statistics. Set <b>SPORTS_TIER=pro</b> '+
+             'on the Worker after upgrading and this chart fills itself in.')+'</div>';
+    /* Momentum */
+    // Label honestly. True attack momentum is a separate data product; what we
+    // can build from match events is an event timeline. Same chart, different
+    // claim, and the user is told which one they are looking at.
+    var derived=(s.momentumSource==='events');
+    h+='<div class="mc-sechead"><i></i><h4>'+(derived?'Event timeline':'Momentum')+'</h4></div>';
+    h+= s.momentum ? this.momChart(s.momentum, derived)
+       : '<div class="mc-note">'+(s.deep
+           ? 'Builds from match events once this game is under way.'
+           : 'Needs api-sports match events. Set <b>SPORTS_TIER=pro</b> on the Worker after upgrading '+
+             'and this chart fills itself in.')+'</div>';
+    /* H2H + form, which you already have today */
+    if(s.form&&(s.form.home||s.form.away)){
+      h+='<div class="mc-sechead"><i></i><h4>Recent form</h4></div><div class="mc-ai">'+
+        [[f.home,s.form.home],[f.away,s.form.away]].map(function(r){
+          return '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px;">'+
+            '<span style="flex:1;font-size:.82rem;font-weight:600;">'+esc(r[0])+'</span>'+
+            (r[1]||'').split('').map(function(c){
+              var col=c==='W'?'var(--green)':c==='L'?'var(--red)':'var(--muted)';
+              return '<span style="width:21px;height:21px;border-radius:6px;background:'+col+';color:#000;'+
+                     'display:inline-grid;place-items:center;font-size:.62rem;font-weight:800;">'+c+'</span>';
+            }).join('')+'</div>';
+        }).join('')+'</div>';
+    }
+    if(s.h2h&&s.h2h.length){
+      h+='<div class="mc-sechead"><i></i><h4>Head to head</h4></div><div class="mc-ai">'+
+        s.h2h.map(function(m){
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;font-size:.78rem;border-bottom:1px solid var(--border);">'+
+            '<span class="sub" style="width:64px;font-size:.66rem;">'+esc(m.date||'')+'</span>'+
+            '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(m.home)+' v '+esc(m.away)+'</span>'+
+            '<b style="font-family:var(--d);color:var(--gold);">'+m.sh+'-'+m.sa+'</b></div>';
+        }).join('')+'</div>';
+    }
+    /* General statistics */
+    h+='<div class="mc-sechead"><i></i><h4>General Statistics</h4></div>';
+    if(s.general&&s.general.length){
+      h+='<div class="mc-ai">'+s.general.map(function(g){
+        var t=(Number(g.h)||0)+(Number(g.a)||0)||1;
+        return '<div><div class="mc-statrow"><span class="v">'+g.h+'</span>'+
+          '<span class="lb">'+esc(g.label)+'</span><span class="v">'+g.a+'</span></div>'+
+          '<div class="mc-statbar">'+
+            '<i style="flex:'+(Number(g.h)||0)/t+';background:var(--gold);"></i>'+
+            '<i style="flex:'+(Number(g.a)||0)/t+';background:var(--green);"></i></div></div>';
+      }).join('')+'</div>';
+    } else {
+      h+='<div class="mc-note">'+(s.deep
+           ? 'Match statistics appear once the game is under way.'
+           : 'Possession, shots, corners and cards come from api-sports match statistics. '+
+             'Set <b>SPORTS_TIER=pro</b> on the Worker after upgrading.')+'</div>';
+    }
+    return h;
+  },
+  goalChart:function(f, gd){
+    var buckets=["0-15'","16-30'","31-45'","46-60'","61-75'","76-90'"];
+    var all=(gd.home||[]).concat(gd.away||[]);
+    var max=Math.max.apply(null, all.concat([1]));
+    var W=320, H=130, pad=18, step=(W-pad*2)/5;
+    var line=function(arr,col){
+      var pts=arr.map(function(v,i){
+        return (pad+i*step).toFixed(1)+','+(H-pad-(v/max)*(H-pad*2)).toFixed(1);
+      }).join(' ');
+      return '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-linejoin="round"/>'+
+        arr.map(function(v,i){
+          return '<circle cx="'+(pad+i*step).toFixed(1)+'" cy="'+(H-pad-(v/max)*(H-pad*2)).toFixed(1)+
+                 '" r="3.2" fill="'+col+'"/>'+
+                 '<text x="'+(pad+i*step).toFixed(1)+'" y="'+(H-pad-(v/max)*(H-pad*2)-8).toFixed(1)+
+                 '" fill="'+col+'" font-size="9" text-anchor="middle" font-weight="700">'+v+'</text>';
+        }).join('');
+    };
+    var tot=function(a){ return (a||[]).reduce(function(x,y){return x+y;},0); };
+    return '<div class="mc-ai">'+
+      '<div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--muted);padding:0 12px 4px;">'+
+        buckets.map(function(b){return '<span>'+b+'</span>';}).join('')+'</div>'+
+      '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;">'+
+        line(gd.home||[], '#f4b740')+line(gd.away||[], '#1fd17a')+'</svg>'+
+      '<div style="display:flex;gap:16px;justify-content:center;font-size:.72rem;margin-top:6px;">'+
+        '<span><b style="color:#f4b740">&#9679;</b> '+esc(f.home)+' <b>'+tot(gd.home)+'</b></span>'+
+        '<span><b style="color:#1fd17a">&#9679;</b> '+esc(f.away)+' <b>'+tot(gd.away)+'</b></span></div>'+
+      '<p class="sub" style="font-size:.64rem;text-align:center;margin-top:6px;">Based on the last 10 matches per team.</p>'+
+    '</div>';
+  },
+  momChart:function(mom, derived){
+    var W=320, H=90, mid=H/2, n=mom.length||1, bw=Math.max(1.2,(W/n)-1);
+    var bars=mom.map(function(p,i){
+      var x=(i*(W/n)).toFixed(1);
+      var hh=Math.abs(p.h||0)*mid*0.9, ah=Math.abs(p.a||0)*mid*0.9;
+      return '<rect x="'+x+'" y="'+(mid-hh).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+hh.toFixed(1)+'" fill="#f4b740" rx="1"/>'+
+             '<rect x="'+x+'" y="'+mid+'" width="'+bw.toFixed(1)+'" height="'+ah.toFixed(1)+'" fill="#1fd17a" rx="1"/>';
+    }).join('');
+    return '<div class="mc-ai"><svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;">'+
+      '<line x1="0" y1="'+mid+'" x2="'+W+'" y2="'+mid+'" stroke="var(--border)" stroke-width="1"/>'+bars+'</svg>'+
+      '<div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--faint);margin-top:4px;">'+
+      '<span>0\'</span><span>15\'</span><span>30\'</span><span>HT</span><span>60\'</span><span>75\'</span><span>90\'</span></div>'+
+      (derived?'<p class="sub" style="font-size:.62rem;text-align:center;margin-top:6px;">'+
+        'Built from goals, cards and substitutions &mdash; not ball-territory data.</p>':'')+'</div>';
+  }
+};
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+/* boot once the app is up */
+function boot(){
+  if(typeof App==='undefined' || !App.go){ return setTimeout(boot,180); }
+  MC.install();
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+})();
+</script>
+
+<!-- ═══════════ END MATCH CENTER ═══════════ -->
+
 </body>
 </html>
