@@ -2203,6 +2203,9 @@ const App={
     this.loadAdminUnlocks();
     if(this._adminTab==='games')this.renderAdminGames();
     if(this._adminTab==='users')this.renderAdminUsers();
+    // Match Center is an admin booking tool — re-attach its "Book games" button
+    // to the console action row on every repaint (renderAdmin rebuilds the DOM).
+    if(window.MC && MC.installAdminButton) MC.installAdminButton();
     if(!this._unlockWatch){ this._unlockWatch=setInterval(()=>{ if(document.getElementById('view-admin').classList.contains('active')) this.loadAdminUnlocks(true); },20000); }
   },
   adminGo(tab){ this._adminTab=tab==='overview'?null:tab; this.renderAdmin(); },
@@ -3686,22 +3689,20 @@ var MC = window.MC = {
   /* ---------- install ---------- */
   install:function(){
     var content=document.getElementById('content'); if(!content) return;
+    // The Match Center is an ADMIN-ONLY booking tool for now — it shows partial
+    // data and is not a finished public bookmaker, so regular users must never
+    // see it. It lives inside the admin console (view-admin), NOT on the bottom
+    // nav. Entry is App.go('matches'), reachable only by a server-verified
+    // admin via the "Book games" button below.
     if(!document.getElementById('view-matches')){
       var p=document.createElement('div');
       p.className='page'; p.id='view-matches';
       content.appendChild(p);
     }
-    var nav=document.getElementById('nav');
-    if(nav && !nav.querySelector('[data-nav="matches"]')){
-      var it=document.createElement('div');
-      it.className='navitem'; it.setAttribute('data-nav','matches');
-      it.onclick=function(){ App.go('matches'); };
-      it.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
-        '<circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/>'+
-        '<path d="M12 8.5 9 11l1.2 3.6h3.6L15 11z"/></svg><span>Matches</span>';
-      // slot it in second so Home stays first
-      nav.insertBefore(it, nav.children[1]||null);
-    }
+    // Deliberately NO bottom-nav item is created.
+    // Add a "Book games" button into the admin console's action row, once.
+    this.installAdminButton();
+
     if(!document.getElementById('mc-detail')){
       var d=document.createElement('div'); d.id='mc-detail'; document.body.appendChild(d);
       var f=document.createElement('div'); f.className='mc-fab'; f.id='mc-fab';
@@ -3714,17 +3715,37 @@ var MC = window.MC = {
       var orig=App.go.bind(App);
       App.go=function(v){
         if(v==='matches'){
+          // Hard gate: only server-verified admins. Anyone else falls through
+          // to home, exactly like the existing 'admin' route guard.
+          if(!(window.State && State.isAdmin)){ return orig('home'); }
           MC.render(); MC.load();
           App.show('matches');
-          var n=document.getElementById('nav'); if(n)n.classList.remove('hide');
-          document.querySelectorAll('.navitem').forEach(function(x){ x.classList.toggle('active', x.dataset.nav==='matches'); });
+          // Match Center is a console tool, so hide the member nav like the
+          // admin console does.
+          var n=document.getElementById('nav'); if(n)n.classList.add('hide');
           return;
         }
         MC.closeDetail();
+        var fab=document.getElementById('mc-fab'); if(fab) fab.classList.remove('show');
         return orig(v);
       };
       App._mcWrapped=true;
     }
+  },
+  // Inserts the "Book games" button into the admin console. Runs on install and
+  // is re-checked whenever the console re-renders, so it survives a repaint.
+  installAdminButton:function(){
+    var row=document.querySelector('#view-admin [onclick*="openSheet(\'post\')"]');
+    if(!row) return;                                   // console not in the DOM yet
+    var bar=row.parentNode;
+    if(bar.querySelector('[data-mc-book]')) return;    // already added
+    var b=document.createElement('button');
+    b.className='btn btn-out btn-sm';
+    b.setAttribute('data-mc-book','1');
+    b.style.cssText='flex:1;min-width:130px;height:42px;';
+    b.onclick=function(){ App.go('matches'); };
+    b.innerHTML='\u26BD Book games';
+    bar.appendChild(b);
   },
 
   /* ---------- data ---------- */
@@ -3813,10 +3834,12 @@ var MC = window.MC = {
   render:function(){
     var el=document.getElementById('view-matches'); if(!el) return;
     el.innerHTML =
-      '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">'+
-        '<h2 class="h2">Match Center</h2>'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">'+
+        '<span style="font-size:1.4rem;line-height:1;cursor:pointer;" onclick="App.go(\'admin\')">&#8249;</span>'+
+        '<h2 class="h2" style="flex:1;">Match Center</h2>'+
         '<button class="pill" style="font-size:.66rem;padding:5px 10px;" onclick="MC.load(true)">&#8635; Refresh</button>'+
       '</div>'+
+      '<p class="sub" style="font-size:.7rem;margin-bottom:12px;">Admin booking tool &middot; partial data &middot; not shown to members yet.</p>'+
       '<input class="input" style="height:46px;margin-bottom:10px;" placeholder="&#128269; Search league or team&hellip;" '+
         'oninput="MC.q=this.value.toLowerCase();MC.paint()">'+
       '<div class="mc-selbar">'+
@@ -4036,7 +4059,11 @@ var MC = window.MC = {
     var f=document.getElementById('mc-fab'), n=document.getElementById('mc-fabn');
     if(!f||!n) return;
     n.textContent=this.slip.length;
-    f.classList.toggle('show', this.slip.length>0);
+    var onMC=(document.getElementById('view-matches')||{}).classList &&
+             document.getElementById('view-matches').classList.contains('active');
+    var onDetail=(document.getElementById('mc-detail')||{}).classList &&
+                 document.getElementById('mc-detail').classList.contains('show');
+    f.classList.toggle('show', this.slip.length>0 && (onMC||onDetail));
   },
   openSlip:function(){
     var tot=this.slip.reduce(function(a,s){ return a*(s.odds>1?s.odds:1); },1);
