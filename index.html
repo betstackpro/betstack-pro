@@ -2231,7 +2231,10 @@ const App={
     if(!window.MC){ body.innerHTML='<p class="sub">Match Center failed to load.</p>'; return; }
     // Move the #view-matches page into this tab body (once), then drive it.
     var vm=document.getElementById('view-matches');
-    if(vm && vm.parentNode!==body){ body.appendChild(vm); }
+    if(!vm){ // module hasn't created it yet — create it so the tab never blanks
+      vm=document.createElement('div'); vm.className='page'; vm.id='view-matches';
+    }
+    if(vm.parentNode!==body){ body.appendChild(vm); }
     vm.classList.add('active');
     vm.style.display='block';
     MC.embedded=true;
@@ -2522,6 +2525,20 @@ const App={
   addCode(){ this._editCode=null; this.openSheet('editcode'); },
   selRows(){ return Array.from(document.querySelectorAll('#sel-rows .selrow')); },
   openMatchPicker(target){
+    // Unified: the Game Center is now the ONLY match picker. Both the
+    // Add-Prediction and Add-Tip "pick from real matches" buttons land here.
+    // Selections are accumulated in the Game Center slip, where odds are edited
+    // and posted (Post Free) or handed to the paid-tip builder (Paid Tip).
+    if(this.closeSheet) this.closeSheet();
+    var pk=document.getElementById('match-picker'); if(pk) pk.remove();
+    // Land in the console's Games tab, which hosts the Game Center. This keeps
+    // the admin inside the console (nav hidden) with the full picker + slip.
+    this.go('admin');
+    this.adminGo('games');
+    if(this.toast) this.toast('Tap picks to build your slip, then Post');
+    return;
+  },
+  _legacyMatchPicker(target){
     this._pickerTarget=target; this._pickToSlip=false; this._mpDay='all'; this._mpQ='';
     let ov=document.getElementById('match-picker');
     if(!ov){ ov=document.createElement('div'); ov.id='match-picker';
@@ -2900,7 +2917,7 @@ const App={
       h+=`<h3>${p.id?'Edit':'Add'} prediction</h3><p class="sub" style="margin-bottom:12px;">Free daily prediction shown to everyone.</p>
         <div class="field"><label>Sport</label><select class="sel" id="pr-sport">${sOpts}</select></div>
         <div class="field"><label>Match</label><input class="input" id="pr-match" value="${this.esc(p.match||'')}" placeholder="e.g. LIV vs CHE"></div>
-        <button class="btn btn-out btn-sm" style="margin:-4px 0 12px;height:38px;" onclick="App.openMatchPicker('pred')">\uD83D\uDCC5 Pick from real matches</button>
+        <button class="btn btn-out btn-sm" style="margin:-4px 0 12px;height:38px;" onclick="App.openMatchPicker('pred')">\u26BD Open Game Center</button>
         <div class="field"><label>Prediction / pick</label><input class="input" id="pr-pick" value="${this.esc(p.pick||'')}" placeholder="e.g. Home Win, Over 2.5"></div>
         <div class="field"><label>Odds</label><input class="input" id="pr-odds" type="number" step="0.01" inputmode="decimal" value="${p.odds||''}" placeholder="2.10"></div>
         <div class="field"><label>Risk</label><select class="sel" id="pr-risk">${rOpts}</select></div>
@@ -2914,7 +2931,7 @@ const App={
         <div class="field"><label>Title</label><input class="input" id="cd-title" value="${this.esc(c.title||'')}" placeholder="e.g. Weekend Banker"></div>
         <div class="field"><label>Sport</label><select class="sel" id="cd-sport">${sOpts}</select></div>
         <div class="field"><label>Risk</label><select class="sel" id="cd-risk">${rOpts}</select></div>
-        <div class="sec" style="margin:6px 0 8px;display:flex;align-items:center;justify-content:space-between;">Games (1–30) <button class="btn btn-out btn-sm" style="height:32px;padding:0 12px;" onclick="App.addSelRow()">+ Add game</button><button class="btn btn-out btn-sm" style="height:34px;padding:0 10px;margin-left:6px;" onclick="App.openMatchPicker('tip')">\uD83D\uDCC5 From real matches</button></div>
+        <div class="sec" style="margin:6px 0 8px;display:flex;align-items:center;justify-content:space-between;">Games (1–30) <button class="btn btn-out btn-sm" style="height:32px;padding:0 12px;" onclick="App.addSelRow()">+ Add game</button><button class="btn btn-out btn-sm" style="height:34px;padding:0 10px;margin-left:6px;" onclick="App.openMatchPicker('tip')">\u26BD Game Center</button></div>
         <div id="sel-rows"></div>
         <div id="sel-totals" class="sub" style="margin:2px 0 12px;font-size:.82rem;"></div>
         <label style="display:flex;align-items:center;gap:10px;margin:4px 0 16px;font-size:.9rem;"><input type="checkbox" id="cd-sure" ${c.sure?'checked':''} style="width:18px;height:18px;">VIP “Sure” special (high-stake, low-odds)</label>
@@ -3781,8 +3798,15 @@ var MC = window.MC = {
   load:function(force){
     if(this.loaded && !force) return;
     var self=this;
-    if(typeof Api==='undefined' || !Api.publicFixtures){ this.err='api_missing'; this.paint(); return; }
-    Api.publicFixtures('football').then(function(r){
+    if(typeof Api==='undefined'){ this.err='api_missing'; this.paint(); return; }
+    // Admins load the FULL admin fixtures set (same source the old picker used,
+    // now carrying odds); members would load the public set. One picker, but it
+    // reads whichever feed the viewer is entitled to.
+    var admin=!!(window.State && State.isAdmin);
+    var loader = (admin && Api.adminFixtures) ? Api.adminFixtures('football')
+               : (Api.publicFixtures ? Api.publicFixtures('football') : null);
+    if(!loader){ this.err='api_missing'; this.paint(); return; }
+    loader.then(function(r){
       self.fx = ((r&&r.fixtures)||[]).map(function(f){
         var od={}; try{ od = typeof f.odds==='string' ? JSON.parse(f.odds||'{}') : (f.odds||{}); }catch(e){}
         f._od=od;
