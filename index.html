@@ -399,6 +399,9 @@ body.light .st{background:rgba(0,0,0,.04);}
 .slip-body{overflow-y:auto;padding:4px 18px 18px;}
 .slip-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
 .slip-x{background:none;border:none;color:var(--sub);font-size:.9rem;cursor:pointer;flex-shrink:0;width:30px;height:30px;}
+.slip-odds{flex-shrink:0;width:66px;height:34px;border-radius:9px;background:var(--surface-2);border:1px solid var(--border-2);color:var(--gold);font-family:var(--d);font-weight:700;font-size:.82rem;text-align:center;padding:0 4px;}
+.slip-odds:focus{outline:none;border-color:var(--gold);}
+.slip-odds::placeholder{color:var(--faint);font-weight:400;}
 .slip-summary{display:flex;justify-content:space-between;padding:12px 0;font-size:.8rem;color:var(--sub);}
 .slip-summary b{color:var(--green);}
 .slip-actions{display:flex;gap:8px;}
@@ -2208,32 +2211,32 @@ const App={
     if(window.MC && MC.installAdminButton) MC.installAdminButton();
     if(!this._unlockWatch){ this._unlockWatch=setInterval(()=>{ if(document.getElementById('view-admin').classList.contains('active')) this.loadAdminUnlocks(true); },20000); }
   },
-  adminGo(tab){ this._adminTab=tab==='overview'?null:tab; this.renderAdmin(); },
+  adminGo(tab){
+    // Leaving Games: park the Match Center page back on <body> (hidden) so it
+    // doesn't linger under the Overview/Users tabs.
+    if(this._adminTab==='games' && tab!=='games'){
+      var vm=document.getElementById('view-matches');
+      if(vm){ vm.classList.remove('active'); vm.style.display='none'; document.getElementById('content').appendChild(vm); }
+      if(window.MC){ MC.closeDetail(); var fab=document.getElementById('mc-fab'); if(fab)fab.classList.remove('show'); }
+    }
+    this._adminTab=tab==='overview'?null:tab; this.renderAdmin();
+  },
   _fxSport:'football', _draftSels:[],
   renderAdminGames(){
-    const body=document.getElementById('admin-tab-body'); if(!body)return;
-    const sports=[['football','\u26BD'],['basketball','\uD83C\uDFC0'],['tennis','\uD83C\uDFBE'],['nfl','\uD83C\uDFC8'],['baseball','\u26BE'],['hockey','\uD83C\uDFD2']];
-    body.innerHTML=`
-      <div class="mk-sportbar">${sports.map(([k,e])=>`<button class="mk-sport${k===this._fxSport?' on':''}" onclick="App.pickSport('${k}')">${e} ${k.charAt(0).toUpperCase()+k.slice(1)}</button>`).join('')}</div>
-      <div class="mk-toolbar">
-        <div class="mk-days" id="mk-days"></div>
-        <button class="btn btn-out btn-sm mk-refresh" onclick="App.refreshFixtures()">\u21BB Refresh</button>
-      </div>
-      <input class="input" id="fx-q" placeholder="\uD83D\uDD0D Search league or team\u2026" oninput="App._fxQ=this.value.toLowerCase();App.paintFixtures()" style="margin-bottom:10px;">
-      <div id="fx-list" class="mk-list"><p class="sub">Loading games\u2026</p></div>
-      <!-- Persistent slip tray -->
-      <div id="slip-tray" class="slip-tray">
-        <div class="slip-handle" onclick="App.toggleSlip()">
-          <span class="slip-count" id="slip-count">0</span>
-          <span class="slip-label">Bet slip</span>
-          <span class="slip-chev" id="slip-chev">\u25B4</span>
-        </div>
-        <div class="slip-body" id="slip-body"></div>
-      </div>`;
-    this._fxDay='all';
-    this.loadFixtures();
-    this.paintFixtureDays();
-    this.renderSlip();
+    // The Games tab now hosts the full Match Center (detailed selector + market
+    // pages) instead of the old flat card list. It renders into #view-matches,
+    // which we mount inside the console tab body so the admin gets the same
+    // bookmaker-grade detail they saw before, in one place.
+    var body=document.getElementById('admin-tab-body'); if(!body)return;
+    if(!window.MC){ body.innerHTML='<p class="sub">Match Center failed to load.</p>'; return; }
+    // Move the #view-matches page into this tab body (once), then drive it.
+    var vm=document.getElementById('view-matches');
+    if(vm && vm.parentNode!==body){ body.appendChild(vm); }
+    vm.classList.add('active');
+    vm.style.display='block';
+    MC.embedded=true;
+    MC.render();
+    if(MC.loaded){ MC.paint(); } else { MC.load(); }
   },
   pickSport(k){ this._fxSport=k; this._fxDay='all'; this.renderAdminGames(); },
   paintFixtureDays(){
@@ -2325,6 +2328,16 @@ const App={
     this.toast('Added to slip');
   },
   removeSlip(i){ this._draftSels.splice(i,1); this.renderSlip(); },
+  setSlipOdds(i,val){
+    const s=this._draftSels[i]; if(!s) return;
+    const v=parseFloat(String(val).replace(',','.'));
+    // Accept a sensible decimal price; blank clears it. Anything <1.01 or
+    // garbage is rejected so a slip never posts with an impossible price.
+    if(String(val).trim()==='' ){ s.odds=null; }
+    else if(isFinite(v) && v>=1.01 && v<=1000){ s.odds=Number(v.toFixed(2)); }
+    else { this.toast('Enter odds between 1.01 and 1000'); this.renderSlip(); return; }
+    this.renderSlip();
+  },
   toggleSlip(){ const t=document.getElementById('slip-tray'); if(t){ t.classList.toggle('open'); const c=document.getElementById('slip-chev'); if(c)c.textContent=t.classList.contains('open')?'\u25BE':'\u25B4'; } },
   renderSlip(){
     const sels=this._draftSels||[];
@@ -2335,7 +2348,9 @@ const App={
     const combined=sels.reduce((a,s)=>a*(Number(s.odds)||1),1);
     body.innerHTML=sels.map((s,i)=>`<div class="slip-row">
         <div style="min-width:0;flex:1;"><div style="font-weight:700;font-size:.8rem;">${this.esc(s.match)}</div>
-        <div class="sub" style="font-size:.68rem;">${this.esc(s.pick||'(tap a pick)')}${s.odds?' \u00b7 @'+s.odds:''}</div></div>
+        <div class="sub" style="font-size:.68rem;">${this.esc(s.pick||'(tap a pick)')}</div></div>
+        <input class="slip-odds" inputmode="decimal" placeholder="odds" value="${s.odds?this.esc(String(s.odds)):''}"
+          onchange="App.setSlipOdds(${i},this.value)" onclick="event.stopPropagation()" aria-label="Odds">
         <button class="slip-x" onclick="App.removeSlip(${i})">\u2715</button>
       </div>`).join('')
       + `<div class="slip-summary"><span>${sels.length} pick${sels.length>1?'s':''}</span><span>Combined <b>@${combined.toFixed(2)}</b></span></div>`
@@ -3496,6 +3511,19 @@ var Eng = {
   over:function(g,line){ var s=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++) if(i+j>line) s+=g.m[i][j]; return s; },
   btts:function(g){ var s=0,i,j; for(i=1;i<9;i++)for(j=1;j<9;j++) s+=g.m[i][j]; return s; },
   teamOver:function(g,side,line){ var s=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++){ var v=side==='h'?i:j; if(v>line) s+=g.m[i][j]; } return s; },
+  // European handicap: home line applied to home goals. hcp e.g. -1 means home
+  // must win by 2+. Returns {home,draw,away} probabilities for that handicap.
+  handicap:function(g,hcp){ var p1=0,px=0,p2=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++){ var d=(i+hcp)-j; if(d>0)p1+=g.m[i][j]; else if(d===0)px+=g.m[i][j]; else p2+=g.m[i][j]; } return {p1:p1,px:px,p2:p2}; },
+  // Asian handicap on a whole/half line, two-way price (no draw on .5 lines).
+  ah:function(g,side,line){ var win=0,push=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++){ var m=(side==='h')?(i-j):(j-i); var v=m+line; if(v>0)win+=g.m[i][j]; else if(v===0)push+=g.m[i][j]; } return push>=0.999?null:win/(1-push); },
+  totalOdd:function(g){ var s=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++) if(((i+j)&1)===1) s+=g.m[i][j]; return s; },
+  exactGoals:function(g,n){ var s=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++) if(i+j===n) s+=g.m[i][j]; return s; },
+  multi:function(g,lo,hi){ var s=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++){ var t=i+j; if(t>=lo&&t<=hi) s+=g.m[i][j]; } return s; },
+  winToNil:function(g,side){ var s=0,i; if(side==='h'){ for(i=1;i<9;i++) s+=g.m[i][0]; } else { for(i=1;i<9;i++) s+=g.m[0][i]; } return s; },
+  cleanSheet:function(g,side){ var s=0,i; if(side==='h'){ for(i=0;i<9;i++) s+=g.m[i][0]; } else { for(i=0;i<9;i++) s+=g.m[0][i]; } return s; },
+  // result AND total combos, from the same grid
+  resAnd:function(g,who,dir,line){ var s=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++){ var t=i+j; var okT=dir==='o'?t>line:t<line; if(!okT)continue; var res=i>j?'1':i===j?'X':'2'; if(res===who) s+=g.m[i][j]; } return s; },
+  bttsAnd:function(g,yes,dir,line){ var s=0,i,j; for(i=0;i<9;i++)for(j=0;j<9;j++){ var t=i+j, bt=(i>0&&j>0); if(yes&&!bt)continue; if(!yes&&bt)continue; var okT=dir==='o'?t>line:t<line; if(okT) s+=g.m[i][j]; } return s; },
   scores:function(g,n){
     var out=[],i,j;
     for(i=0;i<6;i++)for(j=0;j<6;j++) out.push({ s:i+'-'+j, p:g.m[i][j] });
@@ -3551,6 +3579,10 @@ var Eng = {
     if(!(cons.h2h.Home>1) && od && od.h2h) cons.h2h=od.h2h;
     if(!(cons.ou_over>1)){ cons.ou_line=od.ou_line; cons.ou_over=od.ou_over||od.ou25; cons.ou_under=od.ou_under; }
     cons.btts=od&&od.btts;
+    // Preserve the per-fixture real price arrays so the Goals and Handicap tabs
+    // can show actual feed prices, not just the consensus main line.
+    if(od&&od.ou_all) cons.ou_all=od.ou_all;
+    if(od&&od.spreads) cons.spreads=od.spreads;
     return { cons:cons, raw:acc, nBooks:n,
       best:function(market, key){
         var b = market==='h2h' ? acc.h2h[key] : acc.tot[key];
@@ -3715,14 +3747,11 @@ var MC = window.MC = {
       var orig=App.go.bind(App);
       App.go=function(v){
         if(v==='matches'){
-          // Hard gate: only server-verified admins. Anyone else falls through
-          // to home, exactly like the existing 'admin' route guard.
+          // Admin-only, and now unified with the console Games tab so there is
+          // a single code path. Non-admins fall through to home.
           if(!(window.State && State.isAdmin)){ return orig('home'); }
-          MC.render(); MC.load();
-          App.show('matches');
-          // Match Center is a console tool, so hide the member nav like the
-          // admin console does.
-          var n=document.getElementById('nav'); if(n)n.classList.add('hide');
+          orig('admin');
+          App.adminGo('games');
           return;
         }
         MC.closeDetail();
@@ -3743,7 +3772,7 @@ var MC = window.MC = {
     b.className='btn btn-out btn-sm';
     b.setAttribute('data-mc-book','1');
     b.style.cssText='flex:1;min-width:130px;height:42px;';
-    b.onclick=function(){ App.go('matches'); };
+    b.onclick=function(){ App.adminGo('games'); };
     b.innerHTML='\u26BD Book games';
     bar.appendChild(b);
   },
@@ -3835,11 +3864,10 @@ var MC = window.MC = {
     var el=document.getElementById('view-matches'); if(!el) return;
     el.innerHTML =
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">'+
-        '<span style="font-size:1.4rem;line-height:1;cursor:pointer;" onclick="App.go(\'admin\')">&#8249;</span>'+
-        '<h2 class="h2" style="flex:1;">Match Center</h2>'+
+        '<h2 class="h2" style="flex:1;">Games</h2>'+
         '<button class="pill" style="font-size:.66rem;padding:5px 10px;" onclick="MC.load(true)">&#8635; Refresh</button>'+
       '</div>'+
-      '<p class="sub" style="font-size:.7rem;margin-bottom:12px;">Admin booking tool &middot; partial data &middot; not shown to members yet.</p>'+
+      '<p class="sub" style="font-size:.7rem;margin-bottom:12px;">Full match detail &amp; markets &middot; tap a game to open all picks.</p>'+
       '<input class="input" style="height:46px;margin-bottom:10px;" placeholder="&#128269; Search league or team&hellip;" '+
         'oninput="MC.q=this.value.toLowerCase();MC.paint()">'+
       '<div class="mc-selbar">'+
@@ -4066,27 +4094,74 @@ var MC = window.MC = {
     f.classList.toggle('show', this.slip.length>0 && (onMC||onDetail));
   },
   openSlip:function(){
+    var admin=!!(window.State && State.isAdmin);
     var tot=this.slip.reduce(function(a,s){ return a*(s.odds>1?s.odds:1); },1);
-    var body='<h3 class="h2" style="margin-bottom:4px;">Your slip</h3>'+
+    var rows=this.slip.map(function(s,i){
+      // Admin sees an EDITABLE odds box so the price is set before posting.
+      var oddsCell = admin
+        ? '<input class="slip-odds" inputmode="decimal" placeholder="odds" value="'+(s.odds>1?s.odds:'')+'" '+
+          'onchange="MC.setSlipOdds('+i+',this.value)" onclick="event.stopPropagation()" aria-label="Odds">'
+        : (s.odds>1?'<b style="color:var(--gold);font-family:var(--d);">'+s.odds.toFixed(2)+'</b>':'');
+      return '<div class="card" style="padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">'+
+        '<div style="flex:1;min-width:0;"><div style="font-size:.84rem;font-weight:700;">'+esc(s.pick)+'</div>'+
+        '<div class="sub" style="font-size:.68rem;margin-top:2px;">'+esc(s.match)+' &middot; '+s.time+'</div></div>'+
+        oddsCell+
+        '<button class="pill" style="font-size:.66rem;padding:4px 9px;" onclick="MC.dropSel('+i+')">&times;</button></div>';
+    }).join('');
+
+    var actions = admin
+      ? '<div style="display:flex;gap:9px;margin-top:14px;">'+
+          '<button class="btn btn-out btn-sm" style="flex:1;border-color:var(--green);color:var(--green);" onclick="MC.postFree()">&#127937; Post Free</button>'+
+          '<button class="btn btn-gold btn-sm" style="flex:1;" onclick="MC.toTip()">&#128274; Paid Tip &rarr;</button>'+
+        '</div>'+
+        '<button class="btn btn-dark btn-sm" style="width:100%;margin-top:6px;" onclick="MC.clearSlip()">Clear all</button>'+
+        '<p class="sub" style="font-size:.68rem;margin-top:10px;text-align:center;">Set each price in the odds box, then post. Blank odds post without a price.</p>'
+      : '<div style="display:flex;gap:9px;margin-top:14px;">'+
+          '<button class="btn btn-out" onclick="MC.clearSlip()">Clear</button>'+
+          '<button class="btn btn-green" onclick="MC.copySlip()">Copy selections</button>'+
+        '</div>'+
+        '<p class="sub" style="font-size:.7rem;margin-top:12px;text-align:center;">Rebuild these at any bookmaker. 18+ &middot; bet responsibly.</p>';
+
+    var body='<h3 class="h2" style="margin-bottom:4px;">'+(admin?'Booking slip':'Your slip')+'</h3>'+
       '<p class="sub" style="font-size:.78rem;margin-bottom:14px;">'+this.slip.length+' selection'+(this.slip.length>1?'s':'')+
       (tot>1?' &middot; combined odds <b style="color:var(--gold)">'+tot.toFixed(2)+'</b>':'')+'</p>'+
-      this.slip.map(function(s,i){
-        return '<div class="card" style="padding:11px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">'+
-          '<div style="flex:1;min-width:0;"><div style="font-size:.84rem;font-weight:700;">'+esc(s.pick)+'</div>'+
-          '<div class="sub" style="font-size:.68rem;margin-top:2px;">'+esc(s.match)+' &middot; '+s.time+'</div></div>'+
-          (s.odds>1?'<b style="color:var(--gold);font-family:var(--d);">'+s.odds.toFixed(2)+'</b>':'')+
-          '<button class="pill" style="font-size:.66rem;padding:4px 9px;" onclick="MC.dropSel('+i+')">&times;</button></div>';
-      }).join('')+
-      '<div style="display:flex;gap:9px;margin-top:14px;">'+
-        '<button class="btn btn-out" onclick="MC.clearSlip()">Clear</button>'+
-        (App.State&&App.State.isAdmin||window.State&&State.isAdmin
-          ? '<button class="btn btn-green" onclick="MC.toDraft()">Send to tip builder</button>'
-          : '<button class="btn btn-green" onclick="MC.copySlip()">Copy selections</button>')+
-      '</div>'+
-      '<p class="sub" style="font-size:.7rem;margin-top:12px;text-align:center;">'+
-      'Rebuild these at any bookmaker. 18+ &middot; bet responsibly.</p>';
+      (this.slip.length?rows:'<p class="sub" style="text-align:center;padding:16px 0;">No selections yet. Tap a pick on any match.</p>')+
+      (this.slip.length?actions:'');
     var ov=document.getElementById('overlay'), sh=document.getElementById('sheet');
     if(ov&&sh){ sh.innerHTML='<div class="grab"></div>'+body; ov.classList.add('show'); }
+  },
+  // Admin edits a selection's price in the slip before posting.
+  setSlipOdds:function(i,val){
+    var sel=this.slip[i]; if(!sel) return;
+    var raw=String(val).trim().replace(',','.');
+    var v=parseFloat(raw);
+    if(raw===''){ sel.odds=0; }
+    else if(isFinite(v) && v>=1.01 && v<=1000){ sel.odds=Number(v.toFixed(2)); }
+    else { if(App&&App.toast)App.toast('Enter odds between 1.01 and 1000'); }
+    this.openSlip();
+    this.paintFab();
+  },
+  // Post every selection as a free prediction, carrying the edited odds.
+  postFree:function(){
+    if(!this.slip.length) return;
+    if(typeof Api==='undefined' || !Api.adminBulkPredictions){ if(App&&App.toast)App.toast('Posting unavailable'); return; }
+    var sels=this.slip.map(function(s){ return { match:s.match, pick:s.pick, odds:s.odds>1?s.odds:null, date:s.date, time:s.time }; });
+    if(App&&App.toast)App.toast('Posting '+sels.length+' prediction'+(sels.length>1?'s':'')+'\u2026');
+    Api.adminBulkPredictions(sels,'Medium').then(function(r){
+      if(r&&r.ok){ if(App&&App.toast)App.toast('\u2705 '+(r.created||sels.length)+' posted');
+        MC.slip=[]; MC.paintFab(); if(App&&App.closeSheet)App.closeSheet();
+        if(App&&App.syncContent)App.syncContent(); MC.det?MC.paintDetail():MC.paint(); }
+      else if(App&&App.toast)App.toast('Could not post \u2014 try again');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  // Hand the slip (with edited odds) to the existing paid-tip builder.
+  toTip:function(){
+    if(!this.slip.length || !App) return;
+    App._editCode={ selections:this.slip.map(function(s){
+      return { match:s.match, pick:s.pick, odds:s.odds>1?Number(s.odds).toFixed(2):'', date:s.date, time:s.time }; }) };
+    this.slip=[]; this.paintFab();
+    if(App.closeSheet)App.closeSheet();
+    if(App.openSheet)App.openSheet('editcode');
   },
   dropSel:function(i){ this.slip.splice(i,1); this.paintFab(); this.openSlip(); if(this.det)this.paintDetail(); else this.paint(); },
   clearSlip:function(){ this.slip=[]; this.paintFab(); if(App&&App.closeSheet)App.closeSheet(); this.det?this.paintDetail():this.paint(); },
@@ -4180,7 +4255,7 @@ var MC = window.MC = {
 
   /* --- markets --- */
   tplMarkets:function(f){
-    var od=f._od||{}, subs=[['main','Main'],['builder','Bet Builder'],['goals','Goals'],['half','Half'],['stats','Stats']];
+    var od=f._od||{}, subs=[['main','Main'],['handicap','Handicap'],['goals','Goals'],['halves','Halves'],['teams','Teams'],['combos','Combos'],['specials','Specials'],['builder','Builder'],['stats','Stats']];
     var h='<div class="mc-subtabs">'+subs.map(function(s){
       return '<button class="mc-sub'+(MC.sub===s[0]?' on':'')+'" onclick="MC.setSub(\''+s[0]+'\')">'+s[1]+'</button>';
     }).join('')+'</div>';
@@ -4202,81 +4277,187 @@ var MC = window.MC = {
      where not, blank where neither — never a fabricated number. */
   marketGroups:function(f, od, M, B){
     var h=od.h2h||{}, g=M&&M.g;
+    var HN=f.home, AN=f.away;
     var P=function(prob){ return (g&&prob!=null) ? prob : null; };
     var bp=function(kind,key,fallback){
       var b=B&&B.best(kind,key); return b? b.price : num(fallback);
     };
+    // Real totals prices: prefer multi-book best, then this fixture's own
+    // ou_all lines from the feed, then the single main line, then modelled.
+    var ouAll = od.ou_all || (od.ou_line!=null ? [{point:num(od.ou_line),over:od.ou_over,under:od.ou_under}] : []);
+    var ouFor = function(L){ for(var i=0;i<ouAll.length;i++){ if(num(ouAll[i].point)===L) return ouAll[i]; } return null; };
     var lineRow=function(L){
       var pv = g? Eng.over(g,L) : null;
-      var priced = (num(od.ou_line)===L);
+      var feed = ouFor(L);
       return { line:String(L),
-        over : { lab:'Over '+L,  price: bp('tot',L+'|Over',  priced?od.ou_over :0), model:pv },
-        under: { lab:'Under '+L, price: bp('tot',L+'|Under', priced?od.ou_under:0), model: pv!=null?1-pv:null } };
+        over : { lab:'Over '+L,  price: bp('tot',L+'|Over',  feed?feed.over :0), model:pv },
+        under: { lab:'Under '+L, price: bp('tot',L+'|Under', feed?feed.under:0), model: pv!=null?1-pv:null } };
     };
+    // half grids (44% of goals fall in H1 on average, 56% in H2)
+    var hg = g ? Eng.grid(M.lh*0.44, M.la*0.44) : null;
+    var sg = g ? Eng.grid(M.lh*0.56, M.la*0.56) : null;
+    var two=function(a,pa,b,pb){ return { k:'two', picks:[ {lab:a,price:0,model:pa}, {lab:b,price:0,model:pb} ] }; };
+
     return {
       main:[
-        { t:'1X2', k:'three', picks:[
-          {k:'Home', lab:f.home+' win', price:bp('h2h','Home',h.Home), model:P(g&&g.p1)},
-          {k:'Draw', lab:'Draw',        price:bp('h2h','Draw',h.Draw), model:P(g&&g.px)},
-          {k:'Away', lab:f.away+' win', price:bp('h2h','Away',h.Away), model:P(g&&g.p2)} ]},
+        { t:'1X2 - Match Result', k:'three', picks:[
+          {k:'Home', lab:HN+' win', price:bp('h2h','Home',h.Home), model:P(g&&g.p1)},
+          {k:'Draw', lab:'Draw',    price:bp('h2h','Draw',h.Draw), model:P(g&&g.px)},
+          {k:'Away', lab:AN+' win', price:bp('h2h','Away',h.Away), model:P(g&&g.p2)} ]},
         { t:'Double Chance', k:'three', picks:[
-          {k:'1X', lab:'1X', price:0, model:P(g&&(g.p1+g.px))},
-          {k:'12', lab:'12', price:0, model:P(g&&(g.p1+g.p2))},
-          {k:'X2', lab:'X2', price:0, model:P(g&&(g.px+g.p2))} ]},
+          {k:'1X', lab:'1X ('+HN+'/Draw)', price:0, model:P(g&&(g.p1+g.px))},
+          {k:'12', lab:'12 (No draw)',     price:0, model:P(g&&(g.p1+g.p2))},
+          {k:'X2', lab:'X2 (Draw/'+AN+')', price:0, model:P(g&&(g.px+g.p2))} ]},
         { t:'Draw No Bet', k:'two', picks:[
-          {k:'H DNB', lab:f.home+' DNB', price:0, model:g?g.p1/(g.p1+g.p2):null},
-          {k:'A DNB', lab:f.away+' DNB', price:0, model:g?g.p2/(g.p1+g.p2):null} ]},
-        { t:'Over/Under', k:'ou', lines:[lineRow(1.5),lineRow(2.5),lineRow(3.5)] },
-        { t:'Both Teams to Score', k:'two', picks:[
+          {lab:HN+' DNB', price:0, model:g?g.p1/(g.p1+g.p2):null},
+          {lab:AN+' DNB', price:0, model:g?g.p2/(g.p1+g.p2):null} ]},
+        { t:'Over/Under Goals', k:'ou', lines:[lineRow(0.5),lineRow(1.5),lineRow(2.5),lineRow(3.5),lineRow(4.5)] },
+        { t:'Both Teams To Score', k:'two', picks:[
           {k:'Yes', lab:'Yes', price:num(od.btts&&od.btts.Yes), model:g?Eng.btts(g):null},
-          {k:'No',  lab:'No',  price:num(od.btts&&od.btts.No),  model:g?1-Eng.btts(g):null} ]}
+          {k:'No',  lab:'No',  price:num(od.btts&&od.btts.No),  model:g?1-Eng.btts(g):null} ]},
+        { t:'Total Goals Odd/Even', k:'two', picks:[
+          {lab:'Odd',  price:0, model:g?Eng.totalOdd(g):null},
+          {lab:'Even', price:0, model:g?1-Eng.totalOdd(g):null} ]}
+      ],
+      handicap:[
+        { t:'European Handicap', k:'three', picks:(function(){
+            if(!g) return [];
+            var r=[];
+            [-2,-1,1,2].forEach(function(hc){
+              var H=Eng.handicap(g,hc);
+              r.push({lab:HN+' '+(hc>0?'+':'')+hc, price:0, model:H.p1});
+            });
+            return r; })() },
+        { t:'Asian Handicap - '+HN, k:'ou', lines:(function(){
+            if(!g) return [];
+            var sp=od.spreads||[];
+            var spFor=function(team,pt){ for(var i=0;i<sp.length;i++){ if(num(sp[i].point)===pt && (sp[i].team===team)) return sp[i].price; } return 0; };
+            return [-1.5,-0.5,0.5,1.5].map(function(L){
+              return { line:(L>0?'+':'')+L,
+                over:{lab:HN+' '+(L>0?'+':'')+L, price:spFor(HN,L)||0, model:Eng.ah(g,'h',L)},
+                under:{lab:AN+' '+(L<0?'+':'')+(-L), price:spFor(AN,-L)||0, model:Eng.ah(g,'a',-L)} };
+            }); })() },
+        { t:'Alternative Totals', k:'ou', lines:[lineRow(0.5),lineRow(1.5),lineRow(2.5),lineRow(3.5),lineRow(4.5),lineRow(5.5),lineRow(6.5)] }
       ],
       goals:[
-        { t:'Over/Under', k:'ou', lines:[lineRow(0.5),lineRow(1.5),lineRow(2.5),lineRow(3.5),lineRow(4.5)] },
-        { t:f.home+' Total Goals', k:'two', picks:[
-          {k:'Over 0.5', lab:'Over 0.5', price:0, model:g?Eng.teamOver(g,'h',0.5):null},
-          {k:'Over 1.5', lab:'Over 1.5', price:0, model:g?Eng.teamOver(g,'h',1.5):null} ]},
-        { t:f.away+' Total Goals', k:'two', picks:[
-          {k:'Over 0.5', lab:'Over 0.5', price:0, model:g?Eng.teamOver(g,'a',0.5):null},
-          {k:'Over 1.5', lab:'Over 1.5', price:0, model:g?Eng.teamOver(g,'a',1.5):null} ]},
-        { t:'Correct Score', k:'grid', picks:(g?Eng.scores(g,9):[]).map(function(s){
-            return {k:s.s, lab:s.s, price:0, model:s.p}; }) }
+        { t:'Exact Total Goals', k:'grid', picks:(function(){
+            if(!g) return [];
+            var r=[]; for(var n=0;n<=6;n++) r.push({lab:n+' goal'+(n===1?'':'s'), price:0, model:Eng.exactGoals(g,n)});
+            r.push({lab:'7+ goals', price:0, model:1-Eng.multi(g,0,6)});
+            return r; })() },
+        { t:'Goal Range', k:'grid', picks:(function(){
+            if(!g) return [];
+            return [['0-1',0,1],['2-3',2,3],['4-6',4,6],['7+',7,20]].map(function(r){
+              return {lab:r[0]+' goals', price:0, model:Eng.multi(g,r[1],r[2])}; }); })() },
+        { t:'Correct Score', k:'grid', picks:(g?Eng.scores(g,12):[]).map(function(s){
+            return {lab:s.s, price:0, model:s.p}; }) },
+        { t:'Both Halves Over 0.5', k:'two', picks:[
+          {lab:'Yes', price:0, model:(hg&&sg)?Eng.over(hg,0.5)*Eng.over(sg,0.5):null},
+          {lab:'No',  price:0, model:(hg&&sg)?1-Eng.over(hg,0.5)*Eng.over(sg,0.5):null} ]}
       ],
-      half:[
-        { t:'Half Time Result', k:'three', picks:(function(){
-            if(!g) return [{k:'Home',lab:'Home',price:0,model:null},{k:'Draw',lab:'Draw',price:0,model:null},{k:'Away',lab:'Away',price:0,model:null}];
-            var hg=Eng.grid(M.lh*0.44, M.la*0.44);
-            return [{k:'Home',lab:'Home',price:0,model:hg.p1},{k:'Draw',lab:'Draw',price:0,model:hg.px},{k:'Away',lab:'Away',price:0,model:hg.p2}];
-          })() },
-        { t:'Half Time Over/Under', k:'ou', lines:(function(){
+      halves:[
+        { t:'Half Time Result', k:'three', picks:[
+          {lab:HN+' win', price:0, model:hg&&hg.p1},
+          {lab:'Draw',    price:0, model:hg&&hg.px},
+          {lab:AN+' win', price:0, model:hg&&hg.p2} ]},
+        { t:'1st Half Over/Under', k:'ou', lines:(function(){
+            if(!hg) return [];
+            return [0.5,1.5,2.5].map(function(L){ var pv=Eng.over(hg,L);
+              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} }; }); })() },
+        { t:'2nd Half Over/Under', k:'ou', lines:(function(){
+            if(!sg) return [];
+            return [0.5,1.5,2.5].map(function(L){ var pv=Eng.over(sg,L);
+              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} }; }); })() },
+        { t:'1st Half BTTS', k:'two', picks:[
+          {lab:'Yes', price:0, model:hg&&Eng.btts(hg)},
+          {lab:'No',  price:0, model:hg?1-Eng.btts(hg):null} ]},
+        { t:'Highest Scoring Half', k:'three', picks:(function(){
+            if(!hg||!sg) return [];
+            var e1=M.lh*0.44+M.la*0.44, e2=M.lh*0.56+M.la*0.56;
+            var tot=e1+e2||1;
+            return [{lab:'1st Half', price:0, model:e1/tot*0.9},
+                    {lab:'Equal',    price:0, model:0.16},
+                    {lab:'2nd Half', price:0, model:e2/tot*0.9}]; })() }
+      ],
+      teams:[
+        { t:HN+' Total Goals', k:'ou', lines:(function(){
             if(!g) return [];
-            var hg=Eng.grid(M.lh*0.44, M.la*0.44);
-            return [0.5,1.5].map(function(L){
-              var pv=Eng.over(hg,L);
-              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} };
-            });
-          })() },
-        { t:'Second Half Over/Under', k:'ou', lines:(function(){
+            return [0.5,1.5,2.5].map(function(L){ var pv=Eng.teamOver(g,'h',L);
+              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} }; }); })() },
+        { t:AN+' Total Goals', k:'ou', lines:(function(){
             if(!g) return [];
-            var sg=Eng.grid(M.lh*0.56, M.la*0.56);
-            return [0.5,1.5,2.5].map(function(L){
-              var pv=Eng.over(sg,L);
-              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} };
-            });
-          })() }
+            return [0.5,1.5,2.5].map(function(L){ var pv=Eng.teamOver(g,'a',L);
+              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} }; }); })() },
+        { t:'Clean Sheet', k:'two', picks:[
+          {lab:HN+' yes', price:0, model:g&&Eng.cleanSheet(g,'h')},
+          {lab:AN+' yes', price:0, model:g&&Eng.cleanSheet(g,'a')} ]},
+        { t:'Win To Nil', k:'two', picks:[
+          {lab:HN+' yes', price:0, model:g&&Eng.winToNil(g,'h')},
+          {lab:AN+' yes', price:0, model:g&&Eng.winToNil(g,'a')} ]},
+        { t:HN+' Odd/Even', k:'two', picks:[
+          {lab:'Odd',  price:0, model:g?(function(){var s=0,i,j;for(i=0;i<9;i++)for(j=0;j<9;j++)if((i&1)===1)s+=g.m[i][j];return s;})():null},
+          {lab:'Even', price:0, model:g?(function(){var s=0,i,j;for(i=0;i<9;i++)for(j=0;j<9;j++)if((i&1)===0)s+=g.m[i][j];return s;})():null} ]}
+      ],
+      combos:[
+        { t:'Result & Both Teams Score', k:'grid', picks:(function(){
+            if(!g) return [];
+            return [
+              {lab:HN+' & BTTS', model:Eng.bttsAnd(g,true,'o',-1)*0+((function(){var s=0,i,j;for(i=1;i<9;i++)for(j=1;j<9;j++)if(i>j)s+=g.m[i][j];return s;})())},
+              {lab:AN+' & BTTS', model:(function(){var s=0,i,j;for(i=1;i<9;i++)for(j=1;j<9;j++)if(j>i)s+=g.m[i][j];return s;})()},
+              {lab:'Draw & BTTS', model:(function(){var s=0,i;for(i=1;i<9;i++)s+=g.m[i][i];return s;})()}
+            ].map(function(x){ return {lab:x.lab, price:0, model:x.model}; }); })() },
+        { t:'Result & Over/Under 2.5', k:'grid', picks:(function(){
+            if(!g) return [];
+            return [
+              {lab:HN+' & Over 2.5', model:Eng.resAnd(g,'1','o',2.5)},
+              {lab:HN+' & Under 2.5', model:Eng.resAnd(g,'1','u',2.5)},
+              {lab:AN+' & Over 2.5', model:Eng.resAnd(g,'2','o',2.5)},
+              {lab:AN+' & Under 2.5', model:Eng.resAnd(g,'2','u',2.5)},
+              {lab:'Draw & Over 2.5', model:Eng.resAnd(g,'X','o',2.5)},
+              {lab:'Draw & Under 2.5', model:Eng.resAnd(g,'X','u',2.5)}
+            ].map(function(x){ return {lab:x.lab, price:0, model:x.model}; }); })() },
+        { t:'BTTS & Over/Under 2.5', k:'grid', picks:(function(){
+            if(!g) return [];
+            return [
+              {lab:'BTTS Yes & Over 2.5', model:Eng.bttsAnd(g,true,'o',2.5)},
+              {lab:'BTTS Yes & Under 2.5', model:Eng.bttsAnd(g,true,'u',2.5)},
+              {lab:'BTTS No & Over 2.5', model:Eng.bttsAnd(g,false,'o',2.5)},
+              {lab:'BTTS No & Under 2.5', model:Eng.bttsAnd(g,false,'u',2.5)}
+            ].map(function(x){ return {lab:x.lab, price:0, model:x.model}; }); })() }
+      ],
+      specials:[
+        { t:'Both Teams Score & Result', k:'grid', picks:(function(){
+            if(!g) return [];
+            return [['0-1',0,1],['2-3',2,3],['4+',4,20]].map(function(r){
+              return {lab:'Total '+r[0]+' goals', price:0, model:Eng.multi(g,r[1],r[2])}; }); })() },
+        { t:'Winning Margin', k:'grid', picks:(function(){
+            if(!g) return [];
+            var byM={}, i, j;
+            for(i=0;i<9;i++)for(j=0;j<9;j++){ var d=i-j; var key=d>0?(HN+' by '+d):d<0?(AN+' by '+(-d)):'Draw';
+              if(Math.abs(d)>3) key=(d>0?HN:AN)+' by 4+'; byM[key]=(byM[key]||0)+g.m[i][j]; }
+            return Object.keys(byM).sort(function(a,b){return byM[b]-byM[a];}).slice(0,8)
+              .map(function(k){ return {lab:k, price:0, model:byM[k]}; }); })() },
+        { t:'First Team To Score', k:'three', picks:(function(){
+            if(!g) return [];
+            var noGoal=g.m[0][0];
+            var hFirst=(M.lh/(M.lh+M.la||1))*(1-noGoal);
+            var aFirst=(M.la/(M.lh+M.la||1))*(1-noGoal);
+            return [{lab:HN, price:0, model:hFirst},{lab:'No goal', price:0, model:noGoal},{lab:AN, price:0, model:aFirst}]; })() }
       ],
       builder:[
-        { t:'Popular combinations', k:'builder', picks:(function(){
+        { t:'Popular Combinations', k:'builder', picks:(function(){
             if(!g) return [];
             var combos=[
-              [f.home+' win & Over 1.5', g.p1*Eng.over(g,1.5)],
-              [f.home+' or draw & Over 1.5', (g.p1+g.px)*Eng.over(g,1.5)],
+              [HN+' win & Over 1.5', g.p1*Eng.over(g,1.5)],
+              [HN+' or draw & Over 1.5', (g.p1+g.px)*Eng.over(g,1.5)],
               ['BTTS & Over 2.5', Eng.btts(g)*Eng.over(g,2.5)],
-              [f.away+' or draw & Under 3.5', (g.px+g.p2)*(1-Eng.over(g,3.5))],
-              [f.home+' win & BTTS', g.p1*Eng.btts(g)],
-              ['Over 2.5 & BTTS No', Eng.over(g,2.5)*(1-Eng.btts(g))]
+              [AN+' or draw & Under 3.5', (g.px+g.p2)*(1-Eng.over(g,3.5))],
+              [HN+' win & BTTS', g.p1*Eng.btts(g)],
+              ['Over 2.5 & BTTS No', Eng.over(g,2.5)*(1-Eng.btts(g))],
+              [HN+' win to nil', Eng.winToNil(g,'h')],
+              ['Over 1.5 & Under 4.5', Eng.multi(g,2,4)]
             ];
-            return combos.map(function(c){ return {k:c[0], lab:c[0], price:0, model:c[1]}; });
+            return combos.map(function(c){ return {lab:c[0], price:0, model:c[1]}; });
           })() }
       ]
     };
