@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Betstack Pro</title>
 <meta name="theme-color" content="#000000">
-<meta name="description" content="A transparent sports-betting community — verified results, bet tips and daily tips. 18+.">
+<meta name="description" content="A transparent betting syndicate — follow the group verified picks and keep 100% of what you win. Every result stays on the record. 18+.">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -765,12 +765,12 @@ body.light .st{background:rgba(0,0,0,.04);}
     <!-- AUTH HUB -->
     <div class="page active auth-page" id="view-hub">
       <div class="pill-eye" style="margin-top:10px;">Choose how you join</div>
-      <h1 class="h1">A transparent<br>betting community.</h1>
-      <p class="sub" style="margin-bottom:20px;">Follow our free daily predictions to see how we perform, then subscribe to unlock the full daily codes and slips. Every result — win or loss — stays on the record. You place your own bets and keep 100% of what you win.</p>
+      <h1 class="h1">A transparent<br>betting syndicate.</h1>
+      <p class="sub" style="margin-bottom:20px;">Join the <b style="color:var(--green);">Syndicate</b> — a members' group that follows the same verified picks, together. Follow our free daily predictions to see how we perform, then subscribe to unlock the full daily codes and slips. Every result — win or loss — stays on the record. You place your own bets and keep 100% of what you win.</p>
 
       <div class="role-card">
         <div class="role-top"><div class="role-ic">🎟️</div><div><div class="role-name">Member</div><div class="role-tag" style="color:var(--green);">Subscribe &amp; unlock tips</div></div></div>
-        <p class="role-desc">Subscribe to a tier and unlock the full daily bet tips. You load each code at your own bookmaker and keep 100% of what you win — we never hold your stake.</p>
+        <p class="role-desc">Subscribe to a tier and unlock the full daily bet tips — plus the <b style="color:var(--green);">Syndicate</b>, where the whole group moves on the same pick. You load each code at your own bookmaker and keep 100% of what you win — we never hold your stake.</p>
         <div class="role-actions"><button class="btn btn-out" onclick="App.signin('Member')">Sign In</button><button class="btn btn-green" onclick="App.signin('Member')">Sign Up</button></div>
       </div>
       <div class="role-card">
@@ -779,6 +779,10 @@ body.light .st{background:rgba(0,0,0,.04);}
         <div class="role-actions"><button class="btn btn-out" onclick="App.signin('Partner')">Sign In</button><button class="btn btn-green" onclick="App.signin('Partner')">Sign Up</button></div>
       </div>
       <div style="height:1px;background:var(--border);margin:11px 0;"></div>
+      <div style="display:flex;gap:9px;margin-bottom:10px;">
+        <button class="btn btn-out" style="flex:1;border-color:var(--green);color:var(--green);" onclick="App.go('syninfo')">🤝 Why the Syndicate</button>
+        <button class="btn btn-out" style="flex:1;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')">💵 Partner programme</button>
+      </div>
       <button class="btn btn-out" onclick="App.openResults()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 3v18h18M7 16l4-4 3 3 5-6"/></svg> View our verified results</button>
       <div class="sec">Today's free predictions</div>
       <p class="sub" style="font-size:.78rem;margin:-6px 0 10px;">Free for everyone. Sign up and subscribe to unlock the full bet tips.</p>
@@ -1682,7 +1686,7 @@ const App={
       h=this.installBanner()+`<div class="hero"><div class="glow"></div>
         <div class="pill-eye" style="margin-bottom:14px;">Daily Tips &amp; Predictions</div>
         <h1 class="h1" style="font-size:1.95rem;">Welcome back</h1>
-        <p class="sub" style="color:#cfd3d9;">Free daily predictions are below for everyone. Subscribe to a tier to unlock the full bet tips — load them at your own bookmaker and keep 100% of what you win.</p>
+        <p class="sub" style="color:#cfd3d9;">Free daily predictions are below for everyone. Subscribe to a tier to unlock the full bet tips and join the <b style="color:var(--green);">Syndicate</b> — load every code at your own bookmaker and keep 100% of what you win.</p>
         <div class="stat2"><div class="st"><div class="v">${CODES.length}</div><div class="k">Tips today</div></div><div class="st"><div class="v" style="color:var(--green);">${rate}%</div><div class="k">90d hit rate</div></div></div>
       </div>
       ${planBanner}
@@ -1703,6 +1707,13 @@ const App={
       <button class="btn btn-green" onclick="App.go('wallet')">${svg(ICON.up)} Open Invite &amp; Earn</button>
       <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Commission is paid on genuine activity only — <b>no rewards for sign-ups alone</b>. Withdrawals are reviewed before payout. 18+.</p></div>`;
     }
+    // ===== SYNDICATE — the headline product, so it leads the page =====
+    h+=`<div class="sec" style="display:flex;justify-content:space-between;align-items:center;">\uD83E\uDD1D The Syndicate <span class="sub" style="font-size:.68rem;font-weight:400;">how it works</span></div>
+    <div id="home-syn-clips"></div>
+    <div style="display:flex;gap:9px;margin:10px 0 4px;">
+      <button class="btn btn-green btn-sm" style="flex:1;height:46px;" onclick="App.go('syninfo')">\uD83E\uDD1D Why the Syndicate</button>
+      <button class="btn btn-out btn-sm" style="flex:1;height:46px;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')">\uD83E\uDD1D Partner programme</button>
+    </div>`;
     // ===== PUBLIC CREDIBILITY SECTIONS (busy, data-rich home) =====
     h+=`<div id="home-statstrip"></div>
     <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">\uD83D\uDCC5 Match center <span class="sub" style="font-size:.68rem;font-weight:400;">today &amp; tomorrow</span></div>
@@ -1710,6 +1721,8 @@ const App={
     <div class="sec">\uD83D\uDCF0 News &amp; updates</div>
     <div id="home-news"><p class="sub">Loading\u2026</p></div>`;
     h+=this.membershipCard();
+    // paint the Syndicate clip box into the home slot once the HTML is in place
+    setTimeout(function(){ if(window.SYN&&SYN.paintHomeClips) SYN.paintHomeClips(); },0);
     if(State.role==='Member')h+=`<div class="sec">Community reviews</div><div id="reviews-block"></div>`;
     el.innerHTML=h;
     this.loadHomeExtras();
@@ -5069,7 +5082,7 @@ else boot();
 <style>
 #syn-admin, #view-syndicate{ --sy-line:var(--border); }
 /* ---- Syndicate explainer clips (rendered inline, no iframe) ---- */
-.syc-stage{position:relative;width:100%;aspect-ratio:9/13;max-height:58vh;border-radius:18px;overflow:hidden;
+.syc-stage{position:relative;width:100%;aspect-ratio:16/10;max-height:none;border-radius:18px;overflow:hidden;margin:0 auto;
   border:1px solid var(--border);
   background:radial-gradient(120% 90% at 15% 0%,rgba(31,209,122,.10),transparent 60%),
              radial-gradient(90% 70% at 100% 100%,rgba(244,183,64,.07),transparent 60%),#0b0d10;}
@@ -5078,7 +5091,7 @@ else boot();
                    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
   background-size:32px 32px;animation:sycDrift 24s linear infinite;}
 @keyframes sycDrift{to{background-position:32px 32px,32px 32px;}}
-.syc-in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:22px 20px;}
+.syc-in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:14px 18px 20px;}
 .syc-brand{position:absolute;top:15px;left:18px;display:flex;align-items:center;gap:6px;
   font-family:var(--d);font-weight:800;font-size:.66rem;color:var(--text);}
 .syc-brand b{display:flex;align-items:flex-end;gap:2px;height:12px;}
@@ -5090,30 +5103,30 @@ else boot();
 @keyframes sycEq{0%,100%{transform:scaleY(1);}50%{transform:scaleY(.55);}}
 .syc-brand s{text-decoration:none;color:var(--muted);}
 .syc-n{position:absolute;top:15px;right:18px;font-family:var(--d);font-weight:700;font-size:.62rem;color:var(--faint);}
-.syc-ic{font-size:2.1rem;line-height:1;margin-bottom:10px;
+.syc-ic{font-size:2.9rem;line-height:1;margin-bottom:6px;
   animation:sycRise .55s cubic-bezier(.16,.84,.44,1) both,sycFloat 3.5s ease-in-out .6s infinite;}
 @keyframes sycFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
-.syc-h{font-family:var(--d);font-weight:800;font-size:1.3rem;line-height:1.15;letter-spacing:-.02em;
-  margin-bottom:8px;animation:sycRise .55s cubic-bezier(.16,.84,.44,1) .10s both;}
+.syc-h{font-family:var(--d);font-weight:800;font-size:1.5rem;line-height:1.1;letter-spacing:-.025em;
+  margin-bottom:6px;animation:sycRise .55s cubic-bezier(.16,.84,.44,1) .10s both;}
 .syc-h em{font-style:normal;color:var(--green);}
 .syc-h em.g{color:var(--gold);} .syc-h em.r{color:var(--red);}
-.syc-p{font-size:.85rem;line-height:1.55;color:var(--muted);max-width:34ch;
+.syc-p{font-size:.88rem;line-height:1.5;color:var(--muted);max-width:40ch;
   animation:sycRise .55s cubic-bezier(.16,.84,.44,1) .18s both;}
 .syc-p b{color:var(--text);font-weight:700;}
-.syc-ul{list-style:none;margin-top:10px;padding:0;}
-.syc-ul li{display:flex;gap:8px;align-items:flex-start;font-size:.8rem;line-height:1.5;
-  color:var(--muted);margin-bottom:5px;animation:sycRise .45s cubic-bezier(.16,.84,.44,1) both;}
+.syc-ul{list-style:none;margin-top:7px;padding:0;}
+.syc-ul li{display:flex;gap:8px;align-items:flex-start;font-size:.83rem;line-height:1.45;
+  color:var(--muted);margin-bottom:4px;font-weight:500;animation:sycRise .45s cubic-bezier(.16,.84,.44,1) both;}
 .syc-ul li:nth-child(1){animation-delay:.30s;} .syc-ul li:nth-child(2){animation-delay:.38s;}
 .syc-ul li:nth-child(3){animation-delay:.46s;} .syc-ul li:nth-child(4){animation-delay:.54s;}
 .syc-ul li s{text-decoration:none;color:var(--green);flex-shrink:0;}
 .syc-ul li.g s{color:var(--gold);} .syc-ul li.r s{color:var(--red);}
 @keyframes sycRise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
-.syc-pill{display:inline-flex;align-self:flex-start;margin-top:12px;padding:6px 12px;border-radius:99px;
-  font-size:.68rem;font-weight:700;background:rgba(31,209,122,.12);border:1px solid rgba(31,209,122,.34);
+.syc-pill{display:inline-flex;align-self:flex-start;margin-top:10px;padding:6px 13px;border-radius:99px;
+  font-size:.72rem;font-weight:800;background:rgba(31,209,122,.12);border:1px solid rgba(31,209,122,.34);
   color:var(--green);animation:sycRise .55s cubic-bezier(.16,.84,.44,1) .5s both;}
 .syc-pill.gold{background:rgba(244,183,64,.12);border-color:rgba(244,183,64,.34);color:var(--gold);}
 .syc-pill.warn{background:rgba(245,73,92,.10);border-color:rgba(245,73,92,.32);color:var(--red);}
-.syc-viz{margin-top:12px;animation:sycRise .55s cubic-bezier(.16,.84,.44,1) .24s both;}
+.syc-viz{margin-top:9px;animation:sycRise .55s cubic-bezier(.16,.84,.44,1) .24s both;}
 .syc-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.66rem;}
 .syc-node{padding:6px 9px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-weight:600;}
 .syc-node.g{border-color:rgba(31,209,122,.4);color:var(--green);}
@@ -5157,7 +5170,7 @@ else boot();
   background:rgba(0,0,0,.55);border:1px solid var(--border-2);color:#fff;font-size:1.1rem;display:grid;
   place-items:center;z-index:3;}
 .syc-edge.l{left:8px;} .syc-edge.r{right:8px;}
-.syc-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:3;flex-wrap:wrap;padding:0 30px;}
+.syc-dots{position:absolute;bottom:7px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:3;flex-wrap:wrap;padding:0 30px;}
 .syc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25);}
 .syc-dot.on{background:var(--green);width:14px;border-radius:99px;}
 @media(prefers-reduced-motion:reduce){
@@ -5281,10 +5294,27 @@ var SYN = window.SYN = {
       var v=document.createElement('div'); v.className='page'; v.id='view-vault';
       content.appendChild(v);
     }
+    // Public info pages — visible to anyone, signed in or not.
+    ['syninfo','program'].forEach(function(k){
+      if(!document.getElementById('view-'+k)){
+        var e=document.createElement('div'); e.className='page'; e.id='view-'+k;
+        content.appendChild(e);
+      }
+    });
     // wrap router so App.go('syndicate') / App.go('vault') render (gated)
     if(typeof App!=='undefined' && !App._synWrapped){
       var orig=App.go.bind(App);
       App.go=function(v){
+        // Public info pages: no login required, so a visitor can read
+        // everything before signing up.
+        if(v==='syninfo' || v==='program'){
+          try{ App.show(v); }catch(e){ return orig('home'); }
+          document.querySelectorAll('.navitem').forEach(function(x){ x.classList.remove('active'); });
+          var nv=document.getElementById('nav');
+          if(nv) nv.classList.toggle('hide', !(window.State && State.role));
+          if(v==='syninfo') SYN.renderInfo(); else SYN.renderProgram();
+          return;
+        }
         if(v==='syndicate' || v==='vault'){
           // Admin-only while the Syndicate is being built (member-facing later).
           if(!(window.State && State.isAdmin)){ return orig('home'); }
@@ -5771,6 +5801,141 @@ var SYN = window.SYN = {
     }
     return h+'</div>';
   },
+  /* Public info page: everything a visitor needs to understand the Syndicate
+     BEFORE signing up. Clips at the top, then tiers, how it works and terms.
+     Deliberately contains no member data — no ladder, no status, no feed —
+     because that belongs to signed-in members only. */
+  renderInfo:function(){
+    var el=document.getElementById('view-syninfo'); if(!el) return;
+    var signedIn=!!(window.State && State.role);
+    el.innerHTML=
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'+
+        '<span style="font-size:1.4rem;cursor:pointer;" onclick="App.go(\''+(signedIn?'home':'hub')+'\')">&#8249;</span>'+
+        '<h2 class="h2" style="flex:1;">The Syndicate</h2></div>'+
+      '<p class="sub" style="font-size:.84rem;margin-bottom:14px;">A members\u2019 group that follows the same verified picks, together. '+
+        'You always stake your own money and keep 100% of what you win.</p>'+
+      '<div id="syn-clips-slot">'+this.clipBoxHtml()+'</div>'+
+      '<div class="sy-sec">The tiers</div>'+
+      tierMeta().map(function(t){
+        return '<div class="sy-tier"><div class="ti" style="color:'+t.color+';">'+t.name.charAt(0)+'</div>'+
+          '<div class="mid"><div class="nm">'+esc(t.name)+'</div><div class="pk">'+esc(t.perks.slice(0,2).join(' \u00B7 '))+'</div></div>'+
+          '<div class="pr"><div class="a">'+esc(t.price.split('/')[0].trim())+'</div><div class="c">'+esc((t.price.split('/')[1]||'mo').trim())+'</div></div></div>';
+      }).join('')+
+      '<div class="sy-sec">How it works</div>'+
+      '<div class="sy-card">'+[
+        ['\uD83D\uDCCB','We publish the pick','The selection and booking code go out before kick-off, with the proof.'],
+        ['\uD83D\uDCB0','You place it yourself','At your own bookmaker, with your own money. We never hold a stake.'],
+        ['\u2B50','Donate for rank','A weekly donation sets your place on the ladder and keeps you on the feed.'],
+        ['\uD83D\uDD10','Everything is recorded','Win or loss, every result goes in the Proof Vault with a verifiable ticket.']
+      ].map(function(x){
+        return '<div style="display:flex;gap:11px;margin-bottom:12px;"><span style="font-size:1.2rem;flex-shrink:0;">'+x[0]+'</span>'+
+          '<div><div style="font-weight:700;font-size:.86rem;">'+x[1]+'</div>'+
+          '<p class="sub" style="font-size:.76rem;line-height:1.55;margin-top:2px;">'+x[2]+'</p></div></div>';
+      }).join('')+'</div>'+
+      '<div class="sy-sec">Before you join</div>'+
+      '<div class="sy-card">'+this.TERMS.map(function(t){
+        return '<div style="margin-bottom:12px;"><div style="font-family:var(--d);font-weight:700;font-size:.85rem;margin-bottom:3px;">'+esc(t[0])+'</div>'+
+          '<p class="sub" style="font-size:.75rem;line-height:1.55;">'+esc(t[1])+'</p></div>';
+      }).join('')+'</div>'+
+      (signedIn
+        ? '<button class="btn btn-green" style="height:52px;margin-top:6px;" onclick="App.go(\'syndicate\')">Open the Syndicate</button>'
+        : '<button class="btn btn-green" style="height:52px;margin-top:6px;" onclick="App.signin(\'Member\')">Join now</button>')+
+      '<p class="sub" style="font-size:.68rem;margin-top:12px;text-align:center;line-height:1.6;">'+
+        'Betting carries real risk and no pick is guaranteed. 18+ \u00B7 bet responsibly.</p>';
+  },
+
+  /* Public info page for the Partner / referral programme. Same idea: full
+     detail for a visitor, no member data. */
+  PROG_CLIPS: [
+    {id:'p1', ic:'\uD83E\uDD1D', lbl:'What the programme is',
+     h:'The <em class="g">Partner</em> programme',
+     p:'Invite people to Betstack Pro and earn a share of what they subscribe \u2014 for as long as they stay.',
+     pill:{t:'A role, not a tier',k:'gold'}},
+    {id:'p2', ic:'\uD83D\uDD17', lbl:'Your link',
+     h:'Your <em>own link</em>',
+     p:'Every partner gets a unique link and code. Anyone who joins through it is tied to you automatically.',
+     li:[['Share it anywhere \u2014 chat, social, in person',''],['Tracked from the moment they sign up','']]},
+    {id:'p3', ic:'\uD83D\uDCB5', lbl:'How you earn',
+     h:'How you <em>earn</em>',
+     p:'You earn commission on <b>genuine subscriptions</b> \u2014 not on sign-ups alone.',
+     viz:{t:'flow', v:[['They subscribe',''],['You earn','g'],['Withdraw','g']]},
+     li:[['No reward for empty accounts','g'],['No recruitment chains','g'],['Earnings are yours to withdraw','g']]},
+    {id:'p4', ic:'\uD83D\uDCCA', lbl:'Track everything',
+     h:'Track <em>everything</em>',
+     p:'Your dashboard shows who joined, what\u2019s active and what you\u2019ve earned \u2014 updated as it happens.',
+     li:[['Referred count and active members',''],['Lifetime commission',''],['Withdraw when you\u2019re ready','']]},
+    {id:'p5', ic:'\u2696\uFE0F', lbl:'Fair rules',
+     h:'Played <em>fairly</em>',
+     p:'The programme rewards real members who stay, not volume.',
+     li:[['No fake or duplicate accounts','r'],['No promising winnings to recruit','r'],['Abuse ends the partnership','r']],
+     pill:{t:'Honest growth only',k:'warn'}}
+  ],
+  _progClip:0,
+  progBoxHtml:function(){
+    var n=this.PROG_CLIPS.length, i=this._progClip, c=this.PROG_CLIPS[i];
+    return '<div class="sy-sec">How the programme works <span style="letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted);">'+
+      (i+1)+' of '+n+'</span></div>'+
+      '<div class="syc-stage" id="prog-stage">'+this.buildClip(c,i,n)+
+        '<button class="syc-edge l" onclick="SYN.progPrev()">\u2039</button>'+
+        '<button class="syc-edge r" onclick="SYN.progNext()">\u203A</button>'+
+        '<div class="syc-dots">'+this.PROG_CLIPS.map(function(_,k){
+          return '<span class="syc-dot'+(k===i?' on':'')+'" onclick="SYN.gotoProg('+k+')"></span>'; }).join('')+'</div>'+
+      '</div>'+
+      '<div style="text-align:center;font-size:.76rem;font-weight:700;margin:8px 0;">'+esc(c.lbl)+'</div>';
+  },
+  gotoProg:function(i){
+    var n=this.PROG_CLIPS.length; this._progClip=((i%n)+n)%n;
+    var slot=document.getElementById('prog-clips-slot');
+    if(slot) slot.innerHTML=this.progBoxHtml();
+  },
+  progNext:function(){ this.gotoProg(this._progClip+1); },
+  progPrev:function(){ this.gotoProg(this._progClip-1); },
+  renderProgram:function(){
+    var el=document.getElementById('view-program'); if(!el) return;
+    var signedIn=!!(window.State && State.role);
+    el.innerHTML=
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'+
+        '<span style="font-size:1.4rem;cursor:pointer;" onclick="App.go(\''+(signedIn?'home':'hub')+'\')">&#8249;</span>'+
+        '<h2 class="h2" style="flex:1;">Partner programme</h2></div>'+
+      '<p class="sub" style="font-size:.84rem;margin-bottom:14px;">Invite people, earn a transparent commission on their genuine activity.</p>'+
+      '<div id="prog-clips-slot">'+this.progBoxHtml()+'</div>'+
+      '<div class="sy-sec">What you get</div><div class="sy-card">'+[
+        ['\uD83D\uDD17','A unique link and code','Tied to you automatically the moment someone joins through it.'],
+        ['\uD83D\uDCB5','Commission on real subscriptions','Paid on genuine activity \u2014 never on sign-ups alone.'],
+        ['\uD83D\uDCCA','A live dashboard','See who joined, what\u2019s active and what you\u2019ve earned.'],
+        ['\uD83C\uDFE6','Withdraw your earnings','Your commission is yours to take out.']
+      ].map(function(x){
+        return '<div style="display:flex;gap:11px;margin-bottom:12px;"><span style="font-size:1.2rem;flex-shrink:0;">'+x[0]+'</span>'+
+          '<div><div style="font-weight:700;font-size:.86rem;">'+x[1]+'</div>'+
+          '<p class="sub" style="font-size:.76rem;line-height:1.55;margin-top:2px;">'+x[2]+'</p></div></div>';
+      }).join('')+'</div>'+
+      (signedIn
+        ? '<button class="btn btn-gold" style="height:52px;margin-top:6px;" onclick="App.go(\'wallet\')">Open Invite &amp; Earn</button>'
+        : '<button class="btn btn-gold" style="height:52px;margin-top:6px;" onclick="App.signin(\'Partner\')">Join now</button>')+
+      '<p class="sub" style="font-size:.68rem;margin-top:12px;text-align:center;">No recruitment chains. No rewards for sign-ups alone. 18+.</p>';
+  },
+
+  // The home page shows the same clip player in its own slot, with its own
+  // index so paging on home doesn't disturb the Syndicate page.
+  _homeClip:0,
+  paintHomeClips:function(){
+    var slot=document.getElementById('home-syn-clips'); if(!slot) return;
+    var n=this.SYN_CLIPS.length, i=this._homeClip, c=this.SYN_CLIPS[i];
+    slot.innerHTML='<div class="syc-stage" id="home-stage">'+this.buildClip(c,i,n)+
+      '<button class="syc-edge l" onclick="SYN.homePrev()">\u2039</button>'+
+      '<button class="syc-edge r" onclick="SYN.homeNext()">\u203A</button>'+
+      '<div class="syc-dots">'+this.SYN_CLIPS.map(function(_,k){
+        return '<span class="syc-dot'+(k===i?' on':'')+'" onclick="SYN.gotoHome('+k+')"></span>'; }).join('')+'</div>'+
+      '</div>'+
+      '<div style="text-align:center;font-size:.76rem;font-weight:700;margin:8px 0 0;">'+esc(c.lbl)+
+      ' <span class="sub" style="font-weight:600;">('+(i+1)+'/'+n+')</span></div>';
+  },
+  gotoHome:function(i){
+    var n=this.SYN_CLIPS.length; this._homeClip=((i%n)+n)%n; this.paintHomeClips();
+  },
+  homeNext:function(){ this.gotoHome(this._homeClip+1); },
+  homePrev:function(){ this.gotoHome(this._homeClip-1); },
+
   clipBoxHtml:function(){
     var n=this.SYN_CLIPS.length, i=this._synClip, c=this.SYN_CLIPS[i];
     return '<div class="sy-sec">Learn the Syndicate <span style="letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted);">'+
