@@ -1605,9 +1605,30 @@ const App={
       : `<div class="eyebrow">Membership</div><h2 class="h2" style="margin:4px 0 6px;">Plans</h2><p class="sub" style="margin-bottom:6px;">Higher tiers unlock more daily tips and bigger-game codes. They never promise returns and never restrict withdrawals.</p>`;
     document.getElementById('view-plan').innerHTML=`${mode==='manage'?`<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;"><div class="icon-btn" style="margin-left:-8px;" onclick="App.go('home')">${svg('<path d="M19 12H5M12 19l-7-7 7-7"/>')}</div></div>`:''}
       ${intro}
+      ${mode==='signup'?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);margin-bottom:12px;cursor:pointer;" onclick="App.explainSyndicate()"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);">🤝</div><div class="pb-mid"><div class="pb-t">There's also the Syndicate</div><div class="pb-s">Follow the group's picks together — you still stake your own money. Tap to see how it works.</div></div><span style="color:var(--green);font-size:1.2rem;">›</span></div>`:''}
       <div class="tier-list">${this.tierCards(mode)}</div>
       <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Fees pay for service only (tips, support). Your winnings come from real bets you choose, results aren't guaranteed, and your balance is always withdrawable.</p></div>`;
     this.show('plan');
+  },
+  // Brief, honest explainer shown at sign-up so new members understand what the
+  // Syndicate is before they ever see it in the app. Deliberately states the
+  // non-custodial model up front — that's the whole trust proposition.
+  explainSyndicate(){
+    const body=`<div class="grab"></div>
+      <div style="text-align:center;font-size:2rem;margin-bottom:6px;">🤝</div>
+      <h3 class="h2" style="text-align:center;margin-bottom:6px;">The Syndicate</h3>
+      <p class="sub" style="font-size:.8rem;text-align:center;margin-bottom:16px;">A members' group that moves together on the same verified picks.</p>
+      ${[
+        ['💰','Your money stays yours','We never hold or pool anyone\'s money. You stake your own bets at your own bookmaker and keep 100% of what you win.'],
+        ['📋','Everyone gets the same pick','We publish the selection and the booking code before kick-off. You choose whether to place it.'],
+        ['⭐','A ladder you can climb','Weekly donations set your rank. Higher ranks get the feed first. Donations buy priority — never a return.'],
+        ['🔒','Proof you can check','Every result, win or loss, goes into a permanent Vault with a verifiable ticket. We never delete a loss.'],
+        ['🔴','Live sessions','Gold and VIP get live picks with a minimum-odds floor, plus analyst voice notes on Telegram.']
+      ].map(([ic,t,d])=>`<div style="display:flex;gap:11px;margin-bottom:13px;"><span style="font-size:1.2rem;flex-shrink:0;">${ic}</span><div><div style="font-weight:700;font-size:.86rem;">${t}</div><p class="sub" style="font-size:.74rem;line-height:1.55;margin-top:2px;">${d}</p></div></div>`).join('')}
+      <div class="note" style="margin-top:4px;">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Betting carries real risk and no pick is guaranteed. 18+ only — bet responsibly.</p></div>
+      <button class="btn btn-green" style="margin-top:12px;" onclick="App.closeSheet()">Got it</button>`;
+    const ov=document.getElementById('overlay'), sh=document.getElementById('sheet');
+    if(ov&&sh){ sh.innerHTML=body; ov.classList.add('show'); }
   },
   chooseTier(key){
     if(this._planMode==='signup'){ this._planMode=null; this.login(this._planRole||'Member'); this.buyTier(key); }
@@ -1665,7 +1686,7 @@ const App={
         <div class="stat2"><div class="st"><div class="v">${CODES.length}</div><div class="k">Tips today</div></div><div class="st"><div class="v" style="color:var(--green);">${rate}%</div><div class="k">90d hit rate</div></div></div>
       </div>
       ${planBanner}
-      ${State.isAdmin?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);">🤝</div><div class="pb-mid"><div class="pb-t">Syndicate</div><div class="pb-s">Group-play preview — admin only while it's built.</div></div><button class="btn btn-out btn-sm" style="height:36px;" onclick="App.go('syndicate')">Open</button></div>`:''}
+      ${State.isAdmin?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);">🤝</div><div class="pb-mid"><div class="pb-t">Syndicate</div><div class="pb-s">Follow the group's picks together — you keep your own money. Admin preview while it's built.</div></div><button class="btn btn-out btn-sm" style="height:36px;" onclick="App.go('syndicate')">Open</button></div>`:''}
       <div id="results-strip"></div>
       <div class="sec">Today's free predictions</div>
       ${preds||'<p class="sub">No predictions posted yet — check back soon.</p>'}
@@ -1736,6 +1757,10 @@ const App={
     ['16_earnings_accumulate','\uD83D\uDCC8 Earnings'],
     ['11_fund_wallet','\uD83D\uDCB3 Fund wallet'],
     ['13_member_withdrawal','\uD83C\uDFE6 Withdrawals'],
+    ['syn_01_what_is','\uD83E\uDD1D The Syndicate'],
+    ['syn_02_own_money','\uD83D\uDCB0 Syndicate: your own money'],
+    ['syn_08_live_sessions','\uD83D\uDD34 Syndicate: live sessions'],
+    ['syn_12_proof_vault','\uD83D\uDD10 The Proof Vault'],
   ],
   renderClipRail(){
     const el=document.getElementById('how-clips'); if(!el)return;
@@ -1745,7 +1770,7 @@ const App={
         <div class="lbl">${t}</div>
       </div>`).join('');
   },
-  REEL_ORDER: ['09_brand_intro','01_how_it_works','03_verified_results','04_tier_ladder','07_keep_100','02_unlock_code','05_member_offer','08_acca_builder','06_partner_program','14_referral_link','16_earnings_accumulate','11_fund_wallet','12_spend_credit','13_member_withdrawal','10_verified_seal','15_share_engage','17_partner_withdrawal'],
+  REEL_ORDER: ['09_brand_intro','01_how_it_works','03_verified_results','04_tier_ladder','07_keep_100','02_unlock_code','05_member_offer','08_acca_builder','06_partner_program','14_referral_link','16_earnings_accumulate','11_fund_wallet','12_spend_credit','13_member_withdrawal','10_verified_seal','15_share_engage','17_partner_withdrawal','syn_01_what_is','syn_02_own_money','syn_12_proof_vault'],
   _reelIdx:0, _reelTimer:null,
   checkReel(){
     try{
@@ -3427,6 +3452,10 @@ if('serviceWorker' in navigator){
 .mc-pick.on{background:var(--mc-acc);border-color:var(--mc-acc);}
 .mc-pick.on .k,.mc-pick.on .v{color:#04140b;}
 .mc-pick.dead{opacity:.45;pointer-events:none;}
+/* No price in the feed yet — still fully bookable, odds typed in on the slip. */
+.mc-pick.noprice{border-style:dashed;border-color:var(--border-2);}
+.mc-pick.noprice .v{color:var(--gold);font-size:.7rem;}
+.mc-pick.noprice.on .v{color:#04140b;}
 .mc-pick.dead .v{color:var(--faint);}
 .mc-linelab{height:52px;border-radius:11px;background:var(--surface-3);display:grid;place-items:center;font-family:var(--d);font-weight:700;font-size:.86rem;}
 .mc-ouhead{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:7px;margin-bottom:6px;font-size:.66rem;color:var(--muted);text-align:center;}
@@ -3738,7 +3767,7 @@ var MC = window.MC = {
   draft:{ day:'all', range:'all', hours:0, oMin:'', oMax:'', leagues:{} },
   live :{ day:'all', range:'all', hours:0, oMin:'', oMax:'', leagues:{} },
   q:'', fav:{},
-  det:null, detStats:null, tab:'markets', sub:'main',
+  det:null, detStats:null, tab:'markets', sub:'all',
 
   /* ---------- install ---------- */
   install:function(){
@@ -4209,7 +4238,7 @@ var MC = window.MC = {
   /* ---------- detail ---------- */
   openDetail:function(fid){
     var f=this.fx.filter(function(x){return String(x.id)===String(fid);})[0]; if(!f) return;
-    this.det=f; this.detStats=null; this.tab='markets'; this.sub='main';
+    this.det=f; this.detStats=null; this.tab='markets'; this.sub='all';
     var el=document.getElementById('mc-detail');
     el.classList.add('show');
     this.paintDetail();
@@ -4284,14 +4313,24 @@ var MC = window.MC = {
 
   /* --- markets --- */
   tplMarkets:function(f){
-    var od=f._od||{}, subs=[['main','Main'],['handicap','Handicap'],['goals','Goals'],['halves','Halves'],['teams','Teams'],['combos','Combos'],['specials','Specials'],['builder','Builder'],['stats','Stats']];
+    var od=f._od||{}, subs=[['all','All markets'],['main','Main'],['handicap','Handicap'],['goals','Goals'],['halves','Halves'],['teams','Teams'],['combos','Combos'],['specials','Specials'],['builder','Builder'],['stats','Stats']];
     var h='<div class="mc-subtabs">'+subs.map(function(s){
       return '<button class="mc-sub'+(MC.sub===s[0]?' on':'')+'" onclick="MC.setSub(\''+s[0]+'\')">'+s[1]+'</button>';
     }).join('')+'</div>';
     if(this.sub==='stats') return h+this.tplStats(f);
     var B=Eng.books(od, f.home, f.away);
     var M=Eng.model(B.cons);
-    var groups=this.marketGroups(f, B.cons, M, B)[this.sub]||[];
+    var GG=this.marketGroups(f, B.cons, M, B);
+    // "All markets" concatenates every category so nothing is hidden behind a
+    // tab. A pick with no price still renders — you book the pick and type the
+    // odds in yourself.
+    var groups;
+    if(this.sub==='all'){
+      groups=[];
+      ['main','handicap','goals','halves','teams','combos','specials','builder'].forEach(function(k){
+        (GG[k]||[]).forEach(function(gr){ groups.push(gr); });
+      });
+    } else { groups=GG[this.sub]||[]; }
     if(B.nBooks>1){
       h+='<p class="sub" style="font-size:.68rem;margin:-4px 2px 8px;">Showing the best of '+B.nBooks+' bookmakers.</p>';
     }
@@ -4494,12 +4533,14 @@ var MC = window.MC = {
   mkCard:function(f, grp){
     var body='';
     if(grp.k==='ou'){
-      if(!grp.lines.length) return '';
+      if(!grp.lines || !grp.lines.length) return '';
       body='<div class="mc-ouhead"><span></span><span>Over</span><span>Under</span></div>'+
         '<div class="mc-mkbody ou">'+grp.lines.map(function(L){
           return '<div class="mc-linelab">'+L.line+'</div>'+MC.pickBtn(f,L.over)+MC.pickBtn(f,L.under);
         }).join('')+'</div>';
     } else {
+      // Keep the market even if the feed gave us nothing — the picks are still
+      // bookable by hand. Only skip a group that defines no picks at all.
       if(!grp.picks || !grp.picks.length) return '';
       var cls = grp.k==='two' ? 'mc-mkbody c2'
               : grp.k==='builder' ? 'mc-mkbody c2'
@@ -4523,14 +4564,20 @@ var MC = window.MC = {
   },
   pickBtn:function(f,p){
     var lab=p.lab, price=p.price||0, on=this.has(f.id,lab);
+    // A market with no price is still a bookable pick — show it, let it be
+    // tapped, and let the odds be typed in on the slip. Nothing is ever
+    // disabled just because the feed didn't carry a price.
     var val = price>1 ? price.toFixed(2)
-            : (p.model!=null ? '~'+dec(p.model).toFixed(2) : '&mdash;');
-    var dead = !(price>1) && p.model==null;
-    var sub = (price>1||p.model==null) ? '' :
-      '<span style="position:absolute;top:3px;right:5px;font-size:.5rem;color:var(--faint);">model</span>';
-    return '<button class="mc-pick'+(on?' on':'')+(dead?' dead':'')+'" style="position:relative;" '+
-      'onclick="MC.addSel(MC.det,\''+esc(lab)+'\','+(price>1?price:(p.model!=null?dec(p.model).toFixed(2):0))+')">'+
-      sub+'<span class="k">'+esc(lab)+'</span><span class="v">'+val+'</span></button>';
+            : (p.model!=null ? '~'+dec(p.model).toFixed(2) : 'add odds');
+    var noPrice = !(price>1) && p.model==null;
+    var tag = (price>1) ? ''
+      : (p.model!=null
+          ? '<span style="position:absolute;top:3px;right:5px;font-size:.5rem;color:var(--faint);">model</span>'
+          : '<span style="position:absolute;top:3px;right:5px;font-size:.5rem;color:var(--gold);">manual</span>');
+    var send = price>1 ? price : (p.model!=null ? dec(p.model).toFixed(2) : 0);
+    return '<button class="mc-pick'+(on?' on':'')+(noPrice?' noprice':'')+'" style="position:relative;" '+
+      'onclick="MC.addSel(MC.det,\''+esc(lab)+'\','+send+')">'+
+      tag+'<span class="k">'+esc(lab)+'</span><span class="v">'+val+'</span></button>';
   },
 
   /* --- commentary --- */
@@ -4988,6 +5035,8 @@ var SYN = window.SYN = {
     // your tier perks + climb
     h+='<div class="sy-sec">Your tier &amp; how to climb</div>';
     h+=this.tierPerks(tier);
+    // explainer clips — every topic, skippable, back/forth like the home reel
+    h+='<div id="syn-clips-slot">'+this.clipBoxHtml()+'</div>';
     // proof vault teaser
     h+='<div class="sy-sec">Proof Vault</div>';
     h+='<div class="sy-vault-head"><div class="t">&#128274; Every result, forever</div>'+
@@ -4995,7 +5044,8 @@ var SYN = window.SYN = {
        '<button class="btn btn-out btn-sm" style="height:44px;" onclick="App.go(\'vault\')">Open the Proof Vault</button>';
     // responsible footer
     h+='<p class="sub" style="font-size:.68rem;margin-top:16px;line-height:1.6;text-align:center;">'+
-       'You place your own bets and keep 100% of what you win. Donations buy rank &amp; priority only — never a return, never a stake. 18+ &middot; bet responsibly.</p>';
+       'You place your own bets and keep 100% of what you win. Donations buy rank &amp; priority only — never a return, never a stake. 18+ &middot; bet responsibly.<br>'+
+       '<a onclick="SYN.openTerms()" style="color:var(--green);text-decoration:underline;cursor:pointer;">Read the full Syndicate terms</a></p>';
     body.innerHTML=h;
   },
   hero:function(tier, m, wired){
@@ -5098,7 +5148,7 @@ var SYN = window.SYN = {
 
       '<label style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;cursor:pointer;">'+
         '<input type="checkbox" id="sp-terms" style="width:20px;height:20px;margin-top:2px;flex-shrink:0;accent-color:var(--green);">'+
-        '<span class="sub" style="font-size:.74rem;line-height:1.55;">I confirm I am <b>18 or older</b>, the details above are mine, and I accept the Syndicate terms: I stake my own money at my own bookmaker, donations buy rank and priority only (never a return), and outcomes are never guaranteed.</span>'+
+        '<span class="sub" style="font-size:.74rem;line-height:1.55;">I confirm I am <b>18 or older</b>, the details above are mine, and I accept the <a onclick="event.preventDefault();SYN.openTerms()" style="color:var(--green);text-decoration:underline;cursor:pointer;">Syndicate terms</a>: I stake my own money at my own bookmaker and keep 100% of my winnings, donations buy rank and priority only (never a return), and outcomes are never guaranteed.</span>'+
       '</label>'+
       '<button class="btn btn-green" style="margin-top:14px;height:50px;" onclick="SYN.saveProfile()">Confirm &amp; enter the Syndicate</button>'+
       '<p class="sub" style="font-size:.64rem;margin-top:10px;text-align:center;">Your details are stored to identify you inside the group and are not shared with other members beyond your username, avatar and rank.</p>'+
@@ -5189,6 +5239,113 @@ var SYN = window.SYN = {
   // surfaces the member's existing referral standing inside the Syndicate so
   // rank and referrals live in one place.
   ach:null, lastCode:null,
+  /* ---------------- Syndicate explainer clips ----------------
+     Same pattern as the home brand reel: an iframe pair with prev/next arrows
+     and dots, so members can page through every topic at their own speed and
+     skip anything they already know. Slugs point at /clips.html#<slug> — add
+     the matching clip sections there and they light up automatically. */
+  SYN_CLIPS: [
+    ['syn_01_what_is',        '\uD83E\uDD1D What the Syndicate is'],
+    ['syn_02_own_money',      '\uD83D\uDCB0 You keep your own money'],
+    ['syn_03_tiers',          '\uD83C\uDFAF Bronze, Silver, Gold, VIP'],
+    ['syn_04_subscription',   '\uD83D\uDCB3 Subscription & fees'],
+    ['syn_05_donations_rank', '\u2B50 Donations & the ladder'],
+    ['syn_06_notifications',  '\uD83D\uDD14 Push notifications'],
+    ['syn_07_compliance',     '\uD83D\uDCCB Submitting your slip'],
+    ['syn_08_live_sessions',  '\uD83D\uDD34 Live sessions & odds floor'],
+    ['syn_09_gold_vip',       '\uD83D\uDC8E Gold & VIP perks'],
+    ['syn_10_telegram',       '\uD83D\uDCF1 Your Telegram channel'],
+    ['syn_11_badges_ranks',   '\uD83C\uDFC5 Badges, ranks & points'],
+    ['syn_12_proof_vault',    '\uD83D\uDD10 The Proof Vault'],
+    ['syn_13_referrals',      '\uD83D\uDD17 Referrals & earnings'],
+    ['syn_14_responsible',    '\u26A0\uFE0F Risk & responsible play']
+  ],
+  _synClip:0,
+  /* Full Syndicate agreement. Written to state plainly what this is and, just
+     as importantly, what it is NOT — no pooled fund, no custody, no promised
+     returns. Members should be able to read this and know exactly where they
+     stand before a naira moves. */
+  TERMS: [
+    ['What the Syndicate is',
+      'The Syndicate is a members\u2019 group that follows the same verified football selections. We publish the pick, the booking code and the proof. You decide whether to place it.'],
+    ['Your money stays yours',
+      'Betstack Pro never holds, pools, manages or bets your money. There is no shared wallet and no fund. Every member stakes their own money in their own bookmaker account and keeps 100% of anything they win. We never take a share of your winnings.'],
+    ['What you are paying for',
+      'Your tier subscription buys ACCESS \u2014 the picks, the codes, the feed and the tier features. Weekly donations buy RANK and PRIORITY on the ladder. Neither is a stake, an investment or a deposit, and neither is returned or grows in value. They are fees for a service.'],
+    ['No guaranteed returns',
+      'Sports betting carries real risk of losing money. No selection, strategy, model or ladder position can guarantee a win. There will be losing picks and losing weeks. Never stake money you cannot afford to lose.'],
+    ['Staying on the feed',
+      'To keep receiving picks you must submit a booked slip whose code matches the tip, and keep your weekly donation active. Members who do not comply are removed from the feed and may be demoted. This keeps the group made of people who actually follow it.'],
+    ['Live sessions and the odds floor',
+      'Live picks carry a minimum-odds floor and a short validity window. If you can no longer get the floor price, do not place the bet. Prices move quickly and missing a live pick is normal.'],
+    ['Your details',
+      'We collect your name, username, age, gender, phone, email, country, occupation, avatar and photo to identify you within the group and prevent account sharing. Other members only ever see your username, avatar, rank and badges. We do not sell your data.'],
+    ['Age and eligibility',
+      'You must be 18 or older and legally permitted to bet where you live. Accounts found to belong to under-18s are removed permanently.'],
+    ['Account sharing',
+      'One account, one person. Sharing logins or redistributing picks outside the group is grounds for suspension without refund.'],
+    ['Ranks, badges and rewards',
+      'Points, ranks and badges are recognition inside the app. They have no cash value, cannot be exchanged for money, and may be adjusted if earned through abuse or automation.'],
+    ['Responsible play',
+      'If betting stops being entertainment, stop. Set limits before you play, never chase a loss, and seek support if it becomes a problem. 18+ only.']
+  ],
+  openTerms:function(){
+    var body='<div class="grab"></div><h3 class="h2" style="margin-bottom:4px;">Syndicate terms</h3>'+
+      '<p class="sub" style="font-size:.74rem;margin-bottom:14px;">Please read this before joining. It says plainly what the Syndicate is and what it is not.</p>'+
+      this.TERMS.map(function(t){
+        return '<div style="margin-bottom:14px;"><div style="font-family:var(--d);font-weight:700;font-size:.88rem;margin-bottom:4px;">'+esc(t[0])+'</div>'+
+          '<p class="sub" style="font-size:.76rem;line-height:1.6;">'+esc(t[1])+'</p></div>';
+      }).join('')+
+      '<button class="btn btn-out" style="margin-top:6px;" onclick="App.closeSheet()">Close</button>';
+    this.sheet(body);
+  },
+
+  clipBoxHtml:function(){
+    var c=this.SYN_CLIPS[this._synClip]||this.SYN_CLIPS[0];
+    return '<div class="sy-sec">Learn the Syndicate <span style="letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted);">'+
+      (this._synClip+1)+' of '+this.SYN_CLIPS.length+'</span></div>'+
+      '<div class="brand-reel" id="syn-reel-box" style="margin-bottom:8px;">'+
+        '<iframe id="syn-reel" class="reel-layer show" src="/clips.html#'+c[0]+'" title="Syndicate" scrolling="no" onload="SYN.checkClip()"></iframe>'+
+        '<button class="reel-edge reel-edge-l" onclick="event.stopPropagation();SYN.clipPrev()" aria-label="Previous">\u2039</button>'+
+        '<button class="reel-edge reel-edge-r" onclick="event.stopPropagation();SYN.clipNext()" aria-label="Next">\u203A</button>'+
+        '<div class="reel-dots" id="syn-reel-dots"></div>'+
+      '</div>'+
+      '<div style="text-align:center;font-size:.76rem;font-weight:700;margin-bottom:8px;">'+esc(c[1])+'</div>'+
+      '<div class="clip-rail" id="syn-clip-rail">'+this.SYN_CLIPS.map(function(x,i){
+        return '<div class="clip-thumb" onclick="SYN.gotoClip('+i+')" style="opacity:'+(i===SYN._synClip?1:.6)+';">'+
+          '<div class="cw"><iframe src="/clips.html#'+x[0]+'" loading="lazy" scrolling="no"></iframe><div class="play">\u25B6</div></div>'+
+          '<div class="lbl">'+esc(x[1])+'</div></div>';
+      }).join('')+'</div>';
+  },
+  paintClipDots:function(){
+    var d=document.getElementById('syn-reel-dots'); if(!d) return;
+    d.innerHTML=this.SYN_CLIPS.map(function(_,i){
+      return '<span class="reel-dot'+(i===SYN._synClip?' on':'')+'" onclick="event.stopPropagation();SYN.gotoClip('+i+')"></span>';
+    }).join('');
+  },
+  gotoClip:function(i){
+    this._synClip=(i+this.SYN_CLIPS.length)%this.SYN_CLIPS.length;
+    var f=document.getElementById('syn-reel');
+    if(f) f.src='/clips.html#'+this.SYN_CLIPS[this._synClip][0];
+    var box=document.getElementById('syn-clips-slot');
+    if(box) box.innerHTML=this.clipBoxHtml();
+    this.paintClipDots();
+  },
+  clipNext:function(){ this.gotoClip(this._synClip+1); },
+  clipPrev:function(){ this.gotoClip(this._synClip-1); },
+  checkClip:function(){
+    // If a clip section hasn't been added to clips.html yet, hide the player
+    // rather than showing an empty frame.
+    try{
+      var f=document.getElementById('syn-reel'), box=document.getElementById('syn-reel-box');
+      if(!f||!box) return;
+      var doc=f.contentDocument;
+      if(doc && !doc.querySelector('.bsp-clip')) box.style.display='none';
+      else box.style.display='';
+    }catch(e){}
+    this.paintClipDots();
+  },
+
   /* Rank card + progress to next rank + the badge wall. This is the part that
      makes members come back: a visible ladder with a next step always in view. */
   achHtml:function(){
