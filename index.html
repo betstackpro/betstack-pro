@@ -946,6 +946,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 
 <script>
 const State={role:null,balance:0,principal:0,earnings:0,refs:3,owned:new Set(),codes:new Set(),pin:null,profile:null,twofa:false,tgLinked:false};
+try{ window.State=State; }catch(e){}
 let Account=null; // PREVIEW ONLY: the account registered this session. Real auth lives server-side.
 // ============ BACKEND CONNECTION ============
 // Point this at your server once it's deployed. While empty, auth/codes run in preview mode.
@@ -1664,6 +1665,7 @@ const App={
         <div class="stat2"><div class="st"><div class="v">${CODES.length}</div><div class="k">Tips today</div></div><div class="st"><div class="v" style="color:var(--green);">${rate}%</div><div class="k">90d hit rate</div></div></div>
       </div>
       ${planBanner}
+      ${State.isAdmin?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);">🤝</div><div class="pb-mid"><div class="pb-t">Syndicate</div><div class="pb-s">Group-play preview — admin only while it's built.</div></div><button class="btn btn-out btn-sm" style="height:36px;" onclick="App.go('syndicate')">Open</button></div>`:''}
       <div id="results-strip"></div>
       <div class="sec">Today's free predictions</div>
       ${preds||'<p class="sub">No predictions posted yet — check back soon.</p>'}
@@ -2199,13 +2201,15 @@ const App={
     document.getElementById('admin-list').innerHTML=`<div style="display:flex;gap:8px;margin-bottom:14px;">
       <button class="pill ${this._adminTab!=='games'&&this._adminTab!=='users'?'active':''}" onclick="App.adminGo('overview')">Overview</button>
       <button class="pill ${this._adminTab==='games'?'active':''}" onclick="App.adminGo('games')">🗓 Games</button>
+      <button class="pill ${this._adminTab==='syndicate'?'active':''}" onclick="App.adminGo('syndicate')">🤝 Syndicate</button>
       <button class="pill ${this._adminTab==='users'?'active':''}" onclick="App.adminGo('users')">👥 Users</button>
-    </div><div id="admin-tab-body"></div><div id="admin-overview" style="display:${this._adminTab==='games'||this._adminTab==='users'?'none':'block'}"><div id="admin-stats" class="card" style="padding:12px 14px;margin-bottom:12px;"><p class="sub" style="margin:0;">Loading stats…</p></div><div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Unlock requests <button class="btn btn-out btn-sm" style="height:30px;padding:0 10px;font-size:.68rem;" onclick="App.toggleAlarm()" id="alarm-btn">🔔 Alarm on</button></div><div id="admin-unlocks"><p class="sub">Loading…</p></div><div class="sec">Daily predictions (free)</div>${pred}<div class="sec">Daily bet tips</div>${tips}<div class="sec">Booked slips</div>${tix}<div class="sec">Withdrawal requests</div><div id="admin-payouts"><p class="sub">Loading…</p></div>`+
+    </div><div id="admin-tab-body"></div><div id="admin-overview" style="display:${this._adminTab==='games'||this._adminTab==='users'||this._adminTab==='syndicate'?'none':'block'}"><div id="admin-stats" class="card" style="padding:12px 14px;margin-bottom:12px;"><p class="sub" style="margin:0;">Loading stats…</p></div><div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Unlock requests <button class="btn btn-out btn-sm" style="height:30px;padding:0 10px;font-size:.68rem;" onclick="App.toggleAlarm()" id="alarm-btn">🔔 Alarm on</button></div><div id="admin-unlocks"><p class="sub">Loading…</p></div><div class="sec">Daily predictions (free)</div>${pred}<div class="sec">Daily bet tips</div>${tips}<div class="sec">Booked slips</div>${tix}<div class="sec">Withdrawal requests</div><div id="admin-payouts"><p class="sub">Loading…</p></div>`+
       `<div class="sec">Email diagnostics</div><div class="card" style="padding:14px 15px;"><p class="sub" style="margin:0 0 10px;">Send a test verification email to check Resend is configured.</p><input class="input" id="et-to" type="email" placeholder="you@email.com" style="margin-bottom:8px;"><button class="btn btn-out btn-sm" style="height:40px;" onclick="App.emailTest()">Send test email</button><div id="et-result" style="font-size:.8rem;margin-top:10px;color:var(--sub);word-break:break-word;"></div></div></div>`;
     this.loadAdminPayouts();
     this.loadAdminUnlocks();
     if(this._adminTab==='games')this.renderAdminGames();
     if(this._adminTab==='users')this.renderAdminUsers();
+    if(this._adminTab==='syndicate' && window.SYN)SYN.renderAdmin();
     // Match Center is an admin booking tool — re-attach its "Book games" button
     // to the console action row on every repaint (renderAdmin rebuilds the DOM).
     if(window.MC && MC.installAdminButton) MC.installAdminButton();
@@ -3251,6 +3255,7 @@ const App={
   toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(this._t);this._t=setTimeout(()=>t.classList.remove('show'),2300);},
   signal(kind,ic,m){const s=document.getElementById('signal');s.className='signal '+(kind==='win'?'win':kind==='pending'?'pending':'');document.getElementById('sig-ic').textContent=ic;document.getElementById('sig-msg').textContent=m;requestAnimationFrame(()=>s.classList.add('show'));clearTimeout(this._s);this._s=setTimeout(()=>s.classList.remove('show'),3200);}
 };
+try{ window.App=App; }catch(e){}
 App.init();
 App.checkAgeGate();
 let deferredPrompt=null;
@@ -4744,6 +4749,620 @@ else boot();
 </script>
 
 <!-- ═══════════ END MATCH CENTER ═══════════ -->
+
+
+
+<!-- ═══════════ SYNDICATE · installed 2026-08-29 ═══════════ -->
+<!-- ============================================================================
+     BETSTACK PRO · SYNDICATE  (non-custodial group-play layer)
+     ============================================================================
+     Paste this whole block immediately before </body> in index.html.
+     Self-installs like the Match Center: adds an admin Syndicate console tab
+     (wired via App.adminGo('syndicate') -> SYN.renderAdmin) and a gated
+     member-facing entrance at App.go('syndicate').
+
+     PRINCIPLE (do not drift from this): NON-CUSTODIAL. Members stake their own
+     money at their own bookmaker. Revenue = existing tier subscription (monthly)
+     + weekly rank-donation. NEVER a cut of winnings, never custody, never a
+     returns-promise. Every string in here respects that.
+
+     App = membership / tiers / donations / ladder / Proof Vault / compliance +
+           the gate that hands out the Telegram invite.
+     Telegram = tiered channels: picks + analyst voice notes + live war-rooms.
+     Bookmaker = where each member stakes their own money.
+
+     BACKEND (all optional — the module degrades to a clear "not wired yet" state
+     if a route is missing, so it is safe to ship the front-end first):
+       GET  /api/syndicate/me        -> member's syndicate status (see shape below)
+       GET  /api/syndicate/ladder    -> {ok, week, rows:[{rank,name,tier,donated,you}]}
+       GET  /api/syndicate/vault     -> {ok, results:[{date,pick,tier,odds,result,hash,url}]}
+       POST /api/syndicate/join      -> {tier}  (opt into the layer)
+       POST /api/syndicate/donate    -> {amount} (records a weekly rank-donation)
+       POST /api/syndicate/slip      -> {tip_id, code, amount, proof_url} (compliance submit)
+       GET  /api/syndicate/invite    -> {ok, url}  (private Telegram link, gated server-side)
+       -- admin --
+       GET  /api/admin/syndicate/members -> {ok, members:[...]}
+       GET  /api/admin/syndicate/slips   -> {ok, slips:[...]}  (verification queue)
+       POST /api/admin/syndicate/slip/decide -> {id, action:'verify'|'reject'}
+       POST /api/admin/syndicate/push    -> {tier, text, min_odds}  (log a push, gated by compliance server-side)
+       POST /api/admin/syndicate/vault   -> {pick, tier, odds, result, hash, url} (append-only)
+       POST /api/admin/syndicate/captain -> {member_id}  (set Captain of the Week)
+
+     me shape:
+       { ok, in:false }                                  // not joined
+       { ok, in:true, tier:'gold', rank:4, donated:120,
+         played:true, donation_active:true, on_feed:true,
+         captain:false, invite:false|true }
+     ========================================================================= -->
+<style>
+#syn-admin, #view-syndicate{ --sy-line:var(--border); }
+/* member entrance */
+.sy-hero{background:linear-gradient(135deg,rgba(31,209,122,.12),rgba(244,183,64,.06),transparent);border:1px solid var(--sy-line);border-radius:18px;padding:16px;margin-bottom:12px;}
+.sy-badge{display:inline-flex;align-items:center;gap:7px;font-family:var(--d);font-weight:800;font-size:.82rem;padding:6px 12px;border-radius:99px;border:1.5px solid currentColor;}
+.sy-status{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.sy-chip{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--sy-line);}
+.sy-chip.ok{color:var(--green);border-color:rgba(31,209,122,.4);}
+.sy-chip.warn{color:var(--gold);border-color:rgba(244,183,64,.4);}
+.sy-chip.off{color:var(--muted);}
+.sy-sec{font-size:.66rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:18px 2px 9px;display:flex;align-items:center;justify-content:space-between;}
+.sy-card{background:var(--surface);border:1px solid var(--sy-line);border-radius:16px;padding:14px;margin-bottom:9px;}
+/* ladder */
+.sy-lrow{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--sy-line);margin-bottom:6px;}
+.sy-lrow.you{border-color:var(--green);background:rgba(31,209,122,.07);}
+.sy-lrow.cap{border-color:var(--gold);background:rgba(244,183,64,.08);}
+.sy-rank{width:30px;text-align:center;font-family:var(--d);font-weight:800;font-size:1rem;color:var(--muted);}
+.sy-lrow.cap .sy-rank{color:var(--gold);}
+.sy-lname{flex:1;min-width:0;}
+.sy-lname .n{font-size:.86rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sy-lname .t{font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+.sy-ldon{font-family:var(--d);font-weight:800;font-size:.92rem;color:var(--gold);}
+.sy-crown{font-size:.9rem;}
+/* tiers */
+.sy-tier{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--sy-line);margin-bottom:8px;}
+.sy-tier .ti{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-family:var(--d);font-weight:800;font-size:1.1rem;flex-shrink:0;border:1.5px solid currentColor;}
+.sy-tier .mid{flex:1;min-width:0;}
+.sy-tier .mid .nm{font-family:var(--d);font-weight:700;font-size:1rem;}
+.sy-tier .mid .pk{font-size:.7rem;color:var(--muted);margin-top:2px;line-height:1.5;}
+.sy-tier .pr{text-align:right;flex-shrink:0;}
+.sy-tier .pr .a{font-family:var(--d);font-weight:800;font-size:.95rem;}
+.sy-tier .pr .c{font-size:.58rem;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;}
+.sy-tier.on{border-color:var(--green);}
+.sy-perk{display:flex;gap:8px;font-size:.76rem;color:var(--muted);line-height:1.5;margin-bottom:5px;}
+.sy-perk s{color:var(--green);text-decoration:none;flex-shrink:0;}
+.sy-perk.vip s{color:var(--gold);}
+.sy-lock{background:var(--surface-2);border:1px dashed var(--border-2);border-radius:14px;padding:20px 16px;text-align:center;}
+.sy-lock .ic{font-size:1.8rem;margin-bottom:8px;}
+/* vault */
+.sy-vrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--sy-line);font-size:.8rem;}
+.sy-vrow .dt{width:56px;flex-shrink:0;font-size:.66rem;color:var(--faint);}
+.sy-vrow .pk{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sy-vrow .rs{font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px;flex-shrink:0;}
+.sy-vrow .rs.won{background:rgba(31,209,122,.14);color:var(--green);}
+.sy-vrow .rs.lost{background:rgba(245,73,92,.12);color:var(--red);}
+.sy-vrow .rs.void{background:var(--surface-3);color:var(--muted);}
+.sy-vrow .hs{font-size:.58rem;color:var(--faint);font-family:var(--d);cursor:pointer;flex-shrink:0;}
+.sy-vault-head{background:linear-gradient(135deg,rgba(31,209,122,.1),transparent);border:1px solid rgba(31,209,122,.3);border-radius:14px;padding:13px 14px;margin-bottom:10px;}
+.sy-vault-head .t{font-family:var(--d);font-weight:800;font-size:.92rem;color:var(--green);}
+.sy-vault-head .s{font-size:.72rem;color:var(--muted);margin-top:3px;line-height:1.5;}
+/* admin */
+.sy-atabs{display:flex;gap:7px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;}
+.sy-atab{flex-shrink:0;height:34px;padding:0 14px;border-radius:99px;background:var(--surface-2);border:1px solid var(--sy-line);font-size:.74rem;font-weight:700;display:flex;align-items:center;}
+.sy-atab.on{background:var(--green);border-color:var(--green);color:#04140b;}
+.sy-mrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;background:var(--surface);border:1px solid var(--sy-line);margin-bottom:6px;}
+.sy-mrow .mid{flex:1;min-width:0;}
+.sy-mrow .mid .n{font-size:.84rem;font-weight:700;}
+.sy-mrow .mid .s{font-size:.64rem;color:var(--muted);margin-top:1px;}
+.sy-tag{font-size:.56rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:5px;}
+.sy-tag.active{background:rgba(31,209,122,.14);color:var(--green);}
+.sy-tag.susp{background:rgba(245,73,92,.12);color:var(--red);}
+.sy-tag.pend{background:rgba(244,183,64,.14);color:var(--gold);}
+.sy-note{background:var(--surface-2);border:1px dashed var(--border-2);border-radius:12px;padding:12px 13px;font-size:.74rem;color:var(--muted);line-height:1.55;}
+.sy-note b{color:var(--text);}
+.sy-stat{flex:1;text-align:center;padding:10px 6px;background:var(--surface-2);border-radius:12px;}
+.sy-stat .v{font-family:var(--d);font-weight:800;font-size:1.3rem;}
+.sy-stat .l{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+</style>
+
+<script>
+(function(){
+'use strict';
+if(window.SYN) return;
+
+// Tier metadata mirrors your existing TIERS but adds syndicate group-play perks.
+// Prices are read live from your TIERS const so there is a single source of truth.
+function tierMeta(){
+  var base = (typeof TIERS!=='undefined') ? TIERS : [
+    {key:'bronze',name:'Bronze',price:'$15 / mo',color:'#cd7f4e'},
+    {key:'silver',name:'Silver',price:'$26 / mo',color:'#c7ccd6'},
+    {key:'gold',name:'Gold',price:'$49 / mo',color:'#f4b740'},
+    {key:'vip',name:'VIP',price:'$98 / mo',color:'#1fd17a'}
+  ];
+  var stack={bronze:100,silver:200,gold:500,vip:500};
+  var perks={
+    bronze:['Group picks + booking codes','Ladder + weekly donations','Submit your slip to stay on feed'],
+    silver:['Everything in Bronze','Earlier feed than Bronze','Blended-strategy group slips'],
+    gold:['Auto push — no waiting','See picks FIRST (better odds)','Live war-room','Private Telegram channel'],
+    vip:['Everything in Gold','Analyst voice notes (Telegram)','First into every live session','Captain-of-the-Week eligible','Verified track-record card']
+  };
+  return base.map(function(t){
+    return { key:t.key, name:t.name, color:t.color, price:t.price,
+             stack:stack[t.key]||100, perks:perks[t.key]||[] };
+  });
+}
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function myTier(){ return (window.State && State.tier) || 'none'; }
+function isAdmin(){ return !!(window.State && State.isAdmin); }
+
+var SYN = window.SYN = {
+  me:null, ladder:null, vault:null, loaded:false,
+  aTab:'members', aMembers:null, aSlips:null,
+
+  /* ---------------- install ---------------- */
+  install:function(){
+    var content=document.getElementById('content'); if(!content) return;
+    if(!document.getElementById('view-syndicate')){
+      var p=document.createElement('div'); p.className='page'; p.id='view-syndicate';
+      content.appendChild(p);
+    }
+    if(!document.getElementById('view-vault')){
+      var v=document.createElement('div'); v.className='page'; v.id='view-vault';
+      content.appendChild(v);
+    }
+    // wrap router so App.go('syndicate') / App.go('vault') render (gated)
+    if(typeof App!=='undefined' && !App._synWrapped){
+      var orig=App.go.bind(App);
+      App.go=function(v){
+        if(v==='syndicate' || v==='vault'){
+          // Admin-only while the Syndicate is being built (member-facing later).
+          if(!(window.State && State.isAdmin)){ return orig('home'); }
+          try{ App.show(v); }catch(e){ return orig('home'); }
+          document.querySelectorAll('.navitem').forEach(function(x){ x.classList.remove('active'); });
+          if(v==='syndicate') SYN.renderMember(); else SYN.renderVault();
+          return;
+        }
+        return orig(v);
+      };
+      App._synWrapped=true;
+    }
+  },
+  // Admin entry: a "Syndicate console" shortcut isn't needed (it's a console tab),
+  // but the member entrance needs a doorway. Add a Syndicate card to the Home
+  // page's member area once, so members can reach App.go('syndicate').
+  installMemberDoor:function(){
+    // Called from renderMember-side; the Home integration is optional and
+    // additive — if Home markup isn't found we simply skip it.
+  },
+
+  /* ================= MEMBER ENTRANCE ================= */
+  renderMember:function(){
+    var el=document.getElementById('view-syndicate'); if(!el) return;
+    el.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'+
+        '<span style="font-size:1.4rem;cursor:pointer;" onclick="App.go(\'home\')">&#8249;</span>'+
+        '<h2 class="h2" style="flex:1;">Syndicate</h2></div>'+
+      '<div id="syn-body"><p class="sub">Loading&hellip;</p></div>';
+    this.loadMember();
+  },
+  loadMember:function(){
+    var self=this;
+    if(typeof Api==='undefined' || !Api.get){ this.paintMember({ok:false}); return; }
+    Api.get('/api/syndicate/me').then(function(r){ self.me=r; self.paintMember(r); })
+      .catch(function(){ self.paintMember({ok:false}); });
+    Api.get('/api/syndicate/ladder').then(function(r){ self.ladder=r; if(self.me)self.paintMember(self.me); }).catch(function(){});
+  },
+  paintMember:function(r){
+    var body=document.getElementById('syn-body'); if(!body) return;
+    var tier=myTier();
+    // Not signed into a tier at all -> must subscribe first (existing flow)
+    if(tier==='none'){
+      body.innerHTML=this.joinPrompt();
+      return;
+    }
+    // Backend not wired yet -> show the structure with a clear notice
+    var wired = r && r.ok;
+    var m = (wired && r.in) ? r : null;
+
+    var h='';
+    // hero: identity + compliance
+    h+=this.hero(tier, m, wired);
+    // ladder
+    h+='<div class="sy-sec">Weekly ladder <span style="letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted);">top donors get priority</span></div>';
+    h+=this.ladderHtml(m);
+    // referrer standing — a ROLE any tier can hold, not a tier of its own.
+    // Reuses the existing referral engine rather than duplicating it.
+    h+=this.referrerHtml();
+    // your tier perks + climb
+    h+='<div class="sy-sec">Your tier &amp; how to climb</div>';
+    h+=this.tierPerks(tier);
+    // proof vault teaser
+    h+='<div class="sy-sec">Proof Vault</div>';
+    h+='<div class="sy-vault-head"><div class="t">&#128274; Every result, forever</div>'+
+       '<div class="s">Every pick we make — win or loss — is written to a permanent, verifiable record. We never delete a loss. Open the Vault to check our whole history yourself.</div></div>'+
+       '<button class="btn btn-out btn-sm" style="height:44px;" onclick="App.go(\'vault\')">Open the Proof Vault</button>';
+    // responsible footer
+    h+='<p class="sub" style="font-size:.68rem;margin-top:16px;line-height:1.6;text-align:center;">'+
+       'You place your own bets and keep 100% of what you win. Donations buy rank &amp; priority only — never a return, never a stake. 18+ &middot; bet responsibly.</p>';
+    body.innerHTML=h;
+  },
+  hero:function(tier, m, wired){
+    var meta=tierMeta().filter(function(t){return t.key===tier;})[0]||{name:tier,color:'#8a909a'};
+    var comp = m ? [
+      m.played ? '<span class="sy-chip ok">&#10003; Played last pick</span>' : '<span class="sy-chip warn">&#9888; Submit your slip</span>',
+      m.donation_active ? '<span class="sy-chip ok">&#10003; Donation active</span>' : '<span class="sy-chip warn">&#9888; Donate to stay on feed</span>',
+      m.on_feed ? '<span class="sy-chip ok">&#128276; On the feed</span>' : '<span class="sy-chip off">&#128277; Off the feed</span>'
+    ].join('') : '<span class="sy-chip off">Join the Syndicate to appear on the feed</span>';
+    var rank = (m && m.rank) ? '<div style="text-align:right;"><div style="font-family:var(--d);font-weight:800;font-size:1.4rem;color:var(--gold);">#'+m.rank+'</div><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">this week</div></div>' : '';
+    var joinBtn = (m ? '' :
+      '<button class="btn btn-green btn-sm" style="height:42px;margin-top:12px;" onclick="SYN.join(\''+tier+'\')">Join the Syndicate ('+esc(meta.name)+')</button>');
+    var capBadge = (m && m.captain) ? '<span class="sy-badge" style="color:var(--gold);margin-left:8px;">&#128081; Captain</span>' : '';
+    return '<div class="sy-hero">'+
+      '<div style="display:flex;align-items:flex-start;gap:10px;">'+
+        '<div style="flex:1;"><span class="sy-badge" style="color:'+meta.color+';">'+esc(meta.name)+' member</span>'+capBadge+
+        '<div class="sy-status">'+comp+'</div></div>'+rank+'</div>'+
+      (wired?'':'<p class="sub" style="font-size:.68rem;margin-top:10px;">Syndicate backend not wired yet — this is your live layout. Status fills in once the <code style="color:var(--green);">/api/syndicate</code> routes are live.</p>')+
+      joinBtn+
+      (m ? '<div style="display:flex;gap:8px;margin-top:12px;">'+
+        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--gold);color:var(--gold);" onclick="SYN.openDonate()">&#11088; Donate for rank</button>'+
+        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--green);color:var(--green);" onclick="SYN.openSlip()">&#128203; Submit slip</button>'+
+      '</div>'+
+      (this.tierHasTelegram(myTier())?'<button class="btn btn-green btn-sm" style="height:44px;margin-top:8px;" onclick="SYN.getInvite()">&#128241; Open my Telegram channel</button>':'')
+      : '')+
+    '</div>';
+  },
+  tierHasTelegram:function(tier){ return tier==='gold'||tier==='vip'; },
+  ladderHtml:function(m){
+    var rows=(this.ladder && this.ladder.ok && this.ladder.rows)||[];
+    if(!rows.length){
+      return '<div class="sy-note">The ladder ranks members by weekly donation — highest donors sit at the top and get the feed first. It fills in here once members start donating.</div>';
+    }
+    return rows.slice(0,10).map(function(r,i){
+      var cls='sy-lrow'+(r.you?' you':'')+(i===0?' cap':'');
+      return '<div class="'+cls+'">'+
+        '<div class="sy-rank">'+(i===0?'&#128081;':(r.rank||i+1))+'</div>'+
+        '<div class="sy-lname"><div class="n">'+esc(r.name||'Member')+(r.you?' (you)':'')+'</div>'+
+        '<div class="t">'+esc(r.tier||'')+'</div></div>'+
+        '<div class="sy-ldon">$'+(r.donated||0)+'</div></div>';
+    }).join('');
+  },
+  // Referrer is a role, not a tier: Bronze through VIP can all earn it. This
+  // surfaces the member's existing referral standing inside the Syndicate so
+  // rank and referrals live in one place.
+  referrerHtml:function(){
+    var r=(window.State && State.ref) || null;
+    if(!r){
+      return '<div class="sy-note" style="margin-top:8px;">Any tier can also be a <b>Referrer</b> \u2014 earn a share of every subscription you bring in. Open Invite &amp; Earn to get your link.</div>'+
+        '<button class="btn btn-out btn-sm" style="height:42px;margin-top:8px;" onclick="App.go(\'wallet\')">Open Invite &amp; Earn</button>';
+    }
+    return '<div class="sy-card" style="display:flex;align-items:center;gap:12px;">'+
+      '<div style="width:42px;height:42px;border-radius:12px;display:grid;place-items:center;border:1.5px solid var(--green);color:var(--green);font-size:1.1rem;">\uD83D\uDD17</div>'+
+      '<div style="flex:1;min-width:0;"><div style="font-family:var(--d);font-weight:700;font-size:.95rem;">Referrer</div>'+
+      '<div class="sub" style="font-size:.7rem;margin-top:2px;">'+(r.referred||0)+' referred &middot; $'+Number(r.balance||0).toFixed(2)+' earned</div></div>'+
+      '<button class="btn btn-out btn-sm" style="width:auto;height:36px;padding:0 14px;" onclick="App.go(\'wallet\')">Manage</button></div>';
+  },
+  tierPerks:function(tier){
+    var metas=tierMeta(), cur=metas.filter(function(t){return t.key===tier;})[0];
+    var idx=metas.map(function(t){return t.key;}).indexOf(tier);
+    var next=metas[idx+1];
+    var h='<div class="sy-card">';
+    (cur?cur.perks:[]).forEach(function(p){
+      h+='<div class="sy-perk'+(tier==='vip'?' vip':'')+'"><s>&#9656;</s>'+esc(p)+'</div>';
+    });
+    h+='</div>';
+    if(next){
+      h+='<div class="sy-note" style="margin-top:8px;">Climb to <b>'+esc(next.name)+'</b>: donate above your $'+cur.stack+' band this week to unlock '+esc(next.name)+'\u2019s feed and priority. Rank is earned by donation — keep donating to hold your place.</div>';
+    } else {
+      h+='<div class="sy-note" style="margin-top:8px;">You\u2019re at the top tier. Keep donating above your $'+(cur?cur.stack:500)+' band each week to hold your spot on the ladder and stay Captain-eligible.</div>';
+    }
+    return h;
+  },
+  joinPrompt:function(){
+    var metas=tierMeta();
+    var h='<div class="sy-lock"><div class="ic">&#129309;</div>'+
+      '<div style="font-family:var(--d);font-weight:800;font-size:1.05rem;margin-bottom:6px;">Subscribe to join the Syndicate</div>'+
+      '<p class="sub" style="font-size:.8rem;margin-bottom:14px;">The Syndicate is group play — everyone follows the same verified picks, climbs the ladder, and moves together. Pick a tier to get in. You always stake your own money at your own bookmaker.</p>'+
+      '<button class="btn btn-green btn-sm" style="height:44px;" onclick="App.openPlans&&App.openPlans(\'manage\')">See tiers &amp; subscribe</button></div>';
+    h+='<div class="sy-sec">What each tier unlocks</div>';
+    metas.forEach(function(t){
+      h+='<div class="sy-tier"><div class="ti" style="color:'+t.color+';">'+t.name.charAt(0)+'</div>'+
+        '<div class="mid"><div class="nm">'+esc(t.name)+'</div><div class="pk">'+esc(t.perks.slice(0,2).join(' &middot; '))+'</div></div>'+
+        '<div class="pr"><div class="a">'+esc(t.price.split('/')[0].trim())+'</div><div class="c">'+esc((t.price.split('/')[1]||'mo').trim())+'</div></div></div>';
+    });
+    return h;
+  },
+
+  /* member actions */
+  join:function(tier){
+    var self=this;
+    if(typeof Api==='undefined'||!Api.post){ if(App&&App.toast)App.toast('Not available'); return; }
+    Api.post('/api/syndicate/join',{tier:tier}).then(function(r){
+      if(r&&r.ok){ if(App&&App.toast)App.toast('You\u2019re in the Syndicate'); self.loadMember(); }
+      else if(App&&App.toast)App.toast((r&&r.error)||'Could not join');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  openDonate:function(){
+    var body='<div class="grab"></div><h3 class="h2" style="margin-bottom:4px;">Donate for rank</h3>'+
+      '<p class="sub" style="font-size:.78rem;margin-bottom:14px;">Your weekly donation sets your place on the ladder and keeps you on the feed. It buys rank and priority only — it is not a stake and returns no money.</p>'+
+      '<div class="field"><label>Amount (USD)</label><input class="input" id="syn-don" inputmode="decimal" placeholder="e.g. 120" style="height:50px;"></div>'+
+      '<button class="btn btn-gold" style="margin-top:12px;" onclick="SYN.donate()">Donate</button>'+
+      '<p class="sub" style="font-size:.66rem;margin-top:10px;text-align:center;">Paid from your wallet credit. 18+ &middot; bet responsibly.</p>';
+    this.sheet(body);
+  },
+  donate:function(){
+    var v=parseFloat((document.getElementById('syn-don')||{}).value);
+    if(!isFinite(v)||v<=0){ if(App&&App.toast)App.toast('Enter an amount'); return; }
+    var self=this;
+    Api.post('/api/syndicate/donate',{amount:Number(v.toFixed(2))}).then(function(r){
+      if(r&&r.ok){ if(App&&App.closeSheet)App.closeSheet(); if(App&&App.toast)App.toast('Donation recorded \u2014 rank updating'); self.loadMember(); }
+      else if(App&&App.toast)App.toast((r&&r.error)||'Could not record');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  openSlip:function(){
+    var body='<div class="grab"></div><h3 class="h2" style="margin-bottom:4px;">Submit your slip</h3>'+
+      '<p class="sub" style="font-size:.78rem;margin-bottom:14px;">Prove you played this week\u2019s pick to stay on the feed. Your slip must show the <b>booking code / selections that match the tip</b> and the amount you staked \u2014 not just any slip.</p>'+
+      '<div class="field"><label>Booking code (must match the tip)</label><input class="input" id="syn-code" placeholder="e.g. A1B2C3" style="height:48px;"></div>'+
+      '<div class="field" style="margin-top:10px;"><label>Amount staked (USD)</label><input class="input" id="syn-amt" inputmode="decimal" placeholder="e.g. 100" style="height:48px;"></div>'+
+      '<div class="field" style="margin-top:10px;"><label>Screenshot link (optional)</label><input class="input" id="syn-proof" placeholder="paste image URL" style="height:48px;"></div>'+
+      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.submitSlip()">Submit for verification</button>'+
+      '<p class="sub" style="font-size:.66rem;margin-top:10px;text-align:center;">An admin verifies the code matches the tip. Only verified, playing members get the next push.</p>';
+    this.sheet(body);
+  },
+  submitSlip:function(){
+    var code=(document.getElementById('syn-code')||{}).value, amt=parseFloat((document.getElementById('syn-amt')||{}).value), proof=(document.getElementById('syn-proof')||{}).value;
+    if(!code||!code.trim()){ if(App&&App.toast)App.toast('Enter the booking code'); return; }
+    if(!isFinite(amt)||amt<=0){ if(App&&App.toast)App.toast('Enter the amount staked'); return; }
+    var self=this;
+    Api.post('/api/syndicate/slip',{code:code.trim(),amount:Number(amt.toFixed(2)),proof_url:(proof||'').trim()}).then(function(r){
+      if(r&&r.ok){ if(App&&App.closeSheet)App.closeSheet(); if(App&&App.toast)App.toast('Slip submitted \u2014 awaiting verification'); self.loadMember(); }
+      else if(App&&App.toast)App.toast((r&&r.error)||'Could not submit');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  getInvite:function(){
+    if(typeof Api==='undefined'||!Api.get){ return; }
+    if(App&&App.toast)App.toast('Checking your access\u2026');
+    Api.get('/api/syndicate/invite').then(function(r){
+      if(r&&r.ok&&r.url){ try{ window.open(r.url,'_blank'); }catch(e){} if(App&&App.toast)App.toast('Opening your channel'); }
+      else if(App&&App.toast)App.toast((r&&r.error)||'No active invite \u2014 check your donation & slip');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  sheet:function(html){
+    var ov=document.getElementById('overlay'), sh=document.getElementById('sheet');
+    if(ov&&sh){ sh.innerHTML=html; ov.classList.add('show'); }
+  },
+
+  /* ================= PROOF VAULT (its own page) ================= */
+  renderVault:function(){
+    var el=document.getElementById('view-vault'); if(!el) return;
+    el.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'+
+      '<span style="font-size:1.4rem;cursor:pointer;" onclick="App.go(\'syndicate\')">&#8249;</span>'+
+      '<h2 class="h2" style="flex:1;">Proof Vault</h2></div>'+
+      '<div class="sy-vault-head"><div class="t">&#128274; Every pick, win or loss \u2014 permanent</div>'+
+      '<div class="s">This is our complete record. We never delete a loss. Each row carries a verification hash you can check independently. Honesty you don\u2019t have to take on trust.</div></div>'+
+      '<div id="vault-body"><p class="sub">Loading the record&hellip;</p></div>';
+    var self=this;
+    if(typeof Api!=='undefined'&&Api.get){
+      Api.get('/api/syndicate/vault').then(function(r){ self.vault=r; self.paintVault(r); }).catch(function(){ self.paintVault({ok:false}); });
+    } else this.paintVault({ok:false});
+  },
+  paintVault:function(r){
+    var body=document.getElementById('vault-body'); if(!body) return;
+    var rows=(r&&r.ok&&r.results)||[];
+    if(!rows.length){
+      body.innerHTML='<div class="sy-note">The Vault is append-only: every pick posts here the moment it settles, win or loss, with a verification hash. It fills in from <code style="color:var(--green);">/api/syndicate/vault</code>. Nothing can be edited or removed once written \u2014 that constraint is the point.</div>';
+      return;
+    }
+    var won=rows.filter(function(x){return /won/i.test(x.result);}).length;
+    var lost=rows.filter(function(x){return /lost/i.test(x.result);}).length;
+    var rate=won+lost?Math.round(won/(won+lost)*100):0;
+    body.innerHTML='<div style="display:flex;gap:8px;margin-bottom:14px;">'+
+        '<div class="sy-stat"><div class="v">'+rows.length+'</div><div class="l">Total picks</div></div>'+
+        '<div class="sy-stat"><div class="v" style="color:var(--green);">'+won+'</div><div class="l">Won</div></div>'+
+        '<div class="sy-stat"><div class="v" style="color:var(--red);">'+lost+'</div><div class="l">Lost</div></div>'+
+        '<div class="sy-stat"><div class="v" style="color:var(--gold);">'+rate+'%</div><div class="l">Strike</div></div>'+
+      '</div>'+
+      '<div class="sy-card" style="padding:4px 14px;">'+rows.map(function(x){
+        var rs=/won/i.test(x.result)?'won':/lost/i.test(x.result)?'lost':'void';
+        var hash=x.hash?('<span class="hs" onclick="SYN.verify(\''+esc(x.url||'')+'\')">'+esc(String(x.hash).slice(0,10))+'\u2026 &#128279;</span>'):'';
+        return '<div class="sy-vrow"><span class="dt">'+esc(x.date||'')+'</span>'+
+          '<span class="pk">'+esc(x.pick||'')+(x.odds?' <b style="color:var(--gold);">@'+x.odds+'</b>':'')+'</span>'+
+          hash+'<span class="rs '+rs+'">'+rs+'</span></div>';
+      }).join('')+'</div>'+
+      '<p class="sub" style="font-size:.66rem;margin-top:12px;text-align:center;">Losses are never removed. That\u2019s the promise.</p>';
+  },
+  verify:function(url){ if(url){ try{ window.open(url,'_blank'); }catch(e){} } else if(App&&App.toast)App.toast('No verification link on this row yet'); },
+
+  /* ================= ADMIN CONSOLE ================= */
+  renderAdmin:function(){
+    var body=document.getElementById('admin-tab-body'); if(!body) return;
+    var h='<div class="sy-atabs">'+
+      [['members','Members'],['slips','Slip queue'],['push','Send push'],['live','Live'],['ladder','Ladder'],['vault','Vault']].map(function(t){
+        return '<button class="sy-atab'+(SYN.aTab===t[0]?' on':'')+'" onclick="SYN.aGo(\''+t[0]+'\')">'+t[1]+'</button>';
+      }).join('')+'</div><div id="syn-admin-body"></div>';
+    body.innerHTML='<div id="syn-admin">'+h+'</div>';
+    this.aPaint();
+  },
+  aGo:function(t){ this.aTab=t; this.aPaint(); },
+  aPaint:function(){
+    var b=document.getElementById('syn-admin-body'); if(!b) return;
+    if(this.aTab==='members') return this.aMembersView(b);
+    if(this.aTab==='slips')   return this.aSlipsView(b);
+    if(this.aTab==='push')    return this.aPushView(b);
+    if(this.aTab==='live')    return this.aLiveView(b);
+    if(this.aTab==='ladder')  return this.aLadderView(b);
+    if(this.aTab==='vault')   return this.aVaultView(b);
+  },
+  aMembersView:function(b){
+    b.innerHTML='<p class="sub">Loading members&hellip;</p>';
+    if(typeof Api==='undefined'||!Api.get){ b.innerHTML=this.aStub('members'); return; }
+    Api.get('/api/admin/syndicate/members').then(function(r){
+      var ms=(r&&r.ok&&r.members)||[];
+      if(!ms.length){ b.innerHTML=SYN.aStub('members'); return; }
+      var counts={active:0,susp:0,pend:0};
+      ms.forEach(function(m){ counts[m.status]=(counts[m.status]||0)+1; });
+      b.innerHTML='<div style="display:flex;gap:8px;margin-bottom:12px;">'+
+          '<div class="sy-stat"><div class="v">'+ms.length+'</div><div class="l">In syndicate</div></div>'+
+          '<div class="sy-stat"><div class="v" style="color:var(--green);">'+(counts.active||0)+'</div><div class="l">Active</div></div>'+
+          '<div class="sy-stat"><div class="v" style="color:var(--red);">'+(counts.susp||0)+'</div><div class="l">Suspended</div></div>'+
+        '</div>'+
+        ms.map(function(m){
+          return '<div class="sy-mrow"><div class="mid"><div class="n">'+esc(m.name||'Member')+'</div>'+
+            '<div class="s">'+esc(m.tier||'')+' &middot; rank #'+(m.rank||'-')+' &middot; donated $'+(m.donated||0)+(m.captain?' &middot; \uD83D\uDC51 Captain':'')+'</div></div>'+
+            '<span class="sy-tag '+(m.status||'active')+'">'+esc(m.status||'active')+'</span></div>';
+        }).join('');
+    }).catch(function(){ b.innerHTML=SYN.aStub('members'); });
+  },
+  aSlipsView:function(b){
+    b.innerHTML='<p class="sub">Loading slip queue&hellip;</p>';
+    if(typeof Api==='undefined'||!Api.get){ b.innerHTML=this.aStub('slips'); return; }
+    Api.get('/api/admin/syndicate/slips').then(function(r){
+      var ss=(r&&r.ok&&r.slips)||[];
+      if(!ss.length){ b.innerHTML='<div class="sy-note">No slips awaiting verification. Submitted slips appear here \u2014 confirm the <b>booking code matches the tip</b>, then verify. Only verified players get the next push.</div>'; return; }
+      b.innerHTML=ss.map(function(s){
+        return '<div class="sy-card" style="padding:12px 13px;">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><b style="font-size:.86rem;flex:1;">'+esc(s.name||'Member')+'</b><span class="sy-tag pend">pending</span></div>'+
+          '<div class="sub" style="font-size:.72rem;line-height:1.6;">Code: <b style="color:var(--text);">'+esc(s.code||'')+'</b><br>Tip: '+esc(s.tip||'(unmatched)')+'<br>Staked: $'+(s.amount||0)+'</div>'+
+          (s.proof_url?'<a href="'+esc(s.proof_url)+'" target="_blank" class="sub" style="font-size:.7rem;color:var(--green);">View screenshot &#128279;</a>':'')+
+          '<div style="display:flex;gap:8px;margin-top:10px;">'+
+            '<button class="btn btn-green btn-sm" style="flex:1;height:38px;" onclick="SYN.slipDecide(\''+esc(s.id)+'\',\'verify\')">Verify</button>'+
+            '<button class="btn btn-out btn-sm" style="flex:1;height:38px;border-color:var(--red);color:var(--red);" onclick="SYN.slipDecide(\''+esc(s.id)+'\',\'reject\')">Reject</button>'+
+          '</div></div>';
+      }).join('');
+    }).catch(function(){ b.innerHTML=SYN.aStub('slips'); });
+  },
+  slipDecide:function(id,action){
+    Api.post('/api/admin/syndicate/slip/decide',{id:id,action:action}).then(function(r){
+      if(r&&r.ok){ if(App&&App.toast)App.toast(action==='verify'?'Verified':'Rejected'); SYN.aPaint(); }
+      else if(App&&App.toast)App.toast('Could not update');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  aPushView:function(b){
+    b.innerHTML='<div class="sy-note" style="margin-bottom:12px;">Push goes only to members who <b>played the last pick</b> and have an <b>active weekly donation</b> \u2014 the server enforces that. Set a minimum-odds floor so latecomers who\u2019ve missed the price skip the bet.</div>'+
+      '<div class="field"><label>Tier</label><select class="sel" id="syn-push-tier" style="height:46px;"><option value="all">All tiers</option><option value="bronze">Bronze+</option><option value="silver">Silver+</option><option value="gold">Gold+</option><option value="vip">VIP only</option></select></div>'+
+      '<div class="field" style="margin-top:10px;"><label>Pick / message</label><textarea class="ta" id="syn-push-text" rows="3" placeholder="e.g. LIV vs CHE \u2014 Over 2.5 @1.90. Code A1B2C3." style="padding:12px 14px;"></textarea></div>'+
+      '<div class="field" style="margin-top:10px;"><label>Minimum odds floor</label><input class="input" id="syn-push-odds" inputmode="decimal" placeholder="e.g. 1.85 \u2014 only play if you can still get this" style="height:46px;"></div>'+
+      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.sendPush()">Send to eligible members</button>';
+  },
+  sendPush:function(){
+    var tier=(document.getElementById('syn-push-tier')||{}).value, text=(document.getElementById('syn-push-text')||{}).value, odds=parseFloat((document.getElementById('syn-push-odds')||{}).value);
+    if(!text||!text.trim()){ if(App&&App.toast)App.toast('Enter the pick'); return; }
+    Api.post('/api/admin/syndicate/push',{tier:tier,text:text.trim(),min_odds:isFinite(odds)?odds:null}).then(function(r){
+      if(r&&r.ok){ if(App&&App.toast)App.toast('Sent to '+(r.sent||0)+' eligible member'+((r.sent||0)===1?'':'s')); }
+      else if(App&&App.toast)App.toast((r&&r.error)||'Could not send');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  /* Live sessions. Declared ahead of time so members know to be online, then
+     picks fire with a short window and a minimum-odds floor. Latecomers who
+     can no longer get the floor price simply skip — that rule is what keeps a
+     live syndicate fair instead of chaotic. */
+  aLiveView:function(b){
+    var live=this.liveSession;
+    b.innerHTML='<div class="sy-note" style="margin-bottom:12px;">Declare a session so members know to be online, then drop picks with an <b>odds floor</b> and a short window. Only members on the feed receive them.</div>'+
+      (live
+        ? '<div class="sy-card" style="border-color:var(--green);">'+
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;"></span>'+
+          '<b style="font-size:.9rem;flex:1;">Live session running</b><span class="sy-tag active">'+esc(live.tier)+'</span></div>'+
+          '<div class="sub" style="font-size:.72rem;">Started '+esc(live.started)+' &middot; '+live.picks+' pick'+(live.picks===1?'':'s')+' sent</div>'+
+          '<button class="btn btn-out btn-sm" style="height:38px;margin-top:10px;border-color:var(--red);color:var(--red);" onclick="SYN.endLive()">End session</button></div>'+
+          '<div class="sy-sec">Drop a live pick</div>'+
+          '<div class="field"><label>Pick</label><input class="input" id="syn-lv-pick" placeholder="e.g. LIV vs CHE \u2014 Next goal LIV" style="height:46px;"></div>'+
+          '<div style="display:flex;gap:8px;margin-top:10px;">'+
+            '<div class="field" style="flex:1;"><label>Minimum odds</label><input class="input" id="syn-lv-odds" inputmode="decimal" placeholder="1.85" style="height:46px;"></div>'+
+            '<div class="field" style="flex:1;"><label>Window (min)</label><input class="input" id="syn-lv-win" inputmode="numeric" value="5" style="height:46px;"></div>'+
+          '</div>'+
+          '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.dropLive()">Drop pick to session</button>'
+        : '<div class="field"><label>Tier</label><select class="sel" id="syn-lv-tier" style="height:46px;"><option value="vip">VIP only</option><option value="gold">Gold+</option><option value="all">All tiers</option></select></div>'+
+          '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.startLive()">Start live session</button>');
+  },
+  liveSession:null,
+  startLive:function(){
+    var tier=(document.getElementById('syn-lv-tier')||{}).value||'vip';
+    this.liveSession={ tier:tier, started:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), picks:0 };
+    // Announce so members know to come online.
+    if(typeof Api!=='undefined'&&Api.post){
+      Api.post('/api/admin/syndicate/push',{tier:tier,text:'\uD83D\uDD34 LIVE SESSION starting now \u2014 be online. Picks drop with a minimum-odds floor.',min_odds:null}).catch(function(){});
+    }
+    if(App&&App.toast)App.toast('Live session started');
+    this.aPaint();
+  },
+  dropLive:function(){
+    var pick=(document.getElementById('syn-lv-pick')||{}).value,
+        odds=parseFloat((document.getElementById('syn-lv-odds')||{}).value),
+        win=parseInt((document.getElementById('syn-lv-win')||{}).value,10)||5;
+    if(!pick||!pick.trim()){ if(App&&App.toast)App.toast('Enter the pick'); return; }
+    if(!isFinite(odds)){ if(App&&App.toast)App.toast('Set the minimum odds floor'); return; }
+    var self=this;
+    var txt='\u26A1 LIVE: '+pick.trim()+'\n\nOnly play if you can still get '+odds.toFixed(2)+' or better. Window: '+win+' min.';
+    Api.post('/api/admin/syndicate/push',{tier:this.liveSession.tier,text:txt,min_odds:odds}).then(function(r){
+      if(r&&r.ok){ self.liveSession.picks++; if(App&&App.toast)App.toast('Sent to '+(r.sent||0)+' member'+((r.sent||0)===1?'':'s'));
+        var e=document.getElementById('syn-lv-pick'); if(e)e.value=''; self.aPaint(); }
+      else if(App&&App.toast)App.toast('Could not send');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  endLive:function(){
+    this.liveSession=null;
+    if(App&&App.toast)App.toast('Live session ended');
+    this.aPaint();
+  },
+  aLadderView:function(b){
+    b.innerHTML='<p class="sub">Loading ladder&hellip;</p>';
+    if(typeof Api==='undefined'||!Api.get){ b.innerHTML=this.aStub('ladder'); return; }
+    Api.get('/api/syndicate/ladder').then(function(r){
+      var rows=(r&&r.ok&&r.rows)||[];
+      if(!rows.length){ b.innerHTML=SYN.aStub('ladder'); return; }
+      b.innerHTML='<div class="sy-note" style="margin-bottom:10px;">Top donor is Captain of the Week. Set it to feature their pick and give the crown badge.</div>'+
+        rows.slice(0,15).map(function(r,i){
+          return '<div class="sy-lrow'+(i===0?' cap':'')+'"><div class="sy-rank">'+(i===0?'\uD83D\uDC51':(i+1))+'</div>'+
+            '<div class="sy-lname"><div class="n">'+esc(r.name||'Member')+'</div><div class="t">'+esc(r.tier||'')+'</div></div>'+
+            '<div class="sy-ldon">$'+(r.donated||0)+'</div>'+
+            '<button class="pill" style="font-size:.6rem;padding:4px 8px;margin-left:8px;" onclick="SYN.setCaptain(\''+esc(r.id||'')+'\')">Captain</button></div>';
+        }).join('');
+    }).catch(function(){ b.innerHTML=SYN.aStub('ladder'); });
+  },
+  setCaptain:function(id){
+    Api.post('/api/admin/syndicate/captain',{member_id:id}).then(function(r){
+      if(r&&r.ok){ if(App&&App.toast)App.toast('Captain of the Week set'); SYN.aPaint(); }
+      else if(App&&App.toast)App.toast('Could not set');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  aVaultView:function(b){
+    b.innerHTML='<div class="sy-note" style="margin-bottom:12px;">The Vault is <b>append-only</b>. Post every result here \u2014 win OR loss. Once written it cannot be edited or deleted; that permanence is the whole point. Never skip a loss.</div>'+
+      '<div class="field"><label>Pick</label><input class="input" id="syn-v-pick" placeholder="e.g. LIV vs CHE \u2014 Over 2.5" style="height:46px;"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:10px;">'+
+        '<div class="field" style="flex:1;"><label>Odds</label><input class="input" id="syn-v-odds" inputmode="decimal" placeholder="1.90" style="height:46px;"></div>'+
+        '<div class="field" style="flex:1;"><label>Result</label><select class="sel" id="syn-v-res" style="height:46px;"><option value="won">Won</option><option value="lost">Lost</option><option value="void">Void</option></select></div>'+
+      '</div>'+
+      '<div class="field" style="margin-top:10px;"><label>Verification hash / ticket ID</label><input class="input" id="syn-v-hash" placeholder="bet ID or ticket hash" style="height:46px;"></div>'+
+      '<div class="field" style="margin-top:10px;"><label>Verify URL (optional)</label><input class="input" id="syn-v-url" placeholder="bookmaker verify link" style="height:46px;"></div>'+
+      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.vaultAdd()">Write to Vault (permanent)</button>';
+  },
+  vaultAdd:function(){
+    var pick=(document.getElementById('syn-v-pick')||{}).value, odds=(document.getElementById('syn-v-odds')||{}).value,
+        res=(document.getElementById('syn-v-res')||{}).value, hash=(document.getElementById('syn-v-hash')||{}).value, url=(document.getElementById('syn-v-url')||{}).value;
+    if(!pick||!pick.trim()){ if(App&&App.toast)App.toast('Enter the pick'); return; }
+    Api.post('/api/admin/syndicate/vault',{pick:pick.trim(),odds:odds,result:res,hash:(hash||'').trim(),url:(url||'').trim()}).then(function(r){
+      if(r&&r.ok){ if(App&&App.toast)App.toast('Written to the Vault'); ['syn-v-pick','syn-v-odds','syn-v-hash','syn-v-url'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';}); }
+      else if(App&&App.toast)App.toast((r&&r.error)||'Could not write');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  aStub:function(which){
+    var msg={
+      members:'Members who join the Syndicate appear here, grouped by status (active / suspended / pending). Fills in from <code style="color:var(--green);">/api/admin/syndicate/members</code>.',
+      slips:'Submitted slips queue here for you to verify the code matches the tip.',
+      ladder:'The weekly donation ladder appears here once members donate.'
+    }[which]||'Not wired yet.';
+    return '<div class="sy-note">'+msg+'</div>';
+  }
+};
+
+/* boot */
+function boot(){
+  if(typeof App==='undefined' || !App.go){ return setTimeout(boot,180); }
+  SYN.install();
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+})();
+</script>
+
+<!-- ═══════════ END SYNDICATE ═══════════ -->
 
 </body>
 </html>
