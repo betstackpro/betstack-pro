@@ -4890,7 +4890,12 @@ function tierMeta(){
   });
 }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function myTier(){ return (window.State && State.tier) || 'none'; }
+// Admins hold the top tier everywhere — they already get full access to every
+// tip, so the Syndicate treats them as VIP rather than defaulting to Bronze.
+function myTier(){
+  if(window.State && State.isAdmin) return 'vip';
+  return (window.State && State.tier) || 'none';
+}
 function isAdmin(){ return !!(window.State && State.isAdmin); }
 
 var SYN = window.SYN = {
@@ -4995,7 +5000,17 @@ var SYN = window.SYN = {
   },
   hero:function(tier, m, wired){
     var meta=tierMeta().filter(function(t){return t.key===tier;})[0]||{name:tier,color:'#8a909a'};
-    var comp = m ? [
+    // Admins are never suspended, demoted or taken off the feed anywhere in
+    // this app. Treat them as fully compliant and show clearance, not warnings.
+    if(isAdmin()){
+      m = m || { rank:1, donated:0, played:true, donation_active:true, on_feed:true, captain:false };
+      m.played=true; m.donation_active=true; m.on_feed=true;
+    }
+    var comp = isAdmin()
+      ? '<span class="sy-chip ok">&#10003; Admin &mdash; full access</span>'+
+        '<span class="sy-chip ok">&#128276; Always on the feed</span>'+
+        '<span class="sy-chip ok">&#10003; Never restricted</span>'
+      : m ? [
       m.played ? '<span class="sy-chip ok">&#10003; Played last pick</span>' : '<span class="sy-chip warn">&#9888; Submit your slip</span>',
       m.donation_active ? '<span class="sy-chip ok">&#10003; Donation active</span>' : '<span class="sy-chip warn">&#9888; Donate to stay on feed</span>',
       m.on_feed ? '<span class="sy-chip ok">&#128276; On the feed</span>' : '<span class="sy-chip off">&#128277; Off the feed</span>'
@@ -5405,7 +5420,7 @@ var SYN = window.SYN = {
         ms.map(function(m){
           return '<div class="sy-mrow"><div class="mid"><div class="n">'+esc(m.name||'Member')+'</div>'+
             '<div class="s">'+esc(m.tier||'')+' &middot; rank #'+(m.rank||'-')+' &middot; donated $'+(m.donated||0)+(m.captain?' &middot; \uD83D\uDC51 Captain':'')+'</div></div>'+
-            '<span class="sy-tag '+(m.status||'active')+'">'+esc(m.status||'active')+'</span></div>';
+            '<span class="sy-tag '+(m.admin?'active':(m.status||'active'))+'">'+esc(m.admin?'admin':(m.status||'active'))+'</span></div>';
         }).join('');
     }).catch(function(){ b.innerHTML=SYN.aStub('members'); });
   },
