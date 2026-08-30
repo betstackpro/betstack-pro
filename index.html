@@ -2198,7 +2198,7 @@ const App={
         :`<button class="btn btn-dark btn-sm" style="height:34px;padding:0 11px;" onclick="App.mark('${t.id}','open')">Pending</button>`;
       return `<div class="irow"><div style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0;"></div><div class="mid"><div class="t" style="font-size:.95rem;">${this.esc(t.title)} <span style="color:${col};font-size:.7rem;">· ${label}</span></div><div class="d">${t.book?this.esc(t.book)+' · ':''}${t.odds?'@'+Number(t.odds).toFixed(2)+' · ':''}${t.img?'Photo uploaded':'No photo yet'}</div></div><div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:170px;"><button class="btn btn-out btn-sm" style="height:34px;padding:0 11px;" onclick="App.openSheet('editslip','${t.id}')">Edit</button>${ctrls}</div></div>`;
     }).join('')||'<p class="sub">No slips yet — post one above.</p>';
-    document.getElementById('admin-list').innerHTML=`<div style="display:flex;gap:8px;margin-bottom:14px;">
+    document.getElementById('admin-list').innerHTML=`<div style="display:flex;gap:8px;margin:22px 0 14px;flex-wrap:wrap;">
       <button class="pill ${this._adminTab!=='games'&&this._adminTab!=='users'?'active':''}" onclick="App.adminGo('overview')">Overview</button>
       <button class="pill ${this._adminTab==='games'?'active':''}" onclick="App.adminGo('games')">🗓 Games</button>
       <button class="pill ${this._adminTab==='syndicate'?'active':''}" onclick="App.adminGo('syndicate')">🤝 Syndicate</button>
@@ -4948,6 +4948,9 @@ var SYN = window.SYN = {
     Api.get('/api/syndicate/me').then(function(r){ self.me=r; self.paintMember(r); })
       .catch(function(){ self.paintMember({ok:false}); });
     Api.get('/api/syndicate/ladder').then(function(r){ self.ladder=r; if(self.me)self.paintMember(self.me); }).catch(function(){});
+    Api.get('/api/syndicate/achievements').then(function(r){ self.ach=r; if(self.me)self.paintMember(self.me); }).catch(function(){});
+    // a visit counts as the daily login for the streak
+    if(Api.post) Api.post('/api/syndicate/activity',{action:'login_daily'}).catch(function(){});
   },
   paintMember:function(r){
     var body=document.getElementById('syn-body'); if(!body) return;
@@ -4957,6 +4960,11 @@ var SYN = window.SYN = {
       body.innerHTML=this.joinPrompt();
       return;
     }
+    // Identity gate: the Syndicate needs to know who each member is before they
+    // can enter. If there's no profile yet, show the onboarding form instead.
+    if(this.profile===null && !this.profileChecked){ this.loadProfile(); return; }
+    if(this.profileChecked && !this.profile){ body.innerHTML=this.onboardHtml(); return; }
+
     // Backend not wired yet -> show the structure with a clear notice
     var wired = r && r.ok;
     var m = (wired && r.in) ? r : null;
@@ -4964,6 +4972,8 @@ var SYN = window.SYN = {
     var h='';
     // hero: identity + compliance
     h+=this.hero(tier, m, wired);
+    // rank, points, progression and badges
+    h+=this.achHtml();
     // ladder
     h+='<div class="sy-sec">Weekly ladder <span style="letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted);">top donors get priority</span></div>';
     h+=this.ladderHtml(m);
@@ -4994,7 +5004,20 @@ var SYN = window.SYN = {
     var joinBtn = (m ? '' :
       '<button class="btn btn-green btn-sm" style="height:42px;margin-top:12px;" onclick="SYN.join(\''+tier+'\')">Join the Syndicate ('+esc(meta.name)+')</button>');
     var capBadge = (m && m.captain) ? '<span class="sy-badge" style="color:var(--gold);margin-left:8px;">&#128081; Captain</span>' : '';
-    return '<div class="sy-hero">'+
+    var pf=this.profile||{};
+    var a=this.ach;
+    var tags=(a&&a.ok&&a.badges||[]).slice(0,4).map(function(k){
+      var b=(a.catalogue||[]).filter(function(x){return x.key===k;})[0]; return b?b.icon:'';
+    }).join('');
+    var rk=(a&&a.ok&&a.rank)?a.rank:null;
+    var who='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'+
+      '<div style="width:44px;height:44px;border-radius:50%;background:var(--surface-2);border:1.5px solid '+((rk&&rk.color)||'var(--green)')+';display:grid;place-items:center;font-size:1.3rem;overflow:hidden;">'+esc(pf.avatar||'\uD83D\uDC64')+'</div>'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div class="sub" style="font-size:.66rem;">Welcome back</div>'+
+        '<div style="font-family:var(--d);font-weight:800;font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(pf.display_name||pf.full_name||'Member')+' '+tags+'</div>'+
+        (rk?'<div class="sub" style="font-size:.64rem;margin-top:1px;color:'+rk.color+';">'+rk.icon+' '+esc(rk.name)+'</div>':'')+
+      '</div></div>';
+    return '<div class="sy-hero">'+who+
       '<div style="display:flex;align-items:flex-start;gap:10px;">'+
         '<div style="flex:1;"><span class="sy-badge" style="color:'+meta.color+';">'+esc(meta.name)+' member</span>'+capBadge+
         '<div class="sy-status">'+comp+'</div></div>'+rank+'</div>'+
@@ -5008,6 +5031,130 @@ var SYN = window.SYN = {
       : '')+
     '</div>';
   },
+  /* ---------------- onboarding / identity ---------------- */
+  profile:null, profileChecked:false, prefill:null, photoData:null, avatarPick:'\uD83D\uDC64',
+  loadProfile:function(){
+    var self=this;
+    if(typeof Api==='undefined'||!Api.get){ this.profileChecked=true; this.paintMember(this.me||{}); return; }
+    Api.get('/api/syndicate/profile').then(function(r){
+      self.profile=(r&&r.profile)||null; self.prefill=(r&&r.prefill)||null;
+      self.profileChecked=true; self.paintMember(self.me||{});
+    }).catch(function(){ self.profileChecked=true; self.paintMember(self.me||{}); });
+  },
+  onboardHtml:function(){
+    var pf=this.prefill||{};
+    var AV=['\uD83D\uDC64','\uD83E\uDD81','\uD83D\uDC2F','\uD83E\uDD85','\uD83D\uDC0D','\uD83D\uDC3A','\uD83E\uDD8A','\uD83D\uDC2C','\u26BD','\uD83C\uDFAF','\uD83D\uDD25','\uD83D\uDC8E'];
+    return '<div class="sy-card" style="border-color:var(--green);">'+
+      '<div style="font-family:var(--d);font-weight:800;font-size:1.1rem;margin-bottom:4px;">Set up your Syndicate profile</div>'+
+      '<p class="sub" style="font-size:.76rem;margin-bottom:14px;">This is how the group tells you apart \u2014 your name on the ladder, your badges, your rank. Fill it once.</p>'+
+
+      '<div style="text-align:center;margin-bottom:14px;">'+
+        '<div id="syn-photo-wrap" style="width:110px;height:110px;border-radius:50%;margin:0 auto 10px;background:var(--surface-2);border:2px dashed var(--border-2);display:grid;place-items:center;overflow:hidden;">'+
+          '<span id="syn-photo-ph" style="font-size:2.2rem;">\uD83D\uDCF7</span>'+
+          '<video id="syn-cam" playsinline autoplay muted style="display:none;width:100%;height:100%;object-fit:cover;"></video>'+
+          '<img id="syn-shot" style="display:none;width:100%;height:100%;object-fit:cover;">'+
+        '</div>'+
+        '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">'+
+          '<button class="btn btn-out btn-sm" style="width:auto;height:36px;padding:0 14px;" onclick="SYN.startCam()">\uD83D\uDCF7 Open camera</button>'+
+          '<button class="btn btn-out btn-sm" id="syn-snap" style="width:auto;height:36px;padding:0 14px;display:none;" onclick="SYN.snap()">Capture</button>'+
+          '<button class="btn btn-out btn-sm" style="width:auto;height:36px;padding:0 14px;" onclick="document.getElementById(\'syn-file\').click()">Upload</button>'+
+        '</div>'+
+        '<input type="file" id="syn-file" accept="image/*" style="display:none;" onchange="SYN.pickFile(this)">'+
+      '</div>'+
+
+      '<div class="field"><label>Full name *</label><input class="input" id="sp-name" placeholder="Your full name" style="height:46px;"></div>'+
+      '<div class="field" style="margin-top:9px;"><label>Username *</label><input class="input" id="sp-user" value="'+esc(pf.display_name||'')+'" placeholder="Shown on the ladder" style="height:46px;"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:9px;">'+
+        '<div class="field" style="flex:1;"><label>Age *</label><input class="input" id="sp-age" inputmode="numeric" placeholder="18+" style="height:46px;"></div>'+
+        '<div class="field" style="flex:1;"><label>Gender *</label><select class="sel" id="sp-gender" style="height:46px;"><option value="">Select</option><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>'+
+      '</div>'+
+      '<div class="field" style="margin-top:9px;"><label>Phone *</label><input class="input" id="sp-phone" inputmode="tel" placeholder="+234\u2026" style="height:46px;"></div>'+
+      '<div class="field" style="margin-top:9px;"><label>Email (verified)</label><input class="input" id="sp-email" value="'+esc(pf.email||'')+'" disabled style="height:46px;opacity:.7;"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:9px;">'+
+        '<div class="field" style="flex:1;"><label>Country *</label><input class="input" id="sp-country" placeholder="Nigeria" style="height:46px;"></div>'+
+        '<div class="field" style="flex:1;"><label>Region / State</label><input class="input" id="sp-region" placeholder="Rivers" style="height:46px;"></div>'+
+      '</div>'+
+      '<div class="field" style="margin-top:9px;"><label>Occupation</label><input class="input" id="sp-occ" placeholder="Optional" style="height:46px;"></div>'+
+
+      '<div class="field" style="margin-top:12px;"><label>Pick an avatar</label>'+
+        '<div id="syn-avatars" style="display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;">'+
+        AV.map(function(a,i){ return '<button class="sy-av'+(i===0?' on':'')+'" data-av="'+a+'" onclick="SYN.pickAvatar(this)" style="width:42px;height:42px;border-radius:12px;background:var(--surface-2);border:1.5px solid '+(i===0?'var(--green)':'var(--border)')+';font-size:1.2rem;">'+a+'</button>'; }).join('')+
+        '</div></div>'+
+
+      '<label style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;cursor:pointer;">'+
+        '<input type="checkbox" id="sp-terms" style="width:20px;height:20px;margin-top:2px;flex-shrink:0;accent-color:var(--green);">'+
+        '<span class="sub" style="font-size:.74rem;line-height:1.55;">I confirm I am <b>18 or older</b>, the details above are mine, and I accept the Syndicate terms: I stake my own money at my own bookmaker, donations buy rank and priority only (never a return), and outcomes are never guaranteed.</span>'+
+      '</label>'+
+      '<button class="btn btn-green" style="margin-top:14px;height:50px;" onclick="SYN.saveProfile()">Confirm &amp; enter the Syndicate</button>'+
+      '<p class="sub" style="font-size:.64rem;margin-top:10px;text-align:center;">Your details are stored to identify you inside the group and are not shared with other members beyond your username, avatar and rank.</p>'+
+    '</div>';
+  },
+  pickAvatar:function(el){
+    this.avatarPick=el.getAttribute('data-av');
+    var all=document.querySelectorAll('#syn-avatars .sy-av');
+    for(var i=0;i<all.length;i++) all[i].style.borderColor='var(--border)';
+    el.style.borderColor='var(--green)';
+  },
+  startCam:function(){
+    var v=document.getElementById('syn-cam'), ph=document.getElementById('syn-photo-ph'), snap=document.getElementById('syn-snap');
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ if(App&&App.toast)App.toast('Camera not available \u2014 use Upload'); return; }
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}}).then(function(st){
+      SYN._stream=st; v.srcObject=st; v.style.display='block';
+      if(ph)ph.style.display='none';
+      var img=document.getElementById('syn-shot'); if(img)img.style.display='none';
+      if(snap)snap.style.display='inline-flex';
+    }).catch(function(){ if(App&&App.toast)App.toast('Camera blocked \u2014 use Upload instead'); });
+  },
+  snap:function(){
+    var v=document.getElementById('syn-cam'), img=document.getElementById('syn-shot');
+    if(!v) return;
+    var c=document.createElement('canvas'); c.width=320; c.height=320;
+    var side=Math.min(v.videoWidth||320, v.videoHeight||320);
+    c.getContext('2d').drawImage(v, ((v.videoWidth||320)-side)/2, ((v.videoHeight||320)-side)/2, side, side, 0,0,320,320);
+    this.photoData=c.toDataURL('image/jpeg',0.7);
+    img.src=this.photoData; img.style.display='block'; v.style.display='none';
+    var snap=document.getElementById('syn-snap'); if(snap)snap.style.display='none';
+    this.stopCam();
+    if(App&&App.toast)App.toast('Photo captured');
+  },
+  stopCam:function(){ if(this._stream){ try{ this._stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} this._stream=null; } },
+  pickFile:function(inp){
+    var f=inp.files&&inp.files[0]; if(!f) return;
+    var self=this, rd=new FileReader();
+    rd.onload=function(){
+      var im=new Image();
+      im.onload=function(){
+        var c=document.createElement('canvas'); c.width=320;c.height=320;
+        var side=Math.min(im.width,im.height);
+        c.getContext('2d').drawImage(im,(im.width-side)/2,(im.height-side)/2,side,side,0,0,320,320);
+        self.photoData=c.toDataURL('image/jpeg',0.7);
+        var img=document.getElementById('syn-shot'); if(img){img.src=self.photoData;img.style.display='block';}
+        var ph=document.getElementById('syn-photo-ph'); if(ph)ph.style.display='none';
+        var v=document.getElementById('syn-cam'); if(v)v.style.display='none';
+      };
+      im.src=rd.result;
+    };
+    rd.readAsDataURL(f);
+  },
+  saveProfile:function(){
+    var g=function(id){ var e=document.getElementById(id); return e?String(e.value||'').trim():''; };
+    var terms=document.getElementById('sp-terms');
+    if(!terms||!terms.checked){ if(App&&App.toast)App.toast('Please accept the terms'); return; }
+    var age=parseInt(g('sp-age'),10);
+    if(!isFinite(age)||age<18){ if(App&&App.toast)App.toast('You must be 18 or older'); return; }
+    var req=[['sp-name','full name'],['sp-user','username'],['sp-gender','gender'],['sp-phone','phone'],['sp-country','country']];
+    for(var i=0;i<req.length;i++){ if(!g(req[i][0])){ if(App&&App.toast)App.toast('Enter your '+req[i][1]); return; } }
+    var self=this;
+    Api.post('/api/syndicate/profile',{
+      full_name:g('sp-name'), display_name:g('sp-user'), age:age, gender:g('sp-gender'),
+      phone:g('sp-phone'), country:g('sp-country'), region:g('sp-region'), occupation:g('sp-occ'),
+      avatar:this.avatarPick, photo:this.photoData||'', terms:true
+    }).then(function(r){
+      if(r&&r.ok){ self.stopCam(); self.profile={display_name:g('sp-user')}; if(App&&App.toast)App.toast('Welcome to the Syndicate'); self.loadMember(); }
+      else if(App&&App.toast)App.toast((r&&r.error)||'Could not save');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+
   tierHasTelegram:function(tier){ return tier==='gold'||tier==='vip'; },
   ladderHtml:function(m){
     var rows=(this.ladder && this.ladder.ok && this.ladder.rows)||[];
@@ -5026,6 +5173,57 @@ var SYN = window.SYN = {
   // Referrer is a role, not a tier: Bronze through VIP can all earn it. This
   // surfaces the member's existing referral standing inside the Syndicate so
   // rank and referrals live in one place.
+  ach:null, lastCode:null,
+  /* Rank card + progress to next rank + the badge wall. This is the part that
+     makes members come back: a visible ladder with a next step always in view. */
+  achHtml:function(){
+    var a=this.ach;
+    if(!a||!a.ok){
+      return '<div class="sy-note" style="margin-top:10px;">Your rank, points and badges appear here once the achievement routes are live. Earn points by logging in daily, submitting verified slips, donating weekly, referring members and joining live sessions.</div>';
+    }
+    var r=a.rank||{}, nx=a.next;
+    var pct = nx ? Math.max(4, Math.min(100, Math.round(((a.points-(r.min||0))/((nx.min-(r.min||0))||1))*100))) : 100;
+    var owned={}; (a.badges||[]).forEach(function(b){ owned[b]=1; });
+    var cat=a.catalogue||[];
+    var earned=cat.filter(function(b){ return owned[b.key]; });
+    var locked=cat.filter(function(b){ return !owned[b.key]; });
+
+    var h='<div class="sy-card" style="border-color:'+(r.color||'var(--green)')+';">'+
+      '<div style="display:flex;align-items:center;gap:12px;">'+
+        '<div style="width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:1.6rem;border:1.5px solid '+(r.color||'var(--green)')+';">'+(r.icon||'\u2B50')+'</div>'+
+        '<div style="flex:1;min-width:0;">'+
+          '<div style="font-family:var(--d);font-weight:800;font-size:1.05rem;color:'+(r.color||'var(--green)')+';">'+esc(r.name||'Rookie')+'</div>'+
+          '<div class="sub" style="font-size:.7rem;margin-top:2px;">'+(a.points||0)+' pts &middot; position #'+(a.position||1)+' overall'+((a.streak||0)>1?' &middot; \uD83D\uDD25 '+a.streak+'-day streak':'')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right;"><div style="font-family:var(--d);font-weight:800;font-size:1.1rem;">'+(earned.length)+'</div><div style="font-size:.56rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">badges</div></div>'+
+      '</div>'+
+      (nx
+        ? '<div class="mc-bar" style="margin-top:12px;"><i style="width:'+pct+'%"></i></div>'+
+          '<div class="sub" style="font-size:.66rem;margin-top:6px;">'+nx.need+' pts to <b style="color:var(--text);">'+esc(nx.name)+'</b> '+(nx.icon||'')+'</div>'
+        : '<div class="sub" style="font-size:.66rem;margin-top:10px;">Top rank reached \u2014 '+esc(r.name)+'.</div>')+
+    '</div>';
+
+    // earned badges become tags shown next to the username
+    if(earned.length){
+      h+='<div class="sy-sec">Your badges <span style="letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted);">'+earned.length+' of '+cat.length+'</span></div>'+
+        '<div class="sy-card"><div style="display:flex;flex-wrap:wrap;gap:7px;">'+
+        earned.map(function(b){
+          return '<span title="'+esc(b.desc)+'" style="display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:700;padding:6px 10px;border-radius:8px;background:rgba(31,209,122,.12);border:1px solid rgba(31,209,122,.35);color:var(--green);">'+b.icon+' '+esc(b.name)+'</span>';
+        }).join('')+'</div></div>';
+    }
+    // next few to chase
+    if(locked.length){
+      h+='<div class="sy-sec">Next to unlock</div><div class="sy-card">'+
+        locked.slice(0,6).map(function(b){
+          return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;">'+
+            '<span style="font-size:1.1rem;opacity:.35;">'+b.icon+'</span>'+
+            '<div style="flex:1;min-width:0;"><div style="font-size:.8rem;font-weight:700;color:var(--muted);">'+esc(b.name)+'</div>'+
+            '<div class="sub" style="font-size:.66rem;">'+esc(b.desc)+'</div></div>'+
+            '<span class="sy-tag pend">'+esc(b.group)+'</span></div>';
+        }).join('')+'</div>';
+    }
+    return h;
+  },
   referrerHtml:function(){
     var r=(window.State && State.ref) || null;
     if(!r){
@@ -5161,9 +5359,11 @@ var SYN = window.SYN = {
       '<div class="sy-card" style="padding:4px 14px;">'+rows.map(function(x){
         var rs=/won/i.test(x.result)?'won':/lost/i.test(x.result)?'lost':'void';
         var hash=x.hash?('<span class="hs" onclick="SYN.verify(\''+esc(x.url||'')+'\')">'+esc(String(x.hash).slice(0,10))+'\u2026 &#128279;</span>'):'';
+        // The ticket IS the record — show it as the primary column.
         return '<div class="sy-vrow"><span class="dt">'+esc(x.date||'')+'</span>'+
-          '<span class="pk">'+esc(x.pick||'')+(x.odds?' <b style="color:var(--gold);">@'+x.odds+'</b>':'')+'</span>'+
-          hash+'<span class="rs '+rs+'">'+rs+'</span></div>';
+          '<span class="pk" style="font-family:var(--d);font-size:.74rem;">'+esc(x.hash||'\u2014')+'</span>'+
+          (x.url?'<span class="hs" onclick="SYN.verify(\''+esc(x.url)+'\')">verify &#128279;</span>':'')+
+          '<span class="rs '+rs+'">'+rs+'</span></div>';
       }).join('')+'</div>'+
       '<p class="sub" style="font-size:.66rem;margin-top:12px;text-align:center;">Losses are never removed. That\u2019s the promise.</p>';
   },
@@ -5236,15 +5436,24 @@ var SYN = window.SYN = {
   aPushView:function(b){
     b.innerHTML='<div class="sy-note" style="margin-bottom:12px;">Push goes only to members who <b>played the last pick</b> and have an <b>active weekly donation</b> \u2014 the server enforces that. Set a minimum-odds floor so latecomers who\u2019ve missed the price skip the bet.</div>'+
       '<div class="field"><label>Tier</label><select class="sel" id="syn-push-tier" style="height:46px;"><option value="all">All tiers</option><option value="bronze">Bronze+</option><option value="silver">Silver+</option><option value="gold">Gold+</option><option value="vip">VIP only</option></select></div>'+
-      '<div class="field" style="margin-top:10px;"><label>Pick / message</label><textarea class="ta" id="syn-push-text" rows="3" placeholder="e.g. LIV vs CHE \u2014 Over 2.5 @1.90. Code A1B2C3." style="padding:12px 14px;"></textarea></div>'+
-      '<div class="field" style="margin-top:10px;"><label>Minimum odds floor</label><input class="input" id="syn-push-odds" inputmode="decimal" placeholder="e.g. 1.85 \u2014 only play if you can still get this" style="height:46px;"></div>'+
-      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.sendPush()">Send to eligible members</button>';
+      '<div class="field" style="margin-top:10px;"><label>Pick / message</label>'+
+        '<button class="btn btn-out btn-sm" style="height:38px;margin-bottom:7px;" onclick="SYN.addFromGames(\'syn-push-text\',\'syn-push-odds\')">\u26BD Add game from Games</button>'+
+        '<textarea class="ta" id="syn-push-text" rows="3" placeholder="e.g. LIV vs CHE \u2014 Over 2.5 @1.90" style="padding:12px 14px;"></textarea></div>'+
+      '<div class="field" style="margin-top:10px;"><label>Minimum odds floor</label>'+
+        '<input class="input" id="syn-push-odds" inputmode="decimal" value="1.85" style="height:46px;"></div>'+
+        '<p class="sub" style="font-size:.64rem;margin-top:5px;">Pre-filled \u2014 just replace the number. Members who can no longer get this price skip the bet.</p>'+
+      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.sendPush()">Send to eligible members</button>'+
+      '<div id="syn-push-code" style="margin-top:10px;">'+(this.lastCode
+        ? '<div class="sy-note" style="border-style:solid;border-color:var(--green);color:var(--green);">Pick code <b style="font-family:var(--d);">'+esc(this.lastCode)+'</b> \u2014 members can quote this back to you.</div>'
+        : '')+'</div>';
   },
   sendPush:function(){
     var tier=(document.getElementById('syn-push-tier')||{}).value, text=(document.getElementById('syn-push-text')||{}).value, odds=parseFloat((document.getElementById('syn-push-odds')||{}).value);
     if(!text||!text.trim()){ if(App&&App.toast)App.toast('Enter the pick'); return; }
-    Api.post('/api/admin/syndicate/push',{tier:tier,text:text.trim(),min_odds:isFinite(odds)?odds:null}).then(function(r){
-      if(r&&r.ok){ if(App&&App.toast)App.toast('Sent to '+(r.sent||0)+' eligible member'+((r.sent||0)===1?'':'s')); }
+    Api.post('/api/admin/syndicate/push',{tier:tier,text:text.trim(),min_odds:isFinite(odds)?odds:null,fixture_id:SYN._lastFixture||''}).then(function(r){
+      if(r&&r.ok){ if(App&&App.toast)App.toast('Sent to '+(r.sent||0)+' eligible member'+((r.sent||0)===1?'':'s'));
+        if(r.code){ SYN.lastCode=r.code; if(SYN.aTab==='push') SYN.aPaint(); }
+      }
       else if(App&&App.toast)App.toast((r&&r.error)||'Could not send');
     }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
   },
@@ -5262,11 +5471,14 @@ var SYN = window.SYN = {
           '<div class="sub" style="font-size:.72rem;">Started '+esc(live.started)+' &middot; '+live.picks+' pick'+(live.picks===1?'':'s')+' sent</div>'+
           '<button class="btn btn-out btn-sm" style="height:38px;margin-top:10px;border-color:var(--red);color:var(--red);" onclick="SYN.endLive()">End session</button></div>'+
           '<div class="sy-sec">Drop a live pick</div>'+
-          '<div class="field"><label>Pick</label><input class="input" id="syn-lv-pick" placeholder="e.g. LIV vs CHE \u2014 Next goal LIV" style="height:46px;"></div>'+
+          '<div class="field"><label>Pick</label>'+
+            '<button class="btn btn-out btn-sm" style="height:38px;margin-bottom:7px;" onclick="SYN.addFromGames(\'syn-lv-pick\',\'syn-lv-odds\')">\u26BD Add game from Games</button>'+
+            '<input class="input" id="syn-lv-pick" placeholder="e.g. LIV vs CHE \u2014 Next goal LIV" style="height:46px;"></div>'+
           '<div style="display:flex;gap:8px;margin-top:10px;">'+
-            '<div class="field" style="flex:1;"><label>Minimum odds</label><input class="input" id="syn-lv-odds" inputmode="decimal" placeholder="1.85" style="height:46px;"></div>'+
-            '<div class="field" style="flex:1;"><label>Window (min)</label><input class="input" id="syn-lv-win" inputmode="numeric" value="5" style="height:46px;"></div>'+
+            '<div class="field" style="flex:1;"><label>Minimum odds</label><input class="input" id="syn-lv-odds" inputmode="decimal" value="1.85" style="height:46px;"></div>'+
+            '<div class="field" style="flex:1;"><label>Valid for (minutes)</label><input class="input" id="syn-lv-win" inputmode="numeric" value="5" style="height:46px;"></div>'+
           '</div>'+
+          '<p class="sub" style="font-size:.64rem;margin-top:5px;">Odds pre-filled \u2014 replace the number. \u201cValid for\u201d is how long the pick stays live before members should skip it.</p>'+
           '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.dropLive()">Drop pick to session</button>'
         : '<div class="field"><label>Tier</label><select class="sel" id="syn-lv-tier" style="height:46px;"><option value="vip">VIP only</option><option value="gold">Gold+</option><option value="all">All tiers</option></select></div>'+
           '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.startLive()">Start live session</button>');
@@ -5301,6 +5513,58 @@ var SYN = window.SYN = {
     if(App&&App.toast)App.toast('Live session ended');
     this.aPaint();
   },
+  /* Insert a real fixture (and its price) into a pick field, so you never type
+     a match name by hand. Reuses the Match Center's already-loaded fixtures. */
+  _lastFixture:null,
+  addFromGames:function(targetId, oddsId){
+    var self=this;
+    var go=function(){
+      var fx=(window.MC&&MC.fx)||[];
+      if(!fx.length){ if(App&&App.toast)App.toast('No games loaded \u2014 open Games first'); return; }
+      var body='<div class="grab"></div><h3 class="h2" style="margin-bottom:4px;">Pick a game</h3>'+
+        '<p class="sub" style="font-size:.76rem;margin-bottom:12px;">Tap a match to drop it into the pick, with its 1X2 price.</p>'+
+        '<input class="input" placeholder="Search team or league\u2026" style="height:44px;margin-bottom:10px;" oninput="SYN._fxq=this.value.toLowerCase();SYN.paintFxPick(\''+targetId+'\',\''+(oddsId||'')+'\')">'+
+        '<div id="syn-fx-list"></div>';
+      self.sheet(body);
+      self._fxq='';
+      self.paintFxPick(targetId, oddsId||'');
+    };
+    if(window.MC && (MC.fx||[]).length) return go();
+    if(window.MC && MC.load){ MC.load(); if(App&&App.toast)App.toast('Loading games\u2026'); setTimeout(go, 900); return; }
+    if(App&&App.toast)App.toast('Games not available');
+  },
+  paintFxPick:function(targetId, oddsId){
+    var el=document.getElementById('syn-fx-list'); if(!el) return;
+    var q=this._fxq||'';
+    var fx=((window.MC&&MC.fx)||[]).filter(function(f){
+      return !q || ((f.home+' '+f.away+' '+(f.league||'')).toLowerCase().indexOf(q)>=0);
+    }).slice(0,40);
+    if(!fx.length){ el.innerHTML='<p class="sub">No games match.</p>'; return; }
+    el.innerHTML=fx.map(function(f){
+      var od=f._od||{}, h=(od.h2h||{});
+      var t=new Date(f.start_ts);
+      return '<div class="sy-mrow" onclick="SYN.chooseFx(\''+esc(String(f.id))+'\',\''+targetId+'\',\''+(oddsId||'')+'\')">'+
+        '<div class="mid"><div class="n">'+esc(f.home)+' vs '+esc(f.away)+'</div>'+
+        '<div class="s">'+esc(f.league||'')+' \u00B7 '+t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</div></div>'+
+        (h.Home?'<span class="sy-tag active">'+Number(h.Home).toFixed(2)+'</span>':'')+'</div>';
+    }).join('');
+  },
+  chooseFx:function(fid, targetId, oddsId){
+    var f=((window.MC&&MC.fx)||[]).filter(function(x){return String(x.id)===String(fid);})[0];
+    if(!f) return;
+    var el=document.getElementById(targetId);
+    var od=f._od||{}, h=(od.h2h||{});
+    var line=f.home+' vs '+f.away;
+    if(el){
+      if(el.tagName==='TEXTAREA'){ el.value=(el.value?el.value+'\n':'')+line+' \u2014 '; }
+      else { el.value=line+' \u2014 '; }
+      el.focus();
+    }
+    if(oddsId){ var o=document.getElementById(oddsId); if(o && h.Home) o.value=Number(h.Home).toFixed(2); }
+    this._lastFixture=String(fid);
+    if(App&&App.closeSheet)App.closeSheet();
+    if(App&&App.toast)App.toast('Game added \u2014 finish the pick');
+  },
   aLadderView:function(b){
     b.innerHTML='<p class="sub">Loading ladder&hellip;</p>';
     if(typeof Api==='undefined'||!Api.get){ b.innerHTML=this.aStub('ladder'); return; }
@@ -5323,23 +5587,37 @@ var SYN = window.SYN = {
     }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
   },
   aVaultView:function(b){
-    b.innerHTML='<div class="sy-note" style="margin-bottom:12px;">The Vault is <b>append-only</b>. Post every result here \u2014 win OR loss. Once written it cannot be edited or deleted; that permanence is the whole point. Never skip a loss.</div>'+
-      '<div class="field"><label>Pick</label><input class="input" id="syn-v-pick" placeholder="e.g. LIV vs CHE \u2014 Over 2.5" style="height:46px;"></div>'+
-      '<div style="display:flex;gap:8px;margin-top:10px;">'+
-        '<div class="field" style="flex:1;"><label>Odds</label><input class="input" id="syn-v-odds" inputmode="decimal" placeholder="1.90" style="height:46px;"></div>'+
-        '<div class="field" style="flex:1;"><label>Result</label><select class="sel" id="syn-v-res" style="height:46px;"><option value="won">Won</option><option value="lost">Lost</option><option value="void">Void</option></select></div>'+
-      '</div>'+
-      '<div class="field" style="margin-top:10px;"><label>Verification hash / ticket ID</label><input class="input" id="syn-v-hash" placeholder="bet ID or ticket hash" style="height:46px;"></div>'+
-      '<div class="field" style="margin-top:10px;"><label>Verify URL (optional)</label><input class="input" id="syn-v-url" placeholder="bookmaker verify link" style="height:46px;"></div>'+
+    b.innerHTML='<div class="sy-note" style="margin-bottom:12px;">The Vault is <b>append-only</b> and stores the <b>ticket</b>, not our description of it. Paste the bet ID from the bookmaker and tick the outcome. The same ticket can never be stored twice \u2014 that is what makes the record trustworthy. Never skip a loss.</div>'+
+      '<div class="field"><label>Bet ID / ticket *</label><input class="input" id="syn-v-hash" placeholder="paste the bookmaker bet ID" style="height:46px;"></div>'+
+      '<div class="field" style="margin-top:10px;"><label>Outcome</label>'+
+        '<div style="display:flex;gap:8px;margin-top:6px;">'+
+          '<button class="btn btn-out btn-sm" id="syn-v-won" style="flex:1;height:46px;border-color:var(--green);color:var(--green);" onclick="SYN.setVaultResult(\'won\')">\u2713 Won</button>'+
+          '<button class="btn btn-out btn-sm" id="syn-v-lost" style="flex:1;height:46px;" onclick="SYN.setVaultResult(\'lost\')">\u2715 Lost</button>'+
+          '<button class="btn btn-out btn-sm" id="syn-v-void" style="flex:1;height:46px;" onclick="SYN.setVaultResult(\'void\')">Void</button>'+
+        '</div></div>'+
+      '<div class="field" style="margin-top:10px;"><label>Verify URL (optional)</label><input class="input" id="syn-v-url" placeholder="bookmaker verification link" style="height:46px;"></div>'+
       '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.vaultAdd()">Write to Vault (permanent)</button>';
+    this.vaultResult='won'; this.setVaultResult('won');
+  },
+  vaultResult:'won',
+  setVaultResult:function(v){
+    this.vaultResult=v;
+    [['won','var(--green)'],['lost','var(--red)'],['void','var(--muted)']].forEach(function(p){
+      var el=document.getElementById('syn-v-'+p[0]); if(!el) return;
+      var on=(p[0]===v);
+      el.style.borderColor = on ? p[1] : 'var(--border-2)';
+      el.style.color       = on ? p[1] : 'var(--text)';
+      el.style.background  = on ? 'rgba(255,255,255,.04)' : 'transparent';
+    });
   },
   vaultAdd:function(){
-    var pick=(document.getElementById('syn-v-pick')||{}).value, odds=(document.getElementById('syn-v-odds')||{}).value,
-        res=(document.getElementById('syn-v-res')||{}).value, hash=(document.getElementById('syn-v-hash')||{}).value, url=(document.getElementById('syn-v-url')||{}).value;
-    if(!pick||!pick.trim()){ if(App&&App.toast)App.toast('Enter the pick'); return; }
-    Api.post('/api/admin/syndicate/vault',{pick:pick.trim(),odds:odds,result:res,hash:(hash||'').trim(),url:(url||'').trim()}).then(function(r){
-      if(r&&r.ok){ if(App&&App.toast)App.toast('Written to the Vault'); ['syn-v-pick','syn-v-odds','syn-v-hash','syn-v-url'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';}); }
-      else if(App&&App.toast)App.toast((r&&r.error)||'Could not write');
+    var hash=(document.getElementById('syn-v-hash')||{}).value, url=(document.getElementById('syn-v-url')||{}).value;
+    if(!hash||!hash.trim()){ if(App&&App.toast)App.toast('Paste the bet ID / ticket'); return; }
+    Api.post('/api/admin/syndicate/vault',{hash:hash.trim(),result:this.vaultResult,url:(url||'').trim()}).then(function(r){
+      if(r&&r.ok){
+        if(App&&App.toast)App.toast('Written to the Vault \u2014 permanent');
+        ['syn-v-hash','syn-v-url'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+      } else if(App&&App.toast) App.toast((r&&r.error)||'Could not write');
     }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
   },
   aStub:function(which){
