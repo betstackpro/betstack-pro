@@ -32,7 +32,7 @@ body.light{--bg:#f2f4f7;--surface:#fff;--surface-2:#fff;--surface-3:#eef0f4;
   --border:rgba(0,0,0,.08);--border-2:rgba(0,0,0,.16);--text:#0d1015;--muted:#5b616d;--faint:#9aa0ac;
   --green-dim:rgba(31,209,122,.14);--gold-dim:rgba(244,183,64,.16);--red-dim:rgba(245,73,92,.1);--shadow:0 16px 44px rgba(0,0,0,.1);}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html{font-size:81%;}
+html{font-size:89%;}   /* base bumped 81% -> 89% (+10%) for readability */
 html,body{height:100%;}
 body{font-family:var(--b);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased;}
 ::-webkit-scrollbar{width:0;height:0;}
@@ -341,7 +341,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .navitem.active{color:var(--red);}
 /* ===== In-place nav panel ===== */
 /* ===== Horizontal brand strip (cinematic, minimal height) ===== */
-.clip-rail{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch;}
+.clip-rail{display:flex;gap:7px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch;}
 .clip-thumb{flex-shrink:0;width:132px;cursor:pointer;}
 .clip-thumb .cw{width:132px;height:132px;border-radius:14px;overflow:hidden;border:1px solid var(--border);position:relative;background:#0b0d0f;}
 .clip-thumb iframe{width:132px;height:132px;border:0;pointer-events:none;}
@@ -494,6 +494,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .winpop-ring{width:64px;height:64px;border-radius:50%;background:rgba(31,209,122,.14);border:2px solid var(--green);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
 .winpop-ring svg{width:32px;height:32px;}
 .winpop-title{font-family:var(--d);font-weight:700;font-size:1.3rem;}
+.pm-meta{font-size:.6rem;color:var(--muted);margin-top:3px;letter-spacing:.01em;}
 .winpop-match{font-size:.92rem;color:var(--text);margin-top:8px;font-weight:600;}
 .winpop-odds{font-size:.8rem;color:var(--muted);margin-top:3px;}
 .paywait{display:flex;gap:8px;justify-content:center;margin-top:6px;}.paywait-dot{width:10px;height:10px;border-radius:50%;background:var(--green);animation:paywait-b 1.2s infinite ease-in-out both;}
@@ -1428,14 +1429,10 @@ const App={
     this.syncContent();
     if(!silent)this.toast('Signed in');
   },
+  // Preview banner removed — it covered the header on every screen. Admins
+  // return from a preview through the drawer instead.
   showPreviewBanner(role){
-    let b=document.getElementById('preview-banner');
-    if(!b){ b=document.createElement('div'); b.id='preview-banner';
-      b.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + 6px);left:50%;transform:translateX(-50%);z-index:1200;background:var(--gold);color:#1a1400;font-weight:800;font-size:.72rem;padding:8px 14px;border-radius:100px;box-shadow:0 4px 18px rgba(0,0,0,.5);cursor:pointer;white-space:nowrap;';
-      b.onclick=()=>{ State._preview=false; State.role='Member'; b.remove(); this.go('admin'); this.toast('Back to Admin'); };
-      document.body.appendChild(b);
-    }
-    b.textContent='\uD83D\uDC41 Previewing as '+role+' \u2014 tap to return to Admin';
+    const b=document.getElementById('preview-banner'); if(b) b.remove();
   },
   updateAdminMenu(){
     const show=State.isAdmin?'flex':'none';
@@ -1473,7 +1470,7 @@ const App={
   syncContent(){
     if(!API_BASE)return;
     Api.getPredictions().then(r=>{ if(r&&r.ok&&Array.isArray(r.predictions)){
-      PREDICTIONS=r.predictions.map(p=>({id:p.id,sport:p.sport||'Football',match:p.match,pick:p.pick,odds:Number(p.odds)||0,risk:p.risk||'Medium',status:(p.status&&p.status!=='pending')?p.status:'open'}));
+      PREDICTIONS=r.predictions.map(p=>({id:p.id,sport:p.sport||'Football',match:p.match,pick:p.pick,odds:Number(p.odds)||0,risk:p.risk||'Medium',status:(p.status&&p.status!=='pending')?p.status:'open',league:p.league||'',start_ts:p.start_ts||p.kickoff||null,posted_at:p.created_at||p.posted_at||null}));
       this.refreshAfterSync(); } }).catch(()=>{});
     Api.getCodes().then(r=>{ if(r&&r.ok&&Array.isArray(r.codes)){
       CODES=r.codes.map(c=>({id:String(c.id),title:c.title,sport:c.sport||'Football',odds:Number(c.odds)||0,games:Number(c.games)||1,risk:c.risk||'Medium',selections:Array.isArray(c.selections)?c.selections:null,tier:c.tier||null,sure:!!c.sure}));
@@ -1494,12 +1491,12 @@ const App={
     const sportIc=s=>({Football:'⚽',Basketball:'🏀',Tennis:'🎾'})[s]||'🏆';
     const draw=(list)=>{
       if(!list||!list.length){ el.innerHTML='<p class="sub" style="font-size:.8rem;">No predictions posted yet — check back soon.</p>'; return; }
-      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div></div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
+      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
     };
     if(API_BASE){
       Api.getPredictions().then(r=>{
         if(r&&r.ok&&Array.isArray(r.predictions)){
-          PREDICTIONS=r.predictions.map(p=>({id:p.id,sport:p.sport||'Football',match:p.match,pick:p.pick,odds:Number(p.odds)||0,risk:p.risk||'Medium',status:(p.status&&p.status!=='pending')?p.status:'open'}));
+          PREDICTIONS=r.predictions.map(p=>({id:p.id,sport:p.sport||'Football',match:p.match,pick:p.pick,odds:Number(p.odds)||0,risk:p.risk||'Medium',status:(p.status&&p.status!=='pending')?p.status:'open',league:p.league||'',start_ts:p.start_ts||p.kickoff||null,posted_at:p.created_at||p.posted_at||null}));
         }
         draw(PREDICTIONS);
       }).catch(()=>draw(PREDICTIONS));
@@ -1643,6 +1640,33 @@ const App={
 
   renderHome(){
     const el=document.getElementById('view-home');let h='';const rate=this.rate();
+    // A referred user who signed up but hasn't subscribed is NOT a member yet.
+    // They get their referral account and a clear way in — nothing else, so the
+    // paid surface stays paid.
+    if(State.role==='Partner' && !State.tier){ /* partners are handled below */ }
+    if(State.role==='Member' && (!State.tier || State.tier==='none')){
+      el.innerHTML=`
+        <div class="card" style="text-align:center;padding:22px 18px;margin-bottom:14px;">
+          <div style="font-size:2rem;margin-bottom:6px;">🤝</div>
+          <h2 class="h2" style="margin-bottom:6px;">You're signed up</h2>
+          <p class="sub" style="font-size:.84rem;line-height:1.6;">Your account is live, but you haven't subscribed to a tier yet — so the daily tips and the Syndicate are still locked.</p>
+          <button class="btn btn-green" style="height:50px;margin-top:14px;" onclick="App.openPlans('manage')">Choose a tier</button>
+          <button class="btn btn-out btn-sm" style="height:42px;margin-top:8px;" onclick="App.go('syninfo')">What is the Syndicate?</button>
+        </div>
+        <div class="sec">Your referral account</div>
+        <div class="card" style="padding:16px;">
+          <p class="sub" style="font-size:.8rem;line-height:1.6;margin-bottom:10px;">You can invite people and earn from day one — you don't need a subscription for that.</p>
+          <button class="btn btn-gold btn-sm" style="height:44px;" onclick="App.go('wallet')">Invite &amp; Earn</button>
+          <button class="btn btn-out btn-sm" style="height:40px;margin-top:8px;" onclick="App.go('program')">How the programme works</button>
+        </div>
+        <div id="news-hero" style="margin-top:14px;"></div>
+        <div class="sec">Today's free predictions</div>
+        <div id="free-preds"><p class="sub">Loading…</p></div>
+        <p class="sub" style="font-size:.68rem;margin-top:14px;text-align:center;">Free predictions are open to everyone. Subscribe to unlock the full tips and the Syndicate. 18+.</p>`;
+      this.loadNews();
+      this.loadFreePreds && this.loadFreePreds();
+      return;
+    }
     // Telegram community banner — the #1 growth channel deserves front-page placement.
     const tgLinked = !!State.tgLinked;
     h+=`<div class="card" style="display:flex;align-items:center;gap:14px;margin-bottom:14px;background:linear-gradient(120deg,rgba(42,171,238,.12),transparent);border:1px solid rgba(42,171,238,.35);cursor:pointer;" onclick="App.joinTelegram()">
@@ -1664,7 +1688,7 @@ const App={
       const sportIc=s=>({Football:'⚽',Basketball:'🏀',Tennis:'🎾'})[s]||'🏆';
       const preds=(PREDICTIONS||[]).slice(0,4).map(p=>`<div class="predmini">
         <span class="pm-sport">${sportIc(p.sport)}</span>
-        <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div></div>
+        <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div>
         <span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
       const codeCards=CODES.map(c=>{
         const owned=State.codes.has(String(c.id));const rc=c.risk.toLowerCase();
@@ -1690,6 +1714,7 @@ const App={
       </div>
       ${planBanner}
       ${State.isAdmin?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);">🤝</div><div class="pb-mid"><div class="pb-t">Syndicate</div><div class="pb-s">Follow the group's picks together — you keep your own money. Admin preview while it's built.</div></div><button class="btn btn-out btn-sm" style="height:36px;" onclick="App.go('syndicate')">Open</button></div>`:''}
+      <div id="news-hero"></div>
       <div id="results-strip"></div>
       <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">\uD83E\uDD1D The Syndicate <span class="sub" style="font-size:.68rem;font-weight:400;">how it works</span></div>
       <div id="home-syn-clips"></div>
@@ -1703,6 +1728,9 @@ const App={
       ${codeCards}
       <button class="btn btn-out mt" style="width:100%;" onclick="App.openResults()">${svg('<path d="M3 3v18h18M7 16l4-4 3 3 5-6"/>')} See our verified track record</button>
       <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Your subscription unlocks the tips — you place every bet yourself with your own money at your own bookmaker. We never hold your stake or your winnings. Tips can lose; bet responsibly. 18+.</p></div>
+      ${this.bookieStrip()}
+      <div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Football news <span class="sub" style="font-size:.66rem;font-weight:400;">updated daily</span></div>
+      <div id="news-list"><p class="sub">Loading headlines…</p></div>
       <div class="sec">Tips, Syndicate &amp; Partner</div>
       <div class="card" style="padding:14px;">
         <p class="sub" style="font-size:.78rem;line-height:1.6;margin-bottom:10px;"><b style="color:var(--text);">Daily tips</b> are the picks themselves — codes you load at your own bookmaker.
@@ -1734,6 +1762,7 @@ const App={
     <div id="home-news"><p class="sub">Loading\u2026</p></div>`;
     h+=this.membershipCard();
     // paint the Syndicate clip box into the home slot once the HTML is in place
+    this.loadNews();
     setTimeout(function(){
       if(!window.SYN) return;
       // Partners see the programme clips; members see the Syndicate clips.
@@ -3224,6 +3253,124 @@ const App={
     }
     return out;
   },
+  /* ---------------- Sports news ----------------
+     Headlines and thumbnails come straight from the publishers' RSS feeds.
+     Images are hotlinked from their own CDNs and every card links back to the
+     original article — we never copy or re-host their photos. */
+  _news:[], _newsIdx:0, _newsTimer:null,
+  async loadNews(){
+    try{
+      const r=await Api.get('/api/news/public?limit=40');
+      this._news=(r&&r.news)||[];
+    }catch(e){ this._news=[]; }
+    this.paintNewsHero();
+    this.paintNewsList();
+  },
+  newsAge(ts){
+    const m=Math.floor((Date.now()-ts)/60000);
+    if(m<1) return 'just now';
+    if(m<60) return m+'m ago';
+    const h=Math.floor(m/60); if(h<24) return h+'h ago';
+    return Math.floor(h/24)+'d ago';
+  },
+  paintNewsHero(){
+    const el=document.getElementById('news-hero'); if(!el) return;
+    const withImg=this._news.filter(n=>n.image);
+    const slides=withImg.slice(0,6);
+    if(!slides.length){
+      el.innerHTML='<div class="nws-wrap"><div class="nws-slide"><div class="nws-ph">📰</div></div></div>';
+      return;
+    }
+    this._newsSlides=slides;
+    if(this._newsIdx>=slides.length) this._newsIdx=0;
+    el.innerHTML=`<div class="nws-wrap">
+      <div class="nws-track" id="nws-track" style="transform:translateX(-${this._newsIdx*100}%)">
+        ${slides.map(n=>`<div class="nws-slide" onclick="window.open('${this.esc(n.link)}','_blank')">
+          <img src="${this.esc(n.image)}" alt="" loading="lazy" onerror="this.style.display='none'">
+          <div class="nws-veil"></div>
+          <div class="nws-txt">
+            <span class="nws-src">${this.esc(n.source)}</span>
+            <div class="nws-ttl">${this.esc(n.title)}</div>
+            <div class="nws-time">${this.newsAge(n.published_at)} · tap to read</div>
+          </div></div>`).join('')}
+      </div>
+      <div class="nws-dots">${slides.map((_,i)=>`<span class="nws-dot ${i===this._newsIdx?'on':''}" onclick="event.stopPropagation();App.newsGo(${i})"></span>`).join('')}</div>
+    </div>`;
+    this.newsAuto();
+    this.attachNewsSwipe();
+  },
+  newsGo(i){
+    const n=(this._newsSlides||[]).length; if(!n) return;
+    this._newsIdx=((i%n)+n)%n;
+    const t=document.getElementById('nws-track');
+    if(t) t.style.transform=`translateX(-${this._newsIdx*100}%)`;
+    document.querySelectorAll('.nws-dot').forEach((d,k)=>d.classList.toggle('on',k===this._newsIdx));
+    this.newsAuto();
+  },
+  newsAuto(){
+    clearTimeout(this._newsTimer);
+    this._newsTimer=setTimeout(()=>{ if(document.getElementById('nws-track')) this.newsGo(this._newsIdx+1); }, 6000);
+  },
+  attachNewsSwipe(){
+    const el=document.getElementById('nws-track'); if(!el||el._sw) return;
+    el._sw=true; let x0=null,y0=null;
+    el.addEventListener('touchstart',e=>{const t=e.changedTouches[0];x0=t.clientX;y0=t.clientY;},{passive:true});
+    el.addEventListener('touchend',e=>{
+      if(x0===null) return; const t=e.changedTouches[0];
+      const dx=t.clientX-x0, dy=t.clientY-y0;
+      if(Math.abs(dx)>42&&Math.abs(dx)>Math.abs(dy)) this.newsGo(this._newsIdx+(dx<0?1:-1));
+      x0=null;
+    },{passive:true});
+  },
+  paintNewsList(){
+    const el=document.getElementById('news-list'); if(!el) return;
+    const rows=this._news.slice(0,12);
+    if(!rows.length){ el.innerHTML='<p class="sub">Headlines load here shortly.</p>'; return; }
+    el.innerHTML=rows.map(n=>`<div class="nws-row" onclick="window.open('${this.esc(n.link)}','_blank')">
+      ${n.image?`<div class="th"><img src="${this.esc(n.image)}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'"></div>`:''}
+      <div class="bd"><div class="t">${this.esc(n.title)}</div>
+      <div class="m">${this.esc(n.source)} · ${this.newsAge(n.published_at)}</div></div></div>`).join('')
+      +`<p class="sub" style="font-size:.64rem;margin-top:10px;text-align:center;">Headlines from BBC Sport, Sky Sports, ESPN and Goal.com. Tap any story to read it at the source.</p>`;
+  },
+
+  /* ---------------- Bookmaker partners ----------------
+     Where members load the booking codes. These are affiliate links, which is
+     disclosed on the strip — members should know how we're paid. */
+  BOOKIES: [
+    { name:'1xBet',     sub:'Load your code',  url:'https://reffpa.com/L?tag=d_5833178m_97c_&site=5833178&ad=97&r=signup', color:'#1a7f37' },
+    { name:'Melbet',    sub:'Load your code',  url:'https://refpa3665.com/L?tag=d_5833225m_45415c_&site=5833225&ad=45415', color:'#f4b740' },
+    { name:'BetWinner', sub:'Load your code',  url:'https://bwredir.com/324N?p=%2Fregistration%2F', color:'#4da6ff' }
+  ],
+  bookieStrip(){
+    return `<div class="sec">Load your code at</div>
+      <div class="bk-strip">${this.BOOKIES.map(b=>`
+        <div class="bk-card" onclick="window.open('${b.url}','_blank')">
+          <div class="lg" style="color:${b.color};">${b.name}</div>
+          <div class="sb">${b.sub}</div>
+        </div>`).join('')}
+      </div>
+      <p class="sub" style="font-size:.64rem;margin-top:2px;">These are our partner bookmakers and the links are affiliate links — we may earn a commission if you open an account. You always stake your own money and keep 100% of what you win. 18+.</p>`;
+  },
+  /* Stamp every posted pick with when it kicks off and when we posted it.
+     Format: ID · 28-09 12:33 am · League — the posted time is what proves a
+     pick went out before kickoff, so it belongs on the card. */
+  stamp(ts){
+    if(!ts) return '';
+    const d=new Date(ts); if(isNaN(d)) return '';
+    const p=n=>String(n).padStart(2,'0');
+    let h=d.getHours(); const ap=h<12?'am':'pm'; h=h%12||12;
+    return p(d.getDate())+'-'+p(d.getMonth()+1)+' '+p(h)+':'+p(d.getMinutes())+' '+ap;
+  },
+  pickMeta(p){
+    const bits=[];
+    if(p.id) bits.push('#'+String(p.id).slice(-6));
+    const ko=this.stamp(p.start_ts);
+    if(ko) bits.push('KO '+ko);
+    if(p.league) bits.push(this.esc(p.league));
+    const po=this.stamp(p.posted_at);
+    const line=bits.join(' \u00B7 ');
+    return line ? `<div class="pm-meta">${line}${po?` <span style="color:var(--faint);">\u00B7 posted ${po}</span>`:''}</div>` : '';
+  },
   openResults(){this._resultsBack=this.currentView();this.show('results');this.renderResults();},
   resultsBack(){const v=this._resultsBack||'hub';this.show(v==='results'?'hub':v);},
   trendSvg(chain){
@@ -3242,12 +3389,20 @@ const App={
     const back=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;"><div class="icon-btn" style="margin-left:-8px;" onclick="App.resultsBack()">${svg('<path d="M19 12H5M12 19l-7-7 7-7"/>')}</div></div>`;
     el.innerHTML=back+`<div class="eyebrow">Transparency</div><h2 class="h2" style="margin:4px 0 6px;">Verified Results</h2><p class="sub">Computing verification chain…</p>`;
     const chain=await this.buildChain();this._chain=chain;
-    // No settled picks yet -> say so plainly. Never invent a track record.
+    // No settled picks yet -> keep the page's full framing (stats grid at zero,
+    // same copy) rather than a bare message. It must never invent a record.
     if(!chain.length){
-      el.innerHTML=back+`<div class="eyebrow">Transparency</div><h2 class="h2" style="margin:4px 0 6px;">Verified Results</h2>
-        <p class="sub" style="margin-bottom:14px;">Every pick is published before kick-off and written to a permanent record with a verifiable ticket \u2014 win or loss. Nothing is ever edited or removed.</p>
-        <div class="empty"><div class="ic">\uD83D\uDCC3</div>
-          <p><b>No settled picks on record yet.</b><br>Results appear here automatically as picks settle. We would rather show you an empty page than numbers we cannot prove.</p></div>`;
+      el.innerHTML=back+`
+        <div class="eyebrow">Transparency</div><h2 class="h2" style="margin:4px 0 6px;">Verified Results</h2>
+        <p class="sub" style="margin-bottom:14px;">Every pick is published before kickoff and recorded in a hash chain. Each entry's fingerprint includes the one before it, so no past result can be edited or removed without breaking every fingerprint after it. This page is computed live in your browser.</p>
+        <div class="res-stats">
+          <div class="res-stat"><div class="v">0</div><div class="k">Picks</div></div>
+          <div class="res-stat"><div class="v" style="color:var(--green);">0</div><div class="k">Won</div></div>
+          <div class="res-stat"><div class="v" style="color:var(--red);">0</div><div class="k">Lost</div></div>
+          <div class="res-stat"><div class="v">\u2014</div><div class="k">Hit rate</div></div>
+        </div>
+        <div class="empty" style="margin-top:14px;"><div class="ic">${svg(ICON.doc)}</div>
+          <p><b>The record starts here.</b><br>Every pick that settles is written to this page automatically \u2014 wins and losses both. We would rather show you an empty record than numbers we cannot prove.</p></div>`;
       return;
     }
     const f=this._resFilter||(this._resFilter={result:'all',sport:'all'});
@@ -5146,6 +5301,37 @@ else boot();
      ========================================================================= -->
 <style>
 #syn-admin, #view-syndicate{ --sy-line:var(--border); }
+/* ---- News hero slider (edge to edge, landscape) ---- */
+.nws-wrap{margin:0 -16px 14px;position:relative;overflow:hidden;background:#000;}
+.nws-track{display:flex;transition:transform .45s cubic-bezier(.16,.84,.44,1);}
+.nws-slide{flex:0 0 100%;position:relative;aspect-ratio:16/9;background:var(--surface-2);}
+.nws-slide img{width:100%;height:100%;object-fit:cover;display:block;}
+.nws-veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.55) 38%,transparent 68%);}
+.nws-txt{position:absolute;left:0;right:0;bottom:0;padding:14px 16px 16px;}
+.nws-src{display:inline-block;font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 8px;border-radius:5px;background:rgba(31,209,122,.9);color:#04140b;margin-bottom:7px;}
+.nws-ttl{font-family:var(--d);font-weight:800;font-size:1.02rem;line-height:1.22;color:#fff;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-shadow:0 2px 12px rgba(0,0,0,.6);}
+.nws-time{font-size:.64rem;color:rgba(255,255,255,.72);margin-top:5px;}
+.nws-dots{position:absolute;top:11px;right:14px;display:flex;gap:4px;z-index:2;}
+.nws-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.4);}
+.nws-dot.on{background:#fff;width:15px;border-radius:99px;}
+.nws-ph{display:grid;place-items:center;height:100%;color:var(--faint);font-size:2rem;}
+/* news list rows */
+.nws-row{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--border);}
+.nws-row .th{width:82px;height:56px;border-radius:9px;overflow:hidden;flex-shrink:0;background:var(--surface-2);}
+.nws-row .th img{width:100%;height:100%;object-fit:cover;display:block;}
+.nws-row .bd{flex:1;min-width:0;}
+.nws-row .bd .t{font-size:.82rem;font-weight:600;line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.nws-row .bd .m{font-size:.63rem;color:var(--faint);margin-top:4px;}
+/* bookmaker partner strip */
+.bk-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch;}
+.bk-card{flex:0 0 auto;min-width:112px;padding:12px 10px;border-radius:13px;background:var(--surface);
+  border:1px solid var(--border);text-align:center;}
+.bk-card .lg{font-family:var(--d);font-weight:800;font-size:.9rem;margin-bottom:3px;}
+.bk-card .sb{font-size:.58rem;color:var(--muted);}
+.bk-card:active{transform:scale(.97);}
 /* ---- Syndicate explainer clips (rendered inline, no iframe) ---- */
 .syc-stage{position:relative;width:100%;aspect-ratio:16/10;max-height:none;border-radius:18px;overflow:hidden;margin:0 auto;
   touch-action:pan-y;user-select:none;cursor:grab;
@@ -5157,9 +5343,10 @@ else boot();
                    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
   background-size:32px 32px;animation:sycDrift 24s linear infinite;}
 @keyframes sycDrift{to{background-position:32px 32px,32px 32px;}}
-.syc-in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:34px 18px 26px;}
-.syc-brand{position:absolute;top:13px;left:18px;display:flex;align-items:center;gap:10px;
-  font-family:var(--d);font-weight:800;font-size:.79rem;color:var(--text);}
+.syc-in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  padding:52px 18px 46px;overflow:hidden;}
+.syc-brand{position:absolute;top:12px;left:18px;display:flex;align-items:center;gap:9px;z-index:2;
+  font-family:var(--d);font-weight:800;font-size:.74rem;color:var(--text);}
 .syc-brand b{display:flex;align-items:flex-end;gap:2.5px;height:15px;}
 .syc-brand b i{display:block;width:3.2px;border-radius:1px;background:var(--green);animation:sycEq 1.5s ease-in-out infinite;}
 .syc-brand b i:nth-child(1){height:5px;background:var(--faint);}
@@ -5187,13 +5374,13 @@ else boot();
 .syc-ul li s{text-decoration:none;color:var(--green);flex-shrink:0;}
 .syc-ul li.g s{color:var(--gold);} .syc-ul li.r s{color:var(--red);}
 @keyframes sycRise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
-.syc-pill{display:inline-flex;align-self:flex-start;margin-top:10px;padding:6px 13px;border-radius:99px;
-  font-size:.72rem;font-weight:800;background:rgba(31,209,122,.12);border:1px solid rgba(31,209,122,.34);
+.syc-pill{display:inline-flex;align-self:flex-start;margin-top:9px;padding:6px 13px;border-radius:99px;
+  max-width:100%;font-size:.72rem;font-weight:800;background:rgba(31,209,122,.12);border:1px solid rgba(31,209,122,.34);
   color:var(--green);animation:sycRise .55s cubic-bezier(.16,.84,.44,1) .5s both;}
 .syc-pill.gold{background:rgba(244,183,64,.12);border-color:rgba(244,183,64,.34);color:var(--gold);}
 .syc-pill.warn{background:rgba(245,73,92,.10);border-color:rgba(245,73,92,.32);color:var(--red);}
-.syc-viz{margin-top:9px;animation:sycRise .55s cubic-bezier(.16,.84,.44,1) .24s both;}
-.syc-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.66rem;}
+.syc-viz{margin-top:9px;max-width:100%;animation:sycRise .55s cubic-bezier(.16,.84,.44,1) .24s both;}
+.syc-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.66rem;max-width:100%;}
 .syc-node{padding:6px 9px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-weight:600;}
 .syc-node.g{border-color:rgba(31,209,122,.4);color:var(--green);}
 .syc-node.gold{border-color:rgba(244,183,64,.4);color:var(--gold);}
@@ -5211,7 +5398,7 @@ else boot();
 .syc-tiers{display:flex;gap:5px;flex-wrap:wrap;}
 .syc-tier{padding:6px 9px;border-radius:9px;border:1.5px solid currentColor;font-family:var(--d);
   font-weight:800;font-size:.64rem;text-align:center;animation:sycPop .45s cubic-bezier(.2,1.3,.5,1) both;}
-.syc-rung{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:8px;
+.syc-rung{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:8px;box-sizing:border-box;max-width:100%;
   background:rgba(255,255,255,.03);border:1px solid var(--border);margin-bottom:4px;font-size:.72rem;
   animation:sycSlide .5s cubic-bezier(.16,.84,.44,1) both;}
 .syc-rung b{margin-left:auto;color:var(--gold);font-family:var(--d);}
@@ -5234,7 +5421,8 @@ else boot();
 @keyframes sycPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.8);}}
 /* Arrows removed — they covered the content. Paging is by swipe or dots. */
 .syc-edge{display:none;}
-.syc-dots{position:absolute;bottom:7px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:3;flex-wrap:wrap;padding:0 30px;}
+.syc-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:3;
+  flex-wrap:nowrap;overflow:hidden;padding:0 14px;}
 .syc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25);}
 .syc-dot.on{background:var(--green);width:14px;border-radius:99px;}
 @media(prefers-reduced-motion:reduce){
@@ -5657,7 +5845,7 @@ var SYN = window.SYN = {
   // Referrer is a role, not a tier: Bronze through VIP can all earn it. This
   // surfaces the member's existing referral standing inside the Syndicate so
   // rank and referrals live in one place.
-  ach:null, lastCode:null,
+  ach:null, lastCode:null, lastRef:null,
   /* ---------------- Syndicate explainer clips ----------------
      Same pattern as the home brand reel: an iframe pair with prev/next arrows
      and dots, so members can page through every topic at their own speed and
@@ -5668,106 +5856,141 @@ var SYN = window.SYN = {
      404 and show an empty box. Each slide is data, and buildClip() turns it
      into the animated markup. Arrows, dots and a thumbnail rail let members
      page through at their own speed and skip anything they know. */
+  /* Single-colour line icons, drawn to match the shield on the Full-access
+     card. Emoji looked childish and rendered differently on every device;
+     these are one stroke colour, consistent everywhere, and scale cleanly. */
+  ICN:{
+    shield:'<path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/>',
+    wallet:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12h3M3 10h18"/>',
+    brain: '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-1 5.8V16a3 3 0 0 0 4 2.8M15 4a3 3 0 0 1 3 3 3 3 0 0 1 1 5.8V16a3 3 0 0 1-4 2.8M12 4v16"/>',
+    chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',
+    card:  '<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M2.5 10h19M6 14h4"/>',
+    star:  '<path d="M12 4l2.4 5 5.6.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.6-.8z"/>',
+    ladder:'<path d="M7 3v18M17 3v18M7 8h10M7 13h10M7 18h10"/>',
+    block: '<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>',
+    refresh:'<path d="M20 11a8 8 0 1 0-1.2 5"/><path d="M20 5v6h-6"/>',
+    clip:  '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+    bell:  '<path d="M18 15V10a6 6 0 1 0-12 0v5l-1.5 3h15z"/><path d="M10 21h4"/>',
+    live:  '<circle cx="12" cy="12" r="3"/><path d="M6.5 6.5a8 8 0 0 0 0 11M17.5 6.5a8 8 0 0 1 0 11"/>',
+    down:  '<path d="M4 7l6 6 4-4 6 6"/><path d="M20 15v-4h-4"/>',
+    gem:   '<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4l-3 5 6 11 6-11-3-5"/>',
+    phone: '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
+    growth:'<path d="M3 17l5-5 4 3 8-8"/><path d="M20 7v5h-5"/>',
+    medal: '<circle cx="12" cy="14" r="5.5"/><path d="M9 3l3 5 3-5"/>',
+    crown: '<path d="M4 8l3.5 4L12 5l4.5 7L20 8v9H4z"/>',
+    lock:  '<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>',
+    search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>',
+    link:  '<path d="M10 13a4 4 0 0 0 6 .5l2-2a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 11a4 4 0 0 0-6-.5l-2 2A4 4 0 0 0 11.7 18l1-1"/>',
+    scale: '<path d="M12 4v16M7 20h10M4 9l4-4 4 4M4 9a4 4 0 0 0 8 0M12 9l4-4 4 4M12 9a4 4 0 0 0 8 0"/>',
+    alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
+    users: '<circle cx="9" cy="9" r="3.5"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><path d="M16 6.5a3.5 3.5 0 0 1 0 7M17 19a6.5 6.5 0 0 0-2-4.7"/>'
+  },
+  icon:function(k,size,color){
+    var d=this.ICN[k]||this.ICN.shield;
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="'+(color||'currentColor')+'" stroke-width="1.7" '+
+      'stroke-linecap="round" stroke-linejoin="round" style="width:'+(size||34)+'px;height:'+(size||34)+'px;display:block;">'+d+'</svg>';
+  },
   SYN_CLIPS: [
-    {id:'what', ic:'\uD83E\uDD1D', lbl:'What the Syndicate is',
+    {id:'what', ic:'@users', lbl:'What the Syndicate is',
      h:'What the <em>Syndicate</em> is',
      p:'A members\u2019 group that follows the <b>same verified picks</b>, together. We publish the selection, the code and the proof \u2014 you decide whether to place it.',
      viz:{t:'crowd', v:['\uD83E\uDD81','\uD83D\uDC2F','\uD83E\uDD85','\uD83D\uDC3A','\uD83E\uDD8A','\uD83D\uDC3B','\uD83D\uDC2C','\uD83E\uDD88']},
      pill:'One group, one pick, one direction'},
 
-    {id:'money', ic:'\uD83D\uDCB0', lbl:'You keep your own money',
+    {id:'money', ic:'@wallet', lbl:'You keep your own money',
      h:'Your money <em>stays yours</em>',
      p:'There is <b>no pooled fund</b> and no shared wallet. We never hold, move or bet your money.',
      viz:{t:'flow', v:[['Your wallet',''],['Your bookmaker','g'],['Your winnings','g']]},
      li:[['You stake your own bets',''],['You keep <b>100%</b> of what you win',''],['We never take a cut','']],
      pill:'Nothing to hold, nothing to lose'},
 
-    {id:'whygroup', ic:'\uD83E\uDDE0', lbl:'Why play as a group',
+    {id:'whygroup', ic:'@brain', lbl:'Why play as a group',
      h:'Why play as a <em>group</em>?',
      p:'Alone, you carry every decision yourself \u2014 and most people lose to <b>impulse</b>, not to bad luck.',
      li:[['One researched pick instead of ten guesses',''],['A rule to follow when emotion says otherwise',''],
          ['Everyone sees the same result \u2014 nowhere to hide',''],['Discipline is easier when others are watching','']],
      pill:'Structure beats impulse'},
 
-    {id:'strength', ic:'\uD83D\uDCCA', lbl:'What the group does for you',
+    {id:'strength', ic:'@chart', lbl:'What the group does for you',
      h:'What the group <em>does for you</em>',
      p:'Hours of work land as one message on your phone.',
      viz:{t:'flow', v:[['Fixtures',''],['Odds check',''],['Model',''],['Your pick','g']]},
      li:[['Prices compared across bookmakers',''],['Value measured, not guessed',''],['You get the outcome, not the homework','']]},
 
-    {id:'tiers', ic:'\uD83C\uDFAF', lbl:'Bronze, Silver, Gold, VIP',
+    {id:'tiers', ic:'@target', lbl:'Bronze, Silver, Gold, VIP',
      h:'Bronze, Silver, <em class="g">Gold</em>, <em>VIP</em>',
      p:'Your tier sets how much you get and <b>how fast</b> you get it.',
      viz:{t:'tiers', v:[['BRONZE','$15','#cd7f4e'],['SILVER','$26','#c7ccd6'],['GOLD','$49','var(--gold)'],['VIP','$98','var(--green)']]},
      pill:'Start small. Climb when ready.'},
 
-    {id:'sub', ic:'\uD83D\uDCB3', lbl:'What you\u2019re paying for',
+    {id:'sub', ic:'@card', lbl:'What you\u2019re paying for',
      h:'What you\u2019re <em>paying for</em>',
      p:'Your subscription buys <b>access</b> \u2014 picks, codes, the feed and your tier\u2019s features.',
      li:[['Not a stake, not a deposit',''],['Never returned, never grows',''],['Never restricts your withdrawals','']],
      pill:'A fee for a service \u2014 nothing more'},
 
-    {id:'whydon', ic:'\u2B50', lbl:'Why donations exist',
+    {id:'whydon', ic:'@star', lbl:'Why donations exist',
      h:'Why <em class="g">donations</em> exist',
      p:'Running this costs money every month \u2014 odds feeds, data APIs, hosting, the tools that find the picks.',
      viz:{t:'flow', v:[['Donations','gold'],['Odds APIs',''],['Better picks',''],['You','g']]},
      li:[['They fund the feeds the group runs on','g'],['They set your rank and priority','g'],['They are <b>never</b> a stake or a return','g']]},
 
-    {id:'ladder', ic:'\uD83E\uDE9C', lbl:'Donations & the ladder',
+    {id:'ladder', ic:'@ladder', lbl:'Donations & the ladder',
      h:'Donations &amp; the <em class="g">ladder</em>',
      p:'Your weekly donation sets your place. Higher up, you get the feed <b>first</b>.',
      viz:{t:'ladder', v:[['\uD83D\uDC51 Captain of the Week','$400',1],['2 \u00B7 Ada','$250',0],['3 \u00B7 You','$120',0]]},
      pill:{t:'Buys priority \u2014 never a return',k:'gold'}},
 
-    {id:'whysusp', ic:'\uD83D\uDEAB', lbl:'Why members get suspended',
+    {id:'whysusp', ic:'@block', lbl:'Why members get suspended',
      h:'Why members get <em class="r">suspended</em>',
      p:'A syndicate only works if the people in it <b>actually follow it</b>. Passengers weaken the whole group.',
      viz:{t:'crowd', v:['\u2713','\u2713','\u2713','\u2715','\u2713','\u2713','\u2715','\u2713'], out:[3,6]},
      li:[['No slip submitted \u2014 you didn\u2019t play','r'],['Donation lapsed for the week','r'],
          ['Slip code doesn\u2019t match the tip','r'],['One account shared between people','r']]},
 
-    {id:'reinstate', ic:'\uD83D\uDD04', lbl:'Suspended? Come back',
+    {id:'reinstate', ic:'@refresh', lbl:'Suspended? Come back',
      h:'Suspended? <em>Come back</em>',
      p:'A suspension is a pause, not a punishment. Two steps and you\u2019re back on the feed.',
-     viz:{t:'flow', v:[['Submit a slip',''],['Donate this week',''],['Back on the feed','g']]},
+     viz:{t:'flow', v:[['Push feeds',''],['Submit a slip',''],['Donate',''],['Back on the feed','g']]},
      foot:'Your badges, points and rank are <b>never</b> taken away.'},
 
-    {id:'slip', ic:'\uD83D\uDCCB', lbl:'Submitting your slip',
+    {id:'slip', ic:'@clip', lbl:'Submitting your slip',
      h:'Submitting <em>your slip</em>',
      p:'Show us you actually played \u2014 that\u2019s the whole entry price to the feed.',
      li:[['Submit a booked slip each week',''],['The <b>booking code must match</b> the tip',''],['Keep your weekly donation active','']],
      pill:'Played + donated = on the feed'},
 
-    {id:'notif', ic:'\uD83D\uDD14', lbl:'Push notifications',
+    {id:'notif', ic:'@bell', lbl:'Push notifications',
      h:'Push <em>notifications</em>',
      p:'Picks reach you the moment they drop \u2014 if you\u2019re on the feed.',
      viz:{t:'flow', v:[['VIP','g'],['Gold','gold'],['Silver',''],['Bronze','']]},
      li:[['Gold &amp; VIP get <b>automatic push</b>',''],['Higher tiers are notified first','']]},
 
-    {id:'live', ic:'\uD83D\uDD34', lbl:'Live sessions',
+    {id:'live', ic:'@live', lbl:'Live sessions',
      h:'<span class="syc-live"></span>Live <em>sessions</em>',
      p:'We announce a session so you know to be online. Then picks drop fast.',
      li:[['Declared ahead \u2014 be ready',''],['VIP enters the war-room first',''],['Missing one is normal, never chase','']],
      pill:'Be online, be ready'},
 
-    {id:'floor', ic:'\uD83D\uDCC9', lbl:'The odds floor',
+    {id:'floor', ic:'@down', lbl:'The odds floor',
      h:'The <em>odds floor</em>',
      p:'Live prices move by the second. Every live pick carries a <b>minimum price</b>.',
      viz:{t:'flow', v:[['Posted 1.95','g'],['Floor 1.85','gold'],['1.70 \u2014 skip','bad']]},
      foot:'If you can\u2019t still get the floor, <b>don\u2019t place it</b>. A bad price turns a good pick into a bad bet.'},
 
-    {id:'goldvip', ic:'\uD83D\uDC8E', lbl:'Gold & VIP perks',
+    {id:'goldvip', ic:'@gem', lbl:'Gold & VIP perks',
      h:'<em class="g">Gold</em> &amp; <em>VIP</em> perks',
      li:[['See picks <b>first</b> \u2014 before the line moves','g'],['Analyst <b>voice notes</b> on Telegram','g'],
          ['First into every live war-room','g'],['Captain-of-the-Week eligible','g']]},
 
-    {id:'tg', ic:'\uD83D\uDCF1', lbl:'Your Telegram channel',
+    {id:'tg', ic:'@phone', lbl:'Your Telegram channel',
      h:'Your <em>Telegram</em> channel',
      p:'Gold and VIP get a private channel for picks, proof and analyst voice notes.',
      li:[['The app checks your tier, then hands you the invite',''],['Fall off the feed and access pauses',''],
          ['Picks and voice only \u2014 <b>never money</b>','']]},
 
-    {id:'progress', ic:'\uD83D\uDCC8', lbl:'Your progress',
+    {id:'progress', ic:'@growth', lbl:'Your progress',
      h:'Your <em>progress</em>',
      p:'Every week you show up, you move. <b>14 ranks</b> from Rookie to Immortal.',
      viz:{t:'ranks', v:[['\uD83C\uDF31 Rookie',''],['\uD83D\uDC5F Runner',''],['\uD83D\uDD0D Scout',''],
@@ -5775,44 +5998,44 @@ var SYN = window.SYN = {
                         ['\uD83D\uDC51 Captain',''],['\uD83C\uDF1F Immortal','top']], bar:34},
      foot:'550 points to your next rank.'},
 
-    {id:'badges', ic:'\uD83C\uDFC5', lbl:'Badges & points',
+    {id:'badges', ic:'@medal', lbl:'Badges & points',
      h:'Badges &amp; <em>points</em>',
      p:'<b>20 badges</b> across six families become tags on your name.',
      viz:{t:'tags', v:[['\uD83D\uDD25 Streak','w'],['\u2705 Compliance','w'],['\u2B50 Donor','w'],['\uD83D\uDD17 Referral','w'],['\uD83D\uDCAC Community','w']]},
      li:[['Daily logins &amp; streaks',''],['Verified slips, donations, referrals',''],['No cash value \u2014 they\u2019re status','']]},
 
-    {id:'captain', ic:'\uD83D\uDC51', lbl:'Captain of the Week',
+    {id:'captain', ic:'@crown', lbl:'Captain of the Week',
      h:'Captain of the <em class="g">Week</em>',
      p:'The top donor each week takes the crown \u2014 and the whole group sees it.',
      li:[['Crown badge on your name','g'],['Your pick featured to the group','g'],['Five crowns unlocks <b>Throne Keeper</b>','g']],
      pill:{t:'Recognition, earned weekly',k:'gold'}},
 
-    {id:'vault', ic:'\uD83D\uDD10', lbl:'The Proof Vault',
+    {id:'vault', ic:'@lock', lbl:'The Proof Vault',
      h:'The <em>Proof Vault</em>',
      p:'Every pick goes in \u2014 <b>win or loss</b>, permanently, with a ticket you can check.',
      viz:{t:'tags', v:[['\u2713 WON','w'],['\u2715 LOST','l'],['\u2713 WON','w'],['\u2715 LOST','l'],['\u2713 WON','w']]},
      foot:'Most tipsters delete their losses. <b>We can\u2019t.</b>',
      pill:'Built so we can\u2019t lie to you'},
 
-    {id:'verify', ic:'\uD83D\uDD0D', lbl:'How to verify us',
+    {id:'verify', ic:'@search', lbl:'How to verify us',
      h:'How to <em>verify</em> us',
      p:'Don\u2019t trust us \u2014 <b>check</b>. Every entry carries a bet ID from the bookmaker.',
      viz:{t:'flow', v:[['Open the Vault',''],['Copy the bet ID',''],['Check at the bookmaker','g']]},
      foot:'No ticket is ever stored twice, so the record can\u2019t be padded.'},
 
-    {id:'refer', ic:'\uD83D\uDD17', lbl:'Referrals & earnings',
+    {id:'refer', ic:'@link', lbl:'Referrals & earnings',
      h:'Referrals &amp; <em>earnings</em>',
      p:'Any tier can be a <b>Referrer</b> \u2014 it\u2019s a role, not a level.',
      li:[['Share your link, earn on every subscription',''],['Earnings are yours to withdraw',''],['Referral badges climb with you','']]},
 
-    {id:'bankroll', ic:'\u2696\uFE0F', lbl:'Losing weeks are normal',
+    {id:'bankroll', ic:'@scale', lbl:'Losing weeks are normal',
      h:'Losing weeks are <em class="r">normal</em>',
      p:'Anyone promising a winning week every week is lying. Ours are published \u2014 <b>losses included</b>.',
      li:[['Stake the same amount every time','r'],['Never increase after a loss to win it back','r'],
          ['Judge over months, never over one slip','r']],
      pill:{t:'Chasing losses is how people get hurt',k:'warn'}},
 
-    {id:'responsible', ic:'\u26A0\uFE0F', lbl:'Risk & responsible play',
+    {id:'responsible', ic:'@alert', lbl:'Risk & responsible play',
      h:'Risk &amp; <em class="r">responsible play</em>',
      p:'Betting carries a <b>real risk of losing money</b>. No pick, model or rank can guarantee a win.',
      li:[['Only stake what you can afford to lose','r'],['Set your limits before you play','r'],
@@ -5829,7 +6052,7 @@ var SYN = window.SYN = {
       (showBrand?'<div class="syc-brand"><b><i></i><i></i><i></i><i></i></b>BETSTACK <s>PRO</s></div>':'')+
       '<div class="syc-n">'+(i+1)+' / '+n+'</div>'+
       '<div class="syc-in">'+
-      '<div class="syc-ic">'+c.ic+'</div>'+
+      '<div class="syc-ic">'+(String(c.ic).charAt(0)==='@'?this.icon(String(c.ic).slice(1),44,'var(--green)'):c.ic)+'</div>'+
       '<div class="syc-h">'+c.h+'</div>'+
       (c.p?'<p class="syc-p">'+c.p+'</p>':'');
     if(c.viz){
@@ -5919,24 +6142,24 @@ var SYN = window.SYN = {
   /* Public info page for the Partner / referral programme. Same idea: full
      detail for a visitor, no member data. */
   PROG_CLIPS: [
-    {id:'p1', ic:'\uD83E\uDD1D', lbl:'What the programme is',
+    {id:'p1', ic:'@users', lbl:'What the programme is',
      h:'The <em class="g">Partner</em> programme',
      p:'Invite people to Betstack Pro and earn a share of what they subscribe \u2014 for as long as they stay.',
      pill:{t:'A role, not a tier',k:'gold'}},
-    {id:'p2', ic:'\uD83D\uDD17', lbl:'Your link',
+    {id:'p2', ic:'@link', lbl:'Your link',
      h:'Your <em>own link</em>',
      p:'Every partner gets a unique link and code. Anyone who joins through it is tied to you automatically.',
      li:[['Share it anywhere \u2014 chat, social, in person',''],['Tracked from the moment they sign up','']]},
-    {id:'p3', ic:'\uD83D\uDCB5', lbl:'How you earn',
+    {id:'p3', ic:'@wallet', lbl:'How you earn',
      h:'How you <em>earn</em>',
      p:'You earn commission on <b>genuine subscriptions</b> \u2014 not on sign-ups alone.',
      viz:{t:'flow', v:[['They subscribe',''],['You earn','g'],['Withdraw','g']]},
      li:[['No reward for empty accounts','g'],['No recruitment chains','g'],['Earnings are yours to withdraw','g']]},
-    {id:'p4', ic:'\uD83D\uDCCA', lbl:'Track everything',
+    {id:'p4', ic:'@chart', lbl:'Track everything',
      h:'Track <em>everything</em>',
      p:'Your dashboard shows who joined, what\u2019s active and what you\u2019ve earned \u2014 updated as it happens.',
      li:[['Referred count and active members',''],['Lifetime commission',''],['Withdraw when you\u2019re ready','']]},
-    {id:'p5', ic:'\u2696\uFE0F', lbl:'Fair rules',
+    {id:'p5', ic:'@scale', lbl:'Fair rules',
      h:'Played <em>fairly</em>',
      p:'The programme rewards real members who stay, not volume.',
      li:[['No fake or duplicate accounts','r'],['No promising winnings to recruit','r'],['Abuse ends the partnership','r']],
@@ -6023,9 +6246,13 @@ var SYN = window.SYN = {
       '</div>'+
       '<div style="text-align:center;font-size:.76rem;font-weight:700;margin:8px 0;">'+esc(c.lbl)+'</div>'+
       '<div class="clip-rail" id="syn-clip-rail">'+this.SYN_CLIPS.map(function(x,k){
-        return '<div class="clip-thumb" onclick="SYN.gotoClip('+k+')" style="width:96px;opacity:'+(k===i?1:.55)+';">'+
-          '<div class="cw" style="display:grid;place-items:center;font-size:1.4rem;background:var(--surface-2);">'+x.ic+'</div>'+
-          '<div class="lbl">'+esc(x.lbl)+'</div></div>';
+        // Portrait, compact — a picker, not a second gallery.
+        // compact landscape tiles — wide, short, easy to thumb along
+        return '<div class="clip-thumb" onclick="SYN.gotoClip('+k+')" style="width:74px;flex:0 0 74px;opacity:'+(k===i?1:.5)+';">'+
+          '<div class="cw" style="aspect-ratio:16/10;display:grid;place-items:center;background:var(--surface-2);border:1px solid '+(k===i?'var(--green)':'var(--border)')+';border-radius:8px;">'+
+            '<span style="width:22px;height:22px;display:grid;place-items:center;color:'+(k===i?'var(--green)':'var(--muted)')+';">'+
+              (String(x.ic).charAt(0)==='@'?SYN.icon(String(x.ic).slice(1),22):x.ic)+'</span></div>'+
+          '<div class="lbl" style="font-size:.54rem;line-height:1.2;margin-top:4px;max-height:2.4em;overflow:hidden;">'+esc(x.lbl)+'</div></div>';
       }).join('')+'</div>';
   },
   /* Swipe paging. Arrows were covering the content, so the stage is now
@@ -6310,7 +6537,7 @@ var SYN = window.SYN = {
   renderAdmin:function(){
     var body=document.getElementById('admin-tab-body'); if(!body) return;
     var h='<div class="sy-atabs">'+
-      [['members','Members'],['slips','Slip queue'],['push','Send push'],['live','Live'],['ladder','Ladder'],['vault','Vault']].map(function(t){
+      [['members','Members'],['slips','Slip queue'],['push','Send push'],['live','Live'],['ladder','Ladder'],['vault','Vault'],['records','Records']].map(function(t){
         return '<button class="sy-atab'+(SYN.aTab===t[0]?' on':'')+'" onclick="SYN.aGo(\''+t[0]+'\')">'+t[1]+'</button>';
       }).join('')+'</div><div id="syn-admin-body"></div>';
     body.innerHTML='<div id="syn-admin">'+h+'</div>';
@@ -6325,6 +6552,7 @@ var SYN = window.SYN = {
     if(this.aTab==='live')    return this.aLiveView(b);
     if(this.aTab==='ladder')  return this.aLadderView(b);
     if(this.aTab==='vault')   return this.aVaultView(b);
+    if(this.aTab==='records') return this.aRecordsView(b);
   },
   aMembersView:function(b){
     b.innerHTML='<p class="sub">Loading members&hellip;</p>';
@@ -6381,7 +6609,8 @@ var SYN = window.SYN = {
         '<p class="sub" style="font-size:.64rem;margin-top:5px;">Pre-filled \u2014 just replace the number. Members who can no longer get this price skip the bet.</p>'+
       '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.sendPush()">Send</button>'+
       '<div id="syn-push-code" style="margin-top:10px;">'+(this.lastCode
-        ? '<div class="sy-note" style="border-style:solid;border-color:var(--green);color:var(--green);">Pick code <b style="font-family:var(--d);">'+esc(this.lastCode)+'</b> \u2014 members can quote this back to you.</div>'
+        ? '<div class="sy-note" style="border-style:solid;border-color:var(--green);color:var(--green);">Pick code <b style="font-family:var(--d);">'+esc(this.lastCode)+'</b> \u2014 members can quote this back to you.'+
+          (this.lastRef?'<br>Archive reference <b style="font-family:var(--d);color:var(--gold);">'+esc(this.lastRef)+'</b> \u2014 find it any time under Records.':'')+'</div>'
         : '')+'</div>';
   },
   sendPush:function(){
@@ -6389,7 +6618,7 @@ var SYN = window.SYN = {
     if(!text||!text.trim()){ if(App&&App.toast)App.toast('Enter the pick'); return; }
     Api.post('/api/admin/syndicate/push',{tier:tier,text:text.trim(),min_odds:isFinite(odds)?odds:null,fixture_id:SYN._lastFixture||''}).then(function(r){
       if(r&&r.ok){ if(App&&App.toast)App.toast('Sent to '+(r.sent||0)+' eligible member'+((r.sent||0)===1?'':'s'));
-        if(r.code){ SYN.lastCode=r.code; if(SYN.aTab==='push') SYN.aPaint(); }
+        if(r.code){ SYN.lastCode=r.code; SYN.lastRef=r.ref||null; if(SYN.aTab==='push') SYN.aPaint(); }
       }
       else if(App&&App.toast)App.toast((r&&r.error)||'Could not send');
     }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
@@ -6521,6 +6750,84 @@ var SYN = window.SYN = {
     Api.post('/api/admin/syndicate/captain',{member_id:id}).then(function(r){
       if(r&&r.ok){ if(App&&App.toast)App.toast('Captain of the Week set'); SYN.aPaint(); }
       else if(App&&App.toast)App.toast('Could not set');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
+  /* Records — the searchable archive of every pick ever posted. This is what
+     you open if a member disputes what was sent, when, or at what price.
+     Nothing here can be edited except attaching a settled result. */
+  _rq:{q:'',from:'',to:'',kind:'all',tier:'all',result:'all'},
+  aRecordsView:function(b){
+    var q=this._rq;
+    b.innerHTML='<div class="sy-note" style="margin-bottom:12px;">Every pick is written here the moment it is posted, with its own reference and the exact server time. Search by reference, match, code or league. Records are never deleted.</div>'+
+      '<input class="input" id="rec-q" placeholder="Search reference, match, pick, code\u2026" value="'+esc(q.q)+'" style="height:44px;margin-bottom:8px;">'+
+      '<div style="display:flex;gap:8px;margin-bottom:8px;">'+
+        '<div class="field" style="flex:1;"><label>From</label><input class="input" id="rec-from" type="date" value="'+esc(q.from)+'" style="height:42px;"></div>'+
+        '<div class="field" style="flex:1;"><label>To</label><input class="input" id="rec-to" type="date" value="'+esc(q.to)+'" style="height:42px;"></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap;">'+
+        '<select class="sel" id="rec-kind" style="flex:1;min-width:100px;height:40px;">'+
+          ['all','prediction','tip','syndicate','live'].map(function(k){
+            return '<option value="'+k+'"'+(q.kind===k?' selected':'')+'>'+(k==='all'?'All types':k)+'</option>'; }).join('')+'</select>'+
+        '<select class="sel" id="rec-tier" style="flex:1;min-width:100px;height:40px;">'+
+          ['all','bronze','silver','gold','vip'].map(function(k){
+            return '<option value="'+k+'"'+(q.tier===k?' selected':'')+'>'+(k==='all'?'All tiers':k)+'</option>'; }).join('')+'</select>'+
+        '<select class="sel" id="rec-result" style="flex:1;min-width:100px;height:40px;">'+
+          ['all','open','won','lost','void'].map(function(k){
+            return '<option value="'+k+'"'+(q.result===k?' selected':'')+'>'+(k==='all'?'All results':k)+'</option>'; }).join('')+'</select>'+
+      '</div>'+
+      '<button class="btn btn-green btn-sm" style="height:42px;" onclick="SYN.recSearch()">Search records</button>'+
+      '<div id="rec-out" style="margin-top:12px;"><p class="sub">Loading\u2026</p></div>';
+    this.recSearch();
+  },
+  recSearch:function(){
+    var g=function(id){ var e=document.getElementById(id); return e?e.value:''; };
+    this._rq={ q:g('rec-q'), from:g('rec-from'), to:g('rec-to'),
+               kind:g('rec-kind')||'all', tier:g('rec-tier')||'all', result:g('rec-result')||'all' };
+    var q=this._rq, out=document.getElementById('rec-out');
+    if(!out) return;
+    out.innerHTML='<p class="sub">Searching\u2026</p>';
+    var qs='?q='+encodeURIComponent(q.q)+'&from='+q.from+'&to='+q.to+
+           '&kind='+q.kind+'&tier='+q.tier+'&result='+q.result;
+    Api.get('/api/admin/picks/log'+qs).then(function(r){
+      var list=(r&&r.picks)||[], st=(r&&r.stats)||{};
+      if(!list.length){ out.innerHTML='<div class="sy-note">No records match. Picks appear here automatically as they are posted.</div>'; return; }
+      out.innerHTML='<div style="display:flex;gap:8px;margin-bottom:10px;">'+
+          '<div class="sy-stat"><div class="v">'+(st.total||0)+'</div><div class="l">Records</div></div>'+
+          '<div class="sy-stat"><div class="v" style="color:var(--green);">'+(st.won||0)+'</div><div class="l">Won</div></div>'+
+          '<div class="sy-stat"><div class="v" style="color:var(--red);">'+(st.lost||0)+'</div><div class="l">Lost</div></div>'+
+          '<div class="sy-stat"><div class="v" style="color:var(--gold);">'+(st.open||0)+'</div><div class="l">Open</div></div>'+
+        '</div>'+
+        list.map(function(p){
+          var res=p.result?p.result:'open';
+          var cls=res==='won'?'active':(res==='lost'?'susp':'pend');
+          return '<div class="sy-card" style="padding:11px 13px;margin-bottom:7px;">'+
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'+
+              '<b style="font-family:var(--d);font-size:.78rem;color:var(--gold);">'+esc(p.ref)+'</b>'+
+              '<span class="sy-tag '+cls+'">'+res+'</span>'+
+              '<span class="sub" style="margin-left:auto;font-size:.62rem;">'+esc(p.kind)+' \u00B7 '+esc(p.tier)+'</span></div>'+
+            '<div style="font-size:.82rem;font-weight:600;">'+esc(p.match||p.pick||'')+'</div>'+
+            (p.match&&p.pick?'<div class="sub" style="font-size:.72rem;">'+esc(p.pick)+'</div>':'')+
+            '<div class="sub" style="font-size:.64rem;margin-top:4px;">'+
+              (p.code?'Code '+esc(p.code)+' \u00B7 ':'')+
+              (p.odds?'@'+Number(p.odds).toFixed(2)+' \u00B7 ':'')+
+              (p.min_odds?'floor '+Number(p.min_odds).toFixed(2)+' \u00B7 ':'')+
+              (p.kickoff_ts?'KO '+App.stamp(p.kickoff_ts)+' \u00B7 ':'')+
+              'posted '+App.stamp(p.posted_at)+
+              (p.recipients?' \u00B7 '+p.recipients+' members':'')+
+              (p.ticket?' \u00B7 ticket '+esc(p.ticket):'')+
+            '</div>'+
+            (p.result?'':'<div style="display:flex;gap:6px;margin-top:8px;">'+
+              '<button class="btn btn-out btn-sm" style="flex:1;height:34px;border-color:var(--green);color:var(--green);" onclick="SYN.recSettle(\''+esc(p.ref)+'\',\'won\')">Won</button>'+
+              '<button class="btn btn-out btn-sm" style="flex:1;height:34px;border-color:var(--red);color:var(--red);" onclick="SYN.recSettle(\''+esc(p.ref)+'\',\'lost\')">Lost</button>'+
+              '<button class="btn btn-out btn-sm" style="flex:1;height:34px;" onclick="SYN.recSettle(\''+esc(p.ref)+'\',\'void\')">Void</button></div>')+
+          '</div>';
+        }).join('');
+    }).catch(function(){ out.innerHTML='<div class="sy-note">Could not load records.</div>'; });
+  },
+  recSettle:function(ref,result){
+    Api.post('/api/admin/picks/settle',{ref:ref,result:result}).then(function(r){
+      if(r&&r.ok){ if(App&&App.toast)App.toast(ref+' marked '+result); SYN.recSearch(); }
+      else if(App&&App.toast)App.toast('Could not update');
     }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
   },
   aVaultView:function(b){
