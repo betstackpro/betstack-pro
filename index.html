@@ -341,7 +341,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .navitem.active{color:var(--red);}
 /* ===== In-place nav panel ===== */
 /* ===== Horizontal brand strip (cinematic, minimal height) ===== */
-.clip-rail{display:flex;gap:10px;overflow-x:auto;padding:4px 0 12px;-webkit-overflow-scrolling:touch;}
+.clip-rail{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch;}
 .clip-thumb{flex-shrink:0;width:132px;cursor:pointer;}
 .clip-thumb .cw{width:132px;height:132px;border-radius:14px;overflow:hidden;border:1px solid var(--border);position:relative;background:#0b0d0f;}
 .clip-thumb iframe{width:132px;height:132px;border:0;pointer-events:none;}
@@ -868,7 +868,6 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-green btn-sm" style="flex:1;min-width:130px;height:42px;" onclick="App.addPred()">＋ Prediction</button>
         <button class="btn btn-gold btn-sm" style="flex:1;min-width:130px;height:42px;" onclick="App.addCode()">＋ Daily tip</button>
-        <button class="btn btn-out btn-sm" style="flex:1;min-width:130px;height:42px;" onclick="App.openSheet('post')">＋ Slip</button>
       </div>
       <div id="admin-list"></div>
     </div>
@@ -1692,28 +1691,41 @@ const App={
       ${planBanner}
       ${State.isAdmin?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);">🤝</div><div class="pb-mid"><div class="pb-t">Syndicate</div><div class="pb-s">Follow the group's picks together — you keep your own money. Admin preview while it's built.</div></div><button class="btn btn-out btn-sm" style="height:36px;" onclick="App.go('syndicate')">Open</button></div>`:''}
       <div id="results-strip"></div>
+      <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">\uD83E\uDD1D The Syndicate <span class="sub" style="font-size:.68rem;font-weight:400;">how it works</span></div>
+      <div id="home-syn-clips"></div>
+      <div style="display:flex;gap:9px;margin:8px 0 4px;">
+        <button class="btn btn-green btn-sm" style="flex:1;height:44px;" onclick="App.go('syninfo')">Why the Syndicate</button>
+        <button class="btn btn-out btn-sm" style="flex:1;height:44px;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')">Partner programme</button>
+      </div>
       <div class="sec">Today's free predictions</div>
       ${preds||'<p class="sub">No predictions posted yet — check back soon.</p>'}
       <div class="sec">Daily tips</div>
       ${codeCards}
       <button class="btn btn-out mt" style="width:100%;" onclick="App.openResults()">${svg('<path d="M3 3v18h18M7 16l4-4 3 3 5-6"/>')} See our verified track record</button>
-      <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Your subscription unlocks the tips — you place every bet yourself with your own money at your own bookmaker. We never hold your stake or your winnings. Tips can lose; bet responsibly. 18+.</p></div><div class=\"sec\" style=\"display:flex;align-items:center;justify-content:space-between;\">This week's games <span id=\"wk-count\" class=\"sub\" style=\"font-size:.7rem;\"></span></div><div id=\"week-games\"><p class=\"sub\">Loading games\u2026</p></div>`;
+      <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Your subscription unlocks the tips — you place every bet yourself with your own money at your own bookmaker. We never hold your stake or your winnings. Tips can lose; bet responsibly. 18+.</p></div>
+      <div class="sec">Tips, Syndicate &amp; Partner</div>
+      <div class="card" style="padding:14px;">
+        <p class="sub" style="font-size:.78rem;line-height:1.6;margin-bottom:10px;"><b style="color:var(--text);">Daily tips</b> are the picks themselves — codes you load at your own bookmaker.
+        <b style="color:var(--green);">The Syndicate</b> is the group that follows them together, with a ladder, live sessions and a permanent record.
+        <b style="color:var(--gold);">The Partner programme</b> pays you a share when people you invite subscribe.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-out btn-sm" style="flex:1;min-width:130px;height:40px;" onclick="App.go('syninfo')">Syndicate</button>
+          <button class="btn btn-out btn-sm" style="flex:1;min-width:130px;height:40px;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')">Partner</button>
+        </div>
+        ${State.role?'':'<button class="btn btn-green" style="height:46px;margin-top:9px;" onclick="App.go(\'hub\')">Join now</button>'}
+      </div><div class=\"sec\" style=\"display:flex;align-items:center;justify-content:space-between;\">This week's games <span id=\"wk-count\" class=\"sub\" style=\"font-size:.7rem;\"></span></div><div id=\"week-games\"><p class=\"sub\">Loading games\u2026</p></div>`;
     }else if(State.role==='Partner'){
       h=this.installBanner()+`<div class="hero green"><div class="glow"></div>
         <div class="pill-eye" style="margin-bottom:14px;border-color:rgba(255,255,255,.4);">Partner</div>
         <h1 class="h1" style="font-size:1.8rem;">Invite &amp; Earn</h1>
         <p class="sub" style="color:#cfd3d9;">Earn 10% every time someone you invite pays for a membership. Your invite link, balance and withdrawals all live in the Wallet tab.</p>
       </div>
-      <button class="btn btn-green" onclick="App.go('wallet')">${svg(ICON.up)} Open Invite &amp; Earn</button>
+      <button class="btn btn-green" onclick="App.go('wallet')">${svg(ICON.up)} Invite &amp; Earn</button>
+      <div class="sec">How the programme works</div>
+      <div id="prog-clips-slot"></div>
+      <button class="btn btn-out mt" style="width:100%;" onclick="App.go('program')">Full programme details</button>
       <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Commission is paid on genuine activity only — <b>no rewards for sign-ups alone</b>. Withdrawals are reviewed before payout. 18+.</p></div>`;
     }
-    // ===== SYNDICATE — the headline product, so it leads the page =====
-    h+=`<div class="sec" style="display:flex;justify-content:space-between;align-items:center;">\uD83E\uDD1D The Syndicate <span class="sub" style="font-size:.68rem;font-weight:400;">how it works</span></div>
-    <div id="home-syn-clips"></div>
-    <div style="display:flex;gap:9px;margin:10px 0 4px;">
-      <button class="btn btn-green btn-sm" style="flex:1;height:46px;" onclick="App.go('syninfo')">\uD83E\uDD1D Why the Syndicate</button>
-      <button class="btn btn-out btn-sm" style="flex:1;height:46px;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')">\uD83E\uDD1D Partner programme</button>
-    </div>`;
     // ===== PUBLIC CREDIBILITY SECTIONS (busy, data-rich home) =====
     h+=`<div id="home-statstrip"></div>
     <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">\uD83D\uDCC5 Match center <span class="sub" style="font-size:.68rem;font-weight:400;">today &amp; tomorrow</span></div>
@@ -1722,7 +1734,12 @@ const App={
     <div id="home-news"><p class="sub">Loading\u2026</p></div>`;
     h+=this.membershipCard();
     // paint the Syndicate clip box into the home slot once the HTML is in place
-    setTimeout(function(){ if(window.SYN&&SYN.paintHomeClips) SYN.paintHomeClips(); },0);
+    setTimeout(function(){
+      if(!window.SYN) return;
+      // Partners see the programme clips; members see the Syndicate clips.
+      if(State.role==='Partner'){ if(SYN.gotoProg) SYN.gotoProg(SYN._progClip||0); }
+      else if(SYN.paintHomeClips) SYN.paintHomeClips();
+    },0);
     if(State.role==='Member')h+=`<div class="sec">Community reviews</div><div id="reviews-block"></div>`;
     el.innerHTML=h;
     this.loadHomeExtras();
@@ -3169,7 +3186,44 @@ const App={
   currentView(){const a=document.querySelector('.page.active');return a?a.id.replace('view-',''):'settings';},
   legalBack(){const v=this._legalBack||'settings';this.show(v==='legal'?'settings':v);},
   async sha256(str){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');},
-  async buildChain(){let prev='0000000000000000000000000000000000000000000000000000000000000000';const out=[];for(const r of RESULTS){const payload=`${r.ts}|${r.event}|${r.pick}|${r.odds}|${r.result}`;const hash=await this.sha256(prev+'|'+payload);out.push({...r,payload,prev,hash});prev=hash;}return out;},
+  /* Verified Results is now built from REAL settled picks — the Proof Vault
+     first, then settled predictions. It must never show invented results: an
+     empty record is honest, a fabricated one is not. RESULTS stays only as a
+     local demo seed and is used ONLY when explicitly enabled. */
+  async loadRealResults(){
+    let rows=[];
+    try{
+      const v=await Api.get('/api/syndicate/vault');
+      if(v&&v.ok&&v.results&&v.results.length){
+        rows=v.results.filter(r=>r.result==='won'||r.result==='lost').map(r=>({
+          ts:r.ts||r.date||Date.now(), sport:'Football',
+          event:r.pick||r.hash||'Settled pick', pick:r.pick||'\u2014',
+          odds:Number(r.odds)||1.0, result:r.result, ticket:r.hash||'' }));
+      }
+    }catch(e){}
+    if(!rows.length){
+      try{
+        const p=await Api.get('/api/predictions/settled');
+        if(p&&p.ok&&p.predictions) rows=p.predictions.filter(x=>x.result).map(x=>({
+          ts:x.settled_at||x.start_ts||Date.now(), sport:x.sport||'Football',
+          event:x.match||x.event||'', pick:x.pick||'', odds:Number(x.odds)||1.0,
+          result:(x.result==='won'||x.result==='win')?'won':'lost' }));
+      }catch(e){}
+    }
+    return rows;
+  },
+  async buildChain(){
+    let src=await this.loadRealResults();
+    if(!src.length && window.BSP_DEMO_RESULTS===true) src=RESULTS;   // opt-in demo only
+    let prev='0000000000000000000000000000000000000000000000000000000000000000';
+    const out=[];
+    for(const r of src){
+      const payload=`${r.ts}|${r.event}|${r.pick}|${r.odds}|${r.result}`;
+      const hash=await this.sha256(prev+'|'+payload);
+      out.push({...r,payload,prev,hash}); prev=hash;
+    }
+    return out;
+  },
   openResults(){this._resultsBack=this.currentView();this.show('results');this.renderResults();},
   resultsBack(){const v=this._resultsBack||'hub';this.show(v==='results'?'hub':v);},
   trendSvg(chain){
@@ -3188,6 +3242,14 @@ const App={
     const back=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;"><div class="icon-btn" style="margin-left:-8px;" onclick="App.resultsBack()">${svg('<path d="M19 12H5M12 19l-7-7 7-7"/>')}</div></div>`;
     el.innerHTML=back+`<div class="eyebrow">Transparency</div><h2 class="h2" style="margin:4px 0 6px;">Verified Results</h2><p class="sub">Computing verification chain…</p>`;
     const chain=await this.buildChain();this._chain=chain;
+    // No settled picks yet -> say so plainly. Never invent a track record.
+    if(!chain.length){
+      el.innerHTML=back+`<div class="eyebrow">Transparency</div><h2 class="h2" style="margin:4px 0 6px;">Verified Results</h2>
+        <p class="sub" style="margin-bottom:14px;">Every pick is published before kick-off and written to a permanent record with a verifiable ticket \u2014 win or loss. Nothing is ever edited or removed.</p>
+        <div class="empty"><div class="ic">\uD83D\uDCC3</div>
+          <p><b>No settled picks on record yet.</b><br>Results appear here automatically as picks settle. We would rather show you an empty page than numbers we cannot prove.</p></div>`;
+      return;
+    }
     const f=this._resFilter||(this._resFilter={result:'all',sport:'all'});
     const won=chain.filter(c=>c.result==='won').length,lost=chain.length-won;
     const rate=Math.round(won/chain.length*100);
@@ -3828,6 +3890,9 @@ var MC = window.MC = {
     if(!row) return;                                   // console not in the DOM yet
     var bar=row.parentNode;
     if(bar.querySelector('[data-mc-book]')) return;    // already added
+    // "Book games" removed from the console header — the Games tab already
+    // hosts the Match Center, so the button was redundant.
+    if(true) return;
     var b=document.createElement('button');
     b.className='btn btn-out btn-sm';
     b.setAttribute('data-mc-book','1');
@@ -3932,7 +3997,7 @@ var MC = window.MC = {
     el.innerHTML =
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">'+
         '<h2 class="h2" style="flex:1;">Games</h2>'+
-        '<button class="pill" style="font-size:.66rem;padding:5px 10px;" onclick="MC.load(true)">&#8635; Refresh</button>'+
+        '<button class="pill" style="font-size:.66rem;padding:5px 10px;" onclick="MC.load(true)">&#8635;</button>'+
       '</div>'+
       '<p class="sub" style="font-size:.7rem;margin-bottom:12px;">Full match detail &amp; markets &middot; tap a game to open all picks.</p>'+
       '<input class="input" style="height:46px;margin-bottom:10px;" placeholder="&#128269; Search league or team&hellip;" '+
@@ -4322,11 +4387,11 @@ var MC = window.MC = {
 
   /* --- markets --- */
   tplMarkets:function(f){
-    var od=f._od||{}, subs=[['all','All markets'],['main','Main'],['handicap','Handicap'],['goals','Goals'],['halves','Halves'],['teams','Teams'],['corners','Corners'],['cards','Cards'],['combos','Combos'],['specials','Specials'],['builder','Builder'],['stats','Stats']];
+    var od=f._od||{}, subs=[['all','All markets'],['main','Main'],['handicap','Handicap'],['goals','Goals'],['halves','Halves'],['teams','Teams'],['corners','Corners'],['cards','Cards'],['combos','Combos'],['specials','Specials'],['builder','Builder']];
     var h='<div class="mc-subtabs">'+subs.map(function(s){
       return '<button class="mc-sub'+(MC.sub===s[0]?' on':'')+'" onclick="MC.setSub(\''+s[0]+'\')">'+s[1]+'</button>';
     }).join('')+'</div>';
-    if(this.sub==='stats') return h+this.tplStats(f);
+    if(this.sub==='stats') return h+this.tplStats(f);   // reachable only if set directly
     var B=Eng.books(od, f.home, f.away);
     var M=Eng.model(B.cons);
     // No odds on this fixture at all -> fall back to the full static catalogue
@@ -5083,6 +5148,7 @@ else boot();
 #syn-admin, #view-syndicate{ --sy-line:var(--border); }
 /* ---- Syndicate explainer clips (rendered inline, no iframe) ---- */
 .syc-stage{position:relative;width:100%;aspect-ratio:16/10;max-height:none;border-radius:18px;overflow:hidden;margin:0 auto;
+  touch-action:pan-y;user-select:none;cursor:grab;
   border:1px solid var(--border);
   background:radial-gradient(120% 90% at 15% 0%,rgba(31,209,122,.10),transparent 60%),
              radial-gradient(90% 70% at 100% 100%,rgba(244,183,64,.07),transparent 60%),#0b0d10;}
@@ -5091,19 +5157,19 @@ else boot();
                    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
   background-size:32px 32px;animation:sycDrift 24s linear infinite;}
 @keyframes sycDrift{to{background-position:32px 32px,32px 32px;}}
-.syc-in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:14px 18px 20px;}
-.syc-brand{position:absolute;top:15px;left:18px;display:flex;align-items:center;gap:6px;
-  font-family:var(--d);font-weight:800;font-size:.66rem;color:var(--text);}
-.syc-brand b{display:flex;align-items:flex-end;gap:2px;height:12px;}
-.syc-brand b i{display:block;width:2.5px;border-radius:1px;background:var(--green);animation:sycEq 1.5s ease-in-out infinite;}
-.syc-brand b i:nth-child(1){height:4px;background:var(--faint);}
-.syc-brand b i:nth-child(2){height:7px;background:var(--muted);animation-delay:.15s;}
-.syc-brand b i:nth-child(3){height:9px;animation-delay:.3s;}
-.syc-brand b i:nth-child(4){height:12px;animation-delay:.45s;}
+.syc-in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:34px 18px 26px;}
+.syc-brand{position:absolute;top:13px;left:18px;display:flex;align-items:center;gap:10px;
+  font-family:var(--d);font-weight:800;font-size:.79rem;color:var(--text);}
+.syc-brand b{display:flex;align-items:flex-end;gap:2.5px;height:15px;}
+.syc-brand b i{display:block;width:3.2px;border-radius:1px;background:var(--green);animation:sycEq 1.5s ease-in-out infinite;}
+.syc-brand b i:nth-child(1){height:5px;background:var(--faint);}
+.syc-brand b i:nth-child(2){height:9px;background:var(--muted);animation-delay:.15s;}
+.syc-brand b i:nth-child(3){height:12px;animation-delay:.3s;}
+.syc-brand b i:nth-child(4){height:15px;animation-delay:.45s;}
 @keyframes sycEq{0%,100%{transform:scaleY(1);}50%{transform:scaleY(.55);}}
 .syc-brand s{text-decoration:none;color:var(--muted);}
 .syc-n{position:absolute;top:15px;right:18px;font-family:var(--d);font-weight:700;font-size:.62rem;color:var(--faint);}
-.syc-ic{font-size:2.9rem;line-height:1;margin-bottom:6px;
+.syc-ic{font-size:3.5rem;line-height:1;margin-bottom:6px;
   animation:sycRise .55s cubic-bezier(.16,.84,.44,1) both,sycFloat 3.5s ease-in-out .6s infinite;}
 @keyframes sycFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
 .syc-h{font-family:var(--d);font-weight:800;font-size:1.5rem;line-height:1.1;letter-spacing:-.025em;
@@ -5166,10 +5232,8 @@ else boot();
 .syc-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);
   animation:sycPulse 1.3s infinite;margin-right:5px;}
 @keyframes sycPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.8);}}
-.syc-edge{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;
-  background:rgba(0,0,0,.55);border:1px solid var(--border-2);color:#fff;font-size:1.1rem;display:grid;
-  place-items:center;z-index:3;}
-.syc-edge.l{left:8px;} .syc-edge.r{right:8px;}
+/* Arrows removed — they covered the content. Paging is by swipe or dots. */
+.syc-edge{display:none;}
 .syc-dots{position:absolute;bottom:7px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:3;flex-wrap:wrap;padding:0 30px;}
 .syc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25);}
 .syc-dot.on{background:var(--green);width:14px;border-radius:99px;}
@@ -5388,15 +5452,16 @@ var SYN = window.SYN = {
     h+=this.tierPerks(tier);
     // explainer clips — every topic, skippable, back/forth like the home reel
     h+='<div id="syn-clips-slot">'+this.clipBoxHtml()+'</div>';
+    setTimeout(function(){ SYN.attachSwipe('syn-stage', function(){SYN.clipNext();}, function(){SYN.clipPrev();}); },0);
     // proof vault teaser
     h+='<div class="sy-sec">Proof Vault</div>';
     h+='<div class="sy-vault-head"><div class="t">&#128274; Every result, forever</div>'+
        '<div class="s">Every pick we make — win or loss — is written to a permanent, verifiable record. We never delete a loss. Open the Vault to check our whole history yourself.</div></div>'+
-       '<button class="btn btn-out btn-sm" style="height:44px;" onclick="App.go(\'vault\')">Open the Proof Vault</button>';
+       '<button class="btn btn-out btn-sm" style="height:44px;" onclick="App.go(\'vault\')">Proof Vault</button>';
     // responsible footer
     h+='<p class="sub" style="font-size:.68rem;margin-top:16px;line-height:1.6;text-align:center;">'+
        'You place your own bets and keep 100% of what you win. Donations buy rank &amp; priority only — never a return, never a stake. 18+ &middot; bet responsibly.<br>'+
-       '<a onclick="SYN.openTerms()" style="color:var(--green);text-decoration:underline;cursor:pointer;">Read the full Syndicate terms</a></p>';
+       '<a onclick="SYN.openTerms()" style="color:var(--green);text-decoration:underline;cursor:pointer;">Syndicate terms</a></p>';
     body.innerHTML=h;
   },
   hero:function(tier, m, wired){
@@ -5418,7 +5483,7 @@ var SYN = window.SYN = {
     ].join('') : '<span class="sy-chip off">Join the Syndicate to appear on the feed</span>';
     var rank = (m && m.rank) ? '<div style="text-align:right;"><div style="font-family:var(--d);font-weight:800;font-size:1.4rem;color:var(--gold);">#'+m.rank+'</div><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">this week</div></div>' : '';
     var joinBtn = (m ? '' :
-      '<button class="btn btn-green btn-sm" style="height:42px;margin-top:12px;" onclick="SYN.join(\''+tier+'\')">Join the Syndicate ('+esc(meta.name)+')</button>');
+      '<button class="btn btn-green btn-sm" style="height:42px;margin-top:12px;" onclick="SYN.join(\''+tier+'\')">Join Syndicate ('+esc(meta.name)+')</button>');
     var capBadge = (m && m.captain) ? '<span class="sy-badge" style="color:var(--gold);margin-left:8px;">&#128081; Captain</span>' : '';
     var pf=this.profile||{};
     var a=this.ach;
@@ -5430,7 +5495,9 @@ var SYN = window.SYN = {
       '<div style="width:44px;height:44px;border-radius:50%;background:var(--surface-2);border:1.5px solid '+((rk&&rk.color)||'var(--green)')+';display:grid;place-items:center;font-size:1.3rem;overflow:hidden;">'+esc(pf.avatar||'\uD83D\uDC64')+'</div>'+
       '<div style="flex:1;min-width:0;">'+
         '<div class="sub" style="font-size:.66rem;">Welcome back</div>'+
-        '<div style="font-family:var(--d);font-weight:800;font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(pf.display_name||pf.full_name||'Member')+' '+tags+'</div>'+
+        '<div style="font-family:var(--d);font-weight:800;font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+
+          (isAdmin()?'<span title="Administrator" style="color:var(--gold);margin-right:4px;">\uD83D\uDEE1\uFE0F</span>':'')+
+          esc(pf.display_name||pf.full_name||'Member')+' '+tags+'</div>'+
         (rk?'<div class="sub" style="font-size:.64rem;margin-top:1px;color:'+rk.color+';">'+rk.icon+' '+esc(rk.name)+'</div>':'')+
       '</div></div>';
     return '<div class="sy-hero">'+who+
@@ -5440,10 +5507,11 @@ var SYN = window.SYN = {
       (wired?'':'<p class="sub" style="font-size:.68rem;margin-top:10px;">Syndicate backend not wired yet — this is your live layout. Status fills in once the <code style="color:var(--green);">/api/syndicate</code> routes are live.</p>')+
       joinBtn+
       (m ? '<div style="display:flex;gap:8px;margin-top:12px;">'+
-        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--gold);color:var(--gold);" onclick="SYN.openDonate()">&#11088; Donate for rank</button>'+
+        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--gold);color:var(--gold);" onclick="SYN.openDonate()">&#11088; Donate</button>'+
         '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--green);color:var(--green);" onclick="SYN.openSlip()">&#128203; Submit slip</button>'+
+        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;" onclick="SYN.pushFeeds()">&#128276; Push feeds</button>'+
       '</div>'+
-      (this.tierHasTelegram(myTier())?'<button class="btn btn-green btn-sm" style="height:44px;margin-top:8px;" onclick="SYN.getInvite()">&#128241; Open my Telegram channel</button>':'')
+      (this.tierHasTelegram(myTier())?'<button class="btn btn-green btn-sm" style="height:44px;margin-top:8px;" onclick="SYN.getInvite()">&#128241; Telegram</button>':'')
       : '')+
     '</div>';
   },
@@ -5501,7 +5569,7 @@ var SYN = window.SYN = {
         '<input type="checkbox" id="sp-terms" style="width:20px;height:20px;margin-top:2px;flex-shrink:0;accent-color:var(--green);">'+
         '<span class="sub" style="font-size:.74rem;line-height:1.55;">I confirm I am <b>18 or older</b>, the details above are mine, and I accept the <a onclick="event.preventDefault();SYN.openTerms()" style="color:var(--green);text-decoration:underline;cursor:pointer;">Syndicate terms</a>: I stake my own money at my own bookmaker and keep 100% of my winnings, donations buy rank and priority only (never a return), and outcomes are never guaranteed.</span>'+
       '</label>'+
-      '<button class="btn btn-green" style="margin-top:14px;height:50px;" onclick="SYN.saveProfile()">Confirm &amp; enter the Syndicate</button>'+
+      '<button class="btn btn-green" style="margin-top:14px;height:50px;" onclick="SYN.saveProfile()">Confirm &amp; enter</button>'+
       '<p class="sub" style="font-size:.64rem;margin-top:10px;text-align:center;">Your details are stored to identify you inside the group and are not shared with other members beyond your username, avatar and rank.</p>'+
     '</div>';
   },
@@ -5754,8 +5822,11 @@ var SYN = window.SYN = {
   _synClip:0,
   // Turn one clip's data into animated markup.
   buildClip:function(c, i, n){
+    // Signed-in members already see the brand in the app header, so repeating it
+    // inside every clip is duplication. Show it only to logged-out visitors.
+    var showBrand=!(window.State && State.role);
     var h='<div class="syc-grid"></div>'+
-      '<div class="syc-brand"><b><i></i><i></i><i></i><i></i></b>BETSTACK <s>PRO</s></div>'+
+      (showBrand?'<div class="syc-brand"><b><i></i><i></i><i></i><i></i></b>BETSTACK <s>PRO</s></div>':'')+
       '<div class="syc-n">'+(i+1)+' / '+n+'</div>'+
       '<div class="syc-in">'+
       '<div class="syc-ic">'+c.ic+'</div>'+
@@ -5807,6 +5878,7 @@ var SYN = window.SYN = {
      because that belongs to signed-in members only. */
   renderInfo:function(){
     var el=document.getElementById('view-syninfo'); if(!el) return;
+    setTimeout(function(){ SYN.attachSwipe('syn-stage', function(){SYN.clipNext();}, function(){SYN.clipPrev();}); },0);
     var signedIn=!!(window.State && State.role);
     el.innerHTML=
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'+
@@ -5887,11 +5959,13 @@ var SYN = window.SYN = {
     var n=this.PROG_CLIPS.length; this._progClip=((i%n)+n)%n;
     var slot=document.getElementById('prog-clips-slot');
     if(slot) slot.innerHTML=this.progBoxHtml();
+    this.attachSwipe('prog-stage', function(){SYN.progNext();}, function(){SYN.progPrev();});
   },
   progNext:function(){ this.gotoProg(this._progClip+1); },
   progPrev:function(){ this.gotoProg(this._progClip-1); },
   renderProgram:function(){
     var el=document.getElementById('view-program'); if(!el) return;
+    setTimeout(function(){ SYN.attachSwipe('prog-stage', function(){SYN.progNext();}, function(){SYN.progPrev();}); },0);
     var signedIn=!!(window.State && State.role);
     el.innerHTML=
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'+
@@ -5910,7 +5984,7 @@ var SYN = window.SYN = {
           '<p class="sub" style="font-size:.76rem;line-height:1.55;margin-top:2px;">'+x[2]+'</p></div></div>';
       }).join('')+'</div>'+
       (signedIn
-        ? '<button class="btn btn-gold" style="height:52px;margin-top:6px;" onclick="App.go(\'wallet\')">Open Invite &amp; Earn</button>'
+        ? '<button class="btn btn-gold" style="height:52px;margin-top:6px;" onclick="App.go(\'wallet\')">Invite &amp; Earn</button>'
         : '<button class="btn btn-gold" style="height:52px;margin-top:6px;" onclick="App.signin(\'Partner\')">Join now</button>')+
       '<p class="sub" style="font-size:.68rem;margin-top:12px;text-align:center;">No recruitment chains. No rewards for sign-ups alone. 18+.</p>';
   },
@@ -5929,6 +6003,7 @@ var SYN = window.SYN = {
       '</div>'+
       '<div style="text-align:center;font-size:.76rem;font-weight:700;margin:8px 0 0;">'+esc(c.lbl)+
       ' <span class="sub" style="font-weight:600;">('+(i+1)+'/'+n+')</span></div>';
+    this.attachSwipe('home-stage', function(){SYN.homeNext();}, function(){SYN.homePrev();});
   },
   gotoHome:function(i){
     var n=this.SYN_CLIPS.length; this._homeClip=((i%n)+n)%n; this.paintHomeClips();
@@ -5953,11 +6028,30 @@ var SYN = window.SYN = {
           '<div class="lbl">'+esc(x.lbl)+'</div></div>';
       }).join('')+'</div>';
   },
+  /* Swipe paging. Arrows were covering the content, so the stage is now
+     dragged left/right (or the dots tapped). Works with touch and mouse. */
+  attachSwipe:function(id, nextFn, prevFn){
+    var el=document.getElementById(id); if(!el||el._swipe) return;
+    el._swipe=true;
+    var x0=null,y0=null,drag=false;
+    var start=function(x,y){ x0=x; y0=y; drag=true; el.style.cursor='grabbing'; };
+    var end=function(x,y){
+      if(!drag) return; drag=false; el.style.cursor='grab';
+      var dx=x-x0, dy=y-y0;
+      if(Math.abs(dx)>42 && Math.abs(dx)>Math.abs(dy)) { dx<0 ? nextFn() : prevFn(); }
+    };
+    el.addEventListener('touchstart',function(e){ var t=e.changedTouches[0]; start(t.clientX,t.clientY); },{passive:true});
+    el.addEventListener('touchend',function(e){ var t=e.changedTouches[0]; end(t.clientX,t.clientY); },{passive:true});
+    el.addEventListener('mousedown',function(e){ start(e.clientX,e.clientY); });
+    el.addEventListener('mouseup',function(e){ end(e.clientX,e.clientY); });
+    el.addEventListener('mouseleave',function(){ drag=false; el.style.cursor='grab'; });
+  },
   gotoClip:function(i){
     var n=this.SYN_CLIPS.length;
     this._synClip=((i%n)+n)%n;
     var slot=document.getElementById('syn-clips-slot');
     if(slot) slot.innerHTML=this.clipBoxHtml();
+    this.attachSwipe('syn-stage', function(){SYN.clipNext();}, function(){SYN.clipPrev();});
   },
   clipNext:function(){ this.gotoClip(this._synClip+1); },
   clipPrev:function(){ this.gotoClip(this._synClip-1); },
@@ -6036,16 +6130,17 @@ var SYN = window.SYN = {
 
     // earned badges become tags shown next to the username
     if(earned.length){
+      // Icons only — a stack of what you've unlocked. Names would crowd it.
       h+='<div class="sy-sec">Your badges <span style="letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted);">'+earned.length+' of '+cat.length+'</span></div>'+
-        '<div class="sy-card"><div style="display:flex;flex-wrap:wrap;gap:7px;">'+
+        '<div class="sy-card"><div style="display:flex;flex-wrap:wrap;gap:8px;">'+
         earned.map(function(b){
-          return '<span title="'+esc(b.desc)+'" style="display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:700;padding:6px 10px;border-radius:8px;background:rgba(31,209,122,.12);border:1px solid rgba(31,209,122,.35);color:var(--green);">'+b.icon+' '+esc(b.name)+'</span>';
+          return '<span title="'+esc(b.name)+' \u2014 '+esc(b.desc)+'" style="width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:1.35rem;background:rgba(31,209,122,.12);border:1px solid rgba(31,209,122,.35);">'+b.icon+'</span>';
         }).join('')+'</div></div>';
     }
     // next few to chase
     if(locked.length){
       h+='<div class="sy-sec">Next to unlock</div><div class="sy-card">'+
-        locked.slice(0,6).map(function(b){
+        locked.slice(0,12).map(function(b){
           return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;">'+
             '<span style="font-size:1.1rem;opacity:.35;">'+b.icon+'</span>'+
             '<div style="flex:1;min-width:0;"><div style="font-size:.8rem;font-weight:700;color:var(--muted);">'+esc(b.name)+'</div>'+
@@ -6058,8 +6153,8 @@ var SYN = window.SYN = {
   referrerHtml:function(){
     var r=(window.State && State.ref) || null;
     if(!r){
-      return '<div class="sy-note" style="margin-top:8px;">Any tier can also be a <b>Referrer</b> \u2014 earn a share of every subscription you bring in. Open Invite &amp; Earn to get your link.</div>'+
-        '<button class="btn btn-out btn-sm" style="height:42px;margin-top:8px;" onclick="App.go(\'wallet\')">Open Invite &amp; Earn</button>';
+      return '<div class="sy-note" style="margin-top:8px;">Any tier can also be a <b>Referrer</b> \u2014 earn a share of every subscription you bring in. Invite &amp; Earn to get your link.</div>'+
+        '<button class="btn btn-out btn-sm" style="height:42px;margin-top:8px;" onclick="App.go(\'wallet\')">Invite &amp; Earn</button>';
     }
     return '<div class="sy-card" style="display:flex;align-items:center;gap:12px;">'+
       '<div style="width:42px;height:42px;border-radius:12px;display:grid;place-items:center;border:1.5px solid var(--green);color:var(--green);font-size:1.1rem;">\uD83D\uDD17</div>'+
@@ -6088,7 +6183,7 @@ var SYN = window.SYN = {
     var h='<div class="sy-lock"><div class="ic">&#129309;</div>'+
       '<div style="font-family:var(--d);font-weight:800;font-size:1.05rem;margin-bottom:6px;">Subscribe to join the Syndicate</div>'+
       '<p class="sub" style="font-size:.8rem;margin-bottom:14px;">The Syndicate is group play — everyone follows the same verified picks, climbs the ladder, and moves together. Pick a tier to get in. You always stake your own money at your own bookmaker.</p>'+
-      '<button class="btn btn-green btn-sm" style="height:44px;" onclick="App.openPlans&&App.openPlans(\'manage\')">See tiers &amp; subscribe</button></div>';
+      '<button class="btn btn-green btn-sm" style="height:44px;" onclick="App.openPlans&&App.openPlans(\'manage\')">See tiers</button></div>';
     h+='<div class="sy-sec">What each tier unlocks</div>';
     metas.forEach(function(t){
       h+='<div class="sy-tier"><div class="ti" style="color:'+t.color+';">'+t.name.charAt(0)+'</div>'+
@@ -6124,13 +6219,24 @@ var SYN = window.SYN = {
       else if(App&&App.toast)App.toast((r&&r.error)||'Could not record');
     }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
   },
+  /* Push feeds: a member who has been off the feed (suspended, or just come
+     back online) taps this to opt straight back into syndicate pushes, so the
+     notify list only holds people who actually want the next drop. */
+  pushFeeds:function(){
+    if(typeof Api==='undefined'||!Api.post){ if(App&&App.toast)App.toast('Not available'); return; }
+    var self=this;
+    Api.post('/api/syndicate/activity',{action:'push_optin'}).then(function(r){
+      if(r&&r.ok){ if(App&&App.toast)App.toast('Push feeds on \u2014 you\u2019ll get the next drop'); self.loadMember(); }
+      else if(App&&App.toast)App.toast((r&&r.error)||'Could not enable');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
+  },
   openSlip:function(){
     var body='<div class="grab"></div><h3 class="h2" style="margin-bottom:4px;">Submit your slip</h3>'+
       '<p class="sub" style="font-size:.78rem;margin-bottom:14px;">Prove you played this week\u2019s pick to stay on the feed. Your slip must show the <b>booking code / selections that match the tip</b> and the amount you staked \u2014 not just any slip.</p>'+
       '<div class="field"><label>Booking code (must match the tip)</label><input class="input" id="syn-code" placeholder="e.g. A1B2C3" style="height:48px;"></div>'+
       '<div class="field" style="margin-top:10px;"><label>Amount staked (USD)</label><input class="input" id="syn-amt" inputmode="decimal" placeholder="e.g. 100" style="height:48px;"></div>'+
       '<div class="field" style="margin-top:10px;"><label>Screenshot link (optional)</label><input class="input" id="syn-proof" placeholder="paste image URL" style="height:48px;"></div>'+
-      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.submitSlip()">Submit for verification</button>'+
+      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.submitSlip()">Submit</button>'+
       '<p class="sub" style="font-size:.66rem;margin-top:10px;text-align:center;">An admin verifies the code matches the tip. Only verified, playing members get the next push.</p>';
     this.sheet(body);
   },
@@ -6273,7 +6379,7 @@ var SYN = window.SYN = {
       '<div class="field" style="margin-top:10px;"><label>Minimum odds floor</label>'+
         '<input class="input" id="syn-push-odds" inputmode="decimal" value="1.85" style="height:46px;"></div>'+
         '<p class="sub" style="font-size:.64rem;margin-top:5px;">Pre-filled \u2014 just replace the number. Members who can no longer get this price skip the bet.</p>'+
-      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.sendPush()">Send to eligible members</button>'+
+      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.sendPush()">Send</button>'+
       '<div id="syn-push-code" style="margin-top:10px;">'+(this.lastCode
         ? '<div class="sy-note" style="border-style:solid;border-color:var(--green);color:var(--green);">Pick code <b style="font-family:var(--d);">'+esc(this.lastCode)+'</b> \u2014 members can quote this back to you.</div>'
         : '')+'</div>';
@@ -6311,13 +6417,13 @@ var SYN = window.SYN = {
           '</div>'+
           '<p class="sub" style="font-size:.64rem;margin-top:5px;">Odds pre-filled \u2014 replace the number. \u201cValid for\u201d is how long the pick stays live before members should skip it.</p>'+
           '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.dropLive()">Drop pick to session</button>'
-        : '<div class="field"><label>Tier</label><select class="sel" id="syn-lv-tier" style="height:46px;"><option value="vip">VIP only</option><option value="gold">Gold+</option><option value="all">All tiers</option></select></div>'+
+        : '<div class="field"><label>Tier</label><select class="sel" id="syn-lv-tier" style="height:46px;"><option value="gold">Gold &amp; VIP</option><option value="vip">VIP only</option><option value="all">All tiers</option></select></div>'+
           '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.startLive()">Start live session</button>');
   },
   liveSession:null,
   startLive:function(){
-    var tier=(document.getElementById('syn-lv-tier')||{}).value||'vip';
-    this.liveSession={ tier:tier, started:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), picks:0 };
+    var tier=(document.getElementById('syn-lv-tier')||{}).value||'gold';
+    this.liveSession={ tier:tier||'gold', started:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), picks:0 };
     // Announce so members know to come online.
     if(typeof Api!=='undefined'&&Api.post){
       Api.post('/api/admin/syndicate/push',{tier:tier,text:'\uD83D\uDD34 LIVE SESSION starting now \u2014 be online. Picks drop with a minimum-odds floor.',min_odds:null}).catch(function(){});
@@ -6427,7 +6533,7 @@ var SYN = window.SYN = {
           '<button class="btn btn-out btn-sm" id="syn-v-void" style="flex:1;height:46px;" onclick="SYN.setVaultResult(\'void\')">Void</button>'+
         '</div></div>'+
       '<div class="field" style="margin-top:10px;"><label>Verify URL (optional)</label><input class="input" id="syn-v-url" placeholder="bookmaker verification link" style="height:46px;"></div>'+
-      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.vaultAdd()">Write to Vault (permanent)</button>';
+      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.vaultAdd()">Write to Vault</button>';
     this.vaultResult='won'; this.setVaultResult('won');
   },
   vaultResult:'won',
