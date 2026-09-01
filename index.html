@@ -775,14 +775,14 @@ body.light .st{background:rgba(0,0,0,.04);}
         <div class="role-actions"><button class="btn btn-out" onclick="App.signin('Member')">Sign In</button><button class="btn btn-green" onclick="App.signin('Member')">Sign Up</button></div>
       </div>
       <div class="role-card">
-        <div class="role-top"><div class="role-ic">🤝</div><div><div class="role-name">Partner</div><div class="role-tag" style="color:var(--gold);">Earn commission</div></div></div>
+        <div class="role-top"><div class="role-ic" style="display:grid;place-items:center;">${App.ic('cash',22)}</div><div><div class="role-name">Partner</div><div class="role-tag" style="color:var(--gold);">Earn commission</div></div></div>
         <p class="role-desc">Invite friends and earn a transparent commission on their genuine activity. No recruitment chains, no rewards for sign-ups alone.</p>
         <div class="role-actions"><button class="btn btn-out" onclick="App.signin('Partner')">Sign In</button><button class="btn btn-green" onclick="App.signin('Partner')">Sign Up</button></div>
       </div>
       <div style="height:1px;background:var(--border);margin:11px 0;"></div>
       <div style="display:flex;gap:9px;margin-bottom:10px;">
-        <button class="btn btn-out" style="flex:1;border-color:var(--green);color:var(--green);" onclick="App.go('syninfo')">🤝 Why the Syndicate</button>
-        <button class="btn btn-out" style="flex:1;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')">💵 Partner programme</button>
+        <button class="btn btn-out" style="flex:1;border-color:var(--green);color:var(--green);" onclick="App.go('syninfo')">Why the Syndicate</button>
+        <button class="btn btn-out" style="flex:1;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')">Partner programme</button>
       </div>
       <button class="btn btn-out" onclick="App.openResults()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 3v18h18M7 16l4-4 3 3 5-6"/></svg> View our verified results</button>
       <div class="sec">Today's free predictions</div>
@@ -799,7 +799,7 @@ body.light .st{background:rgba(0,0,0,.04);}
         <button class="pill" onclick="App.openPanel('preds')">🎯 Predictions</button>
         <button class="pill" onclick="App.openPanel('matches')">📅 Fixtures</button>
         <button class="pill" onclick="App.openPanel('scores')">⚡ Scores</button>
-        <button class="pill" onclick="App.openPanel('news')">📰 News</button>
+        <button class="pill" onclick="App.openPanel('news')">News</button>
         <button class="pill" onclick="App.openPanel('reviews')">⭐ Reviews</button>
       </div>
       <div id="hub-preds"><p class="sub" style="font-size:.8rem;">Loading today's predictions…</p></div>
@@ -1488,7 +1488,7 @@ const App={
   },
   renderHubPreds(){ this.startBrandReel(); 
     const el=document.getElementById('hub-preds'); if(!el)return;
-    const sportIc=s=>({Football:'⚽',Basketball:'🏀',Tennis:'🎾'})[s]||'🏆';
+    const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
     const draw=(list)=>{
       if(!list||!list.length){ el.innerHTML='<p class="sub" style="font-size:.8rem;">No predictions posted yet — check back soon.</p>'; return; }
       el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
@@ -1605,7 +1605,7 @@ const App={
       : `<div class="eyebrow">Membership</div><h2 class="h2" style="margin:4px 0 6px;">Plans</h2><p class="sub" style="margin-bottom:6px;">Higher tiers unlock more daily tips and bigger-game codes. They never promise returns and never restrict withdrawals.</p>`;
     document.getElementById('view-plan').innerHTML=`${mode==='manage'?`<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;"><div class="icon-btn" style="margin-left:-8px;" onclick="App.go('home')">${svg('<path d="M19 12H5M12 19l-7-7 7-7"/>')}</div></div>`:''}
       ${intro}
-      ${mode==='signup'?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);margin-bottom:12px;cursor:pointer;" onclick="App.explainSyndicate()"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);">🤝</div><div class="pb-mid"><div class="pb-t">There's also the Syndicate</div><div class="pb-s">Follow the group's picks together — you still stake your own money. Tap to see how it works.</div></div><span style="color:var(--green);font-size:1.2rem;">›</span></div>`:''}
+      ${mode==='signup'?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);margin-bottom:12px;cursor:pointer;" onclick="App.explainSyndicate()"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);display:grid;place-items:center;">${this.ic('users',22)}</div><div class="pb-mid"><div class="pb-t">There's also the Syndicate</div><div class="pb-s">Follow the group's picks together — you still stake your own money. Tap to see how it works.</div></div><span style="color:var(--green);font-size:1.2rem;">›</span></div>`:''}
       <div class="tier-list">${this.tierCards(mode)}</div>
       <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Fees pay for service only (tips, support). Your winnings come from real bets you choose, results aren't guaranteed, and your balance is always withdrawable.</p></div>`;
     this.show('plan');
@@ -1615,7 +1615,7 @@ const App={
   // non-custodial model up front — that's the whole trust proposition.
   explainSyndicate(){
     const body=`<div class="grab"></div>
-      <div style="text-align:center;font-size:2rem;margin-bottom:6px;">🤝</div>
+      <div style="display:flex;justify-content:center;margin-bottom:8px;color:var(--green);">${this.ic('users',36)}</div>
       <h3 class="h2" style="text-align:center;margin-bottom:6px;">The Syndicate</h3>
       <p class="sub" style="font-size:.8rem;text-align:center;margin-bottom:16px;">A members' group that moves together on the same verified picks.</p>
       ${[
@@ -1647,7 +1647,7 @@ const App={
     if(State.role==='Member' && (!State.tier || State.tier==='none')){
       el.innerHTML=`
         <div class="card" style="text-align:center;padding:22px 18px;margin-bottom:14px;">
-          <div style="font-size:2rem;margin-bottom:6px;">🤝</div>
+          <div style="display:flex;justify-content:center;margin-bottom:8px;color:var(--green);">${this.ic('users',36)}</div>
           <h2 class="h2" style="margin-bottom:6px;">You're signed up</h2>
           <p class="sub" style="font-size:.84rem;line-height:1.6;">Your account is live, but you haven't subscribed to a tier yet — so the daily tips and the Syndicate are still locked.</p>
           <button class="btn btn-green" style="height:50px;margin-top:14px;" onclick="App.openPlans('manage')">Choose a tier</button>
@@ -1685,14 +1685,14 @@ const App={
     if(State.role==='Member'){
       const plan=(State.tier&&State.tier!=='none')?TIERS.find(x=>x.key===State.tier):null;
       const used=this.unlocksToday().length;
-      const sportIc=s=>({Football:'⚽',Basketball:'🏀',Tennis:'🎾'})[s]||'🏆';
+      const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
       const preds=(PREDICTIONS||[]).slice(0,4).map(p=>`<div class="predmini">
         <span class="pm-sport">${sportIc(p.sport)}</span>
         <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div>
         <span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
       const codeCards=CODES.map(c=>{
         const owned=State.codes.has(String(c.id));const rc=c.risk.toLowerCase();
-        const badge=c.sure?`<span class="tierbadge vip">★ VIP · Sure</span>`:`<span class="tierbadge">${this.tierName(this.neededTier(c))}+</span>`;
+        const badge=c.sure?`<span class="tierbadge vip">VIP · Sure</span>`:`<span class="tierbadge">${this.tierName(this.neededTier(c))}+</span>`;
         return `<div class="scard" style="margin-bottom:8px;">
           <div class="scard-top"><div><div class="poslab">${sportIc(c.sport)} ${c.sport} · ${c.games} game${c.games>1?'s':''}</div><div class="match" style="font-size:.95rem;margin-top:2px;">${this.esc(c.title)}</div></div><span class="riskpill rp ${rc}">${c.risk}</span></div>
           <div class="hr"></div>
@@ -1713,10 +1713,10 @@ const App={
         <div class="stat2"><div class="st"><div class="v">${CODES.length}</div><div class="k">Tips today</div></div><div class="st"><div class="v" style="color:var(--green);">${rate}%</div><div class="k">90d hit rate</div></div></div>
       </div>
       ${planBanner}
-      ${State.isAdmin?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);">🤝</div><div class="pb-mid"><div class="pb-t">Syndicate</div><div class="pb-s">Follow the group's picks together — you keep your own money. Admin preview while it's built.</div></div><button class="btn btn-out btn-sm" style="height:36px;" onclick="App.go('syndicate')">Open</button></div>`:''}
+      ${State.isAdmin?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);display:grid;place-items:center;">${this.ic('users',22)}</div><div class="pb-mid"><div class="pb-t">Syndicate</div><div class="pb-s">Follow the group's picks together — you keep your own money. Admin preview while it's built.</div></div><button class="btn btn-out btn-sm" style="height:36px;" onclick="App.go('syndicate')">Open</button></div>`:''}
       <div id="news-hero"></div>
       <div id="results-strip"></div>
-      <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">\uD83E\uDD1D The Syndicate <span class="sub" style="font-size:.68rem;font-weight:400;">how it works</span></div>
+      <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">The Syndicate <span class="sub" style="font-size:.68rem;font-weight:400;">how it works</span></div>
       <div id="home-syn-clips"></div>
       <div style="display:flex;gap:9px;margin:8px 0 4px;">
         <button class="btn btn-green btn-sm" style="flex:1;height:44px;" onclick="App.go('syninfo')">Why the Syndicate</button>
@@ -1756,9 +1756,9 @@ const App={
     }
     // ===== PUBLIC CREDIBILITY SECTIONS (busy, data-rich home) =====
     h+=`<div id="home-statstrip"></div>
-    <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">\uD83D\uDCC5 Match center <span class="sub" style="font-size:.68rem;font-weight:400;">today &amp; tomorrow</span></div>
+    <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">Match center <span class="sub" style="font-size:.68rem;font-weight:400;">today &amp; tomorrow</span></div>
     <div id="home-matches"><p class="sub">Loading matches\u2026</p></div>
-    <div class="sec">\uD83D\uDCF0 News &amp; updates</div>
+    <div class="sec">News &amp; updates</div>
     <div id="home-news"><p class="sub">Loading\u2026</p></div>`;
     h+=this.membershipCard();
     // paint the Syndicate clip box into the home slot once the HTML is in place
@@ -2257,7 +2257,7 @@ const App={
   },
 
   renderAdmin(){
-    const sportIc=s=>({Football:'⚽',Basketball:'🏀',Tennis:'🎾'})[s]||'🏆';
+    const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
     const pred=PREDICTIONS.map(p=>{
       const col=p.status==='won'?'var(--green)':p.status==='lost'?'var(--red)':'var(--gold)';
       const label=p.status==='won'?'Won':p.status==='lost'?'Lost':'Open';
@@ -2280,9 +2280,9 @@ const App={
     }).join('')||'<p class="sub">No slips yet — post one above.</p>';
     document.getElementById('admin-list').innerHTML=`<div style="display:flex;gap:8px;margin:22px 0 14px;flex-wrap:wrap;">
       <button class="pill ${this._adminTab!=='games'&&this._adminTab!=='users'?'active':''}" onclick="App.adminGo('overview')">Overview</button>
-      <button class="pill ${this._adminTab==='games'?'active':''}" onclick="App.adminGo('games')">🗓 Games</button>
-      <button class="pill ${this._adminTab==='syndicate'?'active':''}" onclick="App.adminGo('syndicate')">🤝 Syndicate</button>
-      <button class="pill ${this._adminTab==='users'?'active':''}" onclick="App.adminGo('users')">👥 Users</button>
+      <button class="pill ${this._adminTab==='games'?'active':''}" onclick="App.adminGo('games')">Games</button>
+      <button class="pill ${this._adminTab==='syndicate'?'active':''}" onclick="App.adminGo('syndicate')">Syndicate</button>
+      <button class="pill ${this._adminTab==='users'?'active':''}" onclick="App.adminGo('users')">Users</button>
     </div><div id="admin-tab-body"></div><div id="admin-overview" style="display:${this._adminTab==='games'||this._adminTab==='users'||this._adminTab==='syndicate'?'none':'block'}"><div id="admin-stats" class="card" style="padding:12px 14px;margin-bottom:12px;"><p class="sub" style="margin:0;">Loading stats…</p></div><div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Unlock requests <button class="btn btn-out btn-sm" style="height:30px;padding:0 10px;font-size:.68rem;" onclick="App.toggleAlarm()" id="alarm-btn">🔔 Alarm on</button></div><div id="admin-unlocks"><p class="sub">Loading…</p></div><div class="sec">Daily predictions (free)</div>${pred}<div class="sec">Daily bet tips</div>${tips}<div class="sec">Booked slips</div>${tix}<div class="sec">Withdrawal requests</div><div id="admin-payouts"><p class="sub">Loading…</p></div>`+
       `<div class="sec">Email diagnostics</div><div class="card" style="padding:14px 15px;"><p class="sub" style="margin:0 0 10px;">Send a test verification email to check Resend is configured.</p><input class="input" id="et-to" type="email" placeholder="you@email.com" style="margin-bottom:8px;"><button class="btn btn-out btn-sm" style="height:40px;" onclick="App.emailTest()">Send test email</button><div id="et-result" style="font-size:.8rem;margin-top:10px;color:var(--sub);word-break:break-word;"></div></div></div>`;
     this.loadAdminPayouts();
@@ -2503,7 +2503,7 @@ const App={
       const tiers=Object.entries(s.tiers||{}).map(([k,v])=>`${k.toUpperCase()}: <b>${v}</b>`).join(' · ')||'no subscribers yet';
       el.innerHTML=`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;">
         <span>🟢 Online (15m): <b>${s.online}</b></span>
-        <span>👥 Users: <b>${s.total_users}</b></span>
+        <span>Users: <b>${s.total_users}</b></span>
         <span>🔓 Pending unlocks: <b style="color:${s.pending_unlocks?'var(--gold)':'var(--green)'}">${s.pending_unlocks}</b></span>
       </div><div class="sub" style="font-size:.72rem;margin-top:6px;">Subscribers — ${tiers}</div>`;
     }).catch(()=>{});
@@ -3278,7 +3278,7 @@ const App={
     const withImg=this._news.filter(n=>n.image);
     const slides=withImg.slice(0,6);
     if(!slides.length){
-      el.innerHTML='<div class="nws-wrap"><div class="nws-slide"><div class="nws-ph">📰</div></div></div>';
+      el.innerHTML='';   // nothing to show yet -> take up no space at all
       return;
     }
     this._newsSlides=slides;
@@ -3354,6 +3354,22 @@ const App={
   /* Stamp every posted pick with when it kicks off and when we posted it.
      Format: ID · 28-09 12:33 am · League — the posted time is what proves a
      pick went out before kickoff, so it belongs on the card. */
+  // One shared icon set for the whole app — same single-stroke style as the
+  // Full-access shield. Emoji rendered differently on every device and read
+  // as childish next to the rest of the UI.
+  ic(k,size,color){
+    const P={
+      users:'<circle cx="9" cy="9" r="3.5"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><path d="M16 6.5a3.5 3.5 0 0 1 0 7M17 19a6.5 6.5 0 0 0-2-4.7"/>',
+      shield:'<path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/>',
+      cash:'<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6 12h.01M18 12h.01"/>',
+      cal:'<rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+      ball:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.2 2.3-1.2 3.8h-4L8.8 9.8z"/>',
+      news:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h7M7 13h7M17 9v6"/>',
+      crown:'<path d="M4 8l3.5 4L12 5l4.5 7L20 8v9H4z"/>',
+      bolt:'<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>'
+    };
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="${color||'currentColor'}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:${size||20}px;height:${size||20}px;display:block;">${P[k]||P.shield}</svg>`;
+  },
   stamp(ts){
     if(!ts) return '';
     const d=new Date(ts); if(isNaN(d)) return '';
@@ -5344,9 +5360,8 @@ else boot();
   background-size:32px 32px;animation:sycDrift 24s linear infinite;}
 @keyframes sycDrift{to{background-position:32px 32px,32px 32px;}}
 .syc-in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
-  padding:52px 18px 46px;overflow:hidden;}
-.syc-brand{position:absolute;top:12px;left:18px;display:flex;align-items:center;gap:9px;z-index:2;
-  font-family:var(--d);font-weight:800;font-size:.74rem;color:var(--text);}
+  padding:34px 18px 56px;overflow:hidden;}
+.syc-brand{display:none;}
 .syc-brand b{display:flex;align-items:flex-end;gap:2.5px;height:15px;}
 .syc-brand b i{display:block;width:3.2px;border-radius:1px;background:var(--green);animation:sycEq 1.5s ease-in-out infinite;}
 .syc-brand b i:nth-child(1){height:5px;background:var(--faint);}
@@ -5355,7 +5370,14 @@ else boot();
 .syc-brand b i:nth-child(4){height:15px;animation-delay:.45s;}
 @keyframes sycEq{0%,100%{transform:scaleY(1);}50%{transform:scaleY(.55);}}
 .syc-brand s{text-decoration:none;color:var(--muted);}
-.syc-n{position:absolute;top:15px;right:18px;font-family:var(--d);font-weight:700;font-size:.62rem;color:var(--faint);}
+.syc-n{position:absolute;top:14px;right:16px;display:flex;align-items:flex-end;gap:9px;z-index:2;
+  font-family:var(--d);font-weight:700;font-size:.66rem;color:var(--faint);}
+.syc-mark{display:flex;align-items:flex-end;gap:2.5px;height:15px;}
+.syc-mark i{display:block;width:3.2px;border-radius:1px;background:var(--green);animation:sycEq 1.5s ease-in-out infinite;}
+.syc-mark i:nth-child(1){height:5px;background:var(--faint);}
+.syc-mark i:nth-child(2){height:9px;background:var(--muted);animation-delay:.15s;}
+.syc-mark i:nth-child(3){height:12px;animation-delay:.3s;}
+.syc-mark i:nth-child(4){height:15px;animation-delay:.45s;}
 .syc-ic{font-size:3.5rem;line-height:1;margin-bottom:6px;
   animation:sycRise .55s cubic-bezier(.16,.84,.44,1) both,sycFloat 3.5s ease-in-out .6s infinite;}
 @keyframes sycFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
@@ -5421,8 +5443,9 @@ else boot();
 @keyframes sycPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.8);}}
 /* Arrows removed — they covered the content. Paging is by swipe or dots. */
 .syc-edge{display:none;}
-.syc-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:3;
-  flex-wrap:nowrap;overflow:hidden;padding:0 14px;}
+.syc-dots{position:absolute;bottom:0;left:0;right:0;height:34px;display:flex;align-items:center;
+  justify-content:center;gap:4px;z-index:3;flex-wrap:nowrap;overflow:hidden;padding:0 14px;
+  background:linear-gradient(to top,rgba(11,13,16,.96),rgba(11,13,16,0));}
 .syc-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25);}
 .syc-dot.on{background:var(--green);width:14px;border-radius:99px;}
 @media(prefers-reduced-motion:reduce){
@@ -5895,7 +5918,7 @@ var SYN = window.SYN = {
     {id:'what', ic:'@users', lbl:'What the Syndicate is',
      h:'What the <em>Syndicate</em> is',
      p:'A members\u2019 group that follows the <b>same verified picks</b>, together. We publish the selection, the code and the proof \u2014 you decide whether to place it.',
-     viz:{t:'crowd', v:['\uD83E\uDD81','\uD83D\uDC2F','\uD83E\uDD85','\uD83D\uDC3A','\uD83E\uDD8A','\uD83D\uDC3B','\uD83D\uDC2C','\uD83E\uDD88']},
+     viz:{t:'crowd', v:['\u25CF','\u25CF','\u25CF','\u25CF','\u25CF','\u25CF','\u25CF','\u25CF']},
      pill:'One group, one pick, one direction'},
 
     {id:'money', ic:'@wallet', lbl:'You keep your own money',
@@ -5975,9 +5998,13 @@ var SYN = window.SYN = {
 
     {id:'floor', ic:'@down', lbl:'The odds floor',
      h:'The <em>odds floor</em>',
-     p:'Live prices move by the second. Every live pick carries a <b>minimum price</b>.',
-     viz:{t:'flow', v:[['Posted 1.95','g'],['Floor 1.85','gold'],['1.70 \u2014 skip','bad']]},
-     foot:'If you can\u2019t still get the floor, <b>don\u2019t place it</b>. A bad price turns a good pick into a bad bet.'},
+     p:'Live prices move by the second. Every pick is posted at a price, with a <b>floor</b> underneath it.',
+     viz:{t:'flow', v:[['Posted 1.95',''],['Floor 1.75','gold'],['1.50 \u2014 skip','bad']]},
+     li:[['Shortening odds often mean money agrees with the pick',''],
+         ['At or above the floor, the price still holds value',''],
+         ['Below the floor, the edge is gone \u2014 <b>let it go</b>','r'],
+         ['Never raise your stake to chase a shorter price','r']],
+     foot:'Same stake, every time. A shorter price is a smaller edge, not a safer bet.'},
 
     {id:'goldvip', ic:'@gem', lbl:'Gold & VIP perks',
      h:'<em class="g">Gold</em> &amp; <em>VIP</em> perks',
@@ -6047,10 +6074,13 @@ var SYN = window.SYN = {
   buildClip:function(c, i, n){
     // Signed-in members already see the brand in the app header, so repeating it
     // inside every clip is duplication. Show it only to logged-out visitors.
+    // Logged-out visitors get the animated mark only (no wordmark — the header
+    // already carries it once they're in). It sits on the same line as the
+    // counter, top-right, so it can never collide with the icon.
     var showBrand=!(window.State && State.role);
     var h='<div class="syc-grid"></div>'+
-      (showBrand?'<div class="syc-brand"><b><i></i><i></i><i></i><i></i></b>BETSTACK <s>PRO</s></div>':'')+
-      '<div class="syc-n">'+(i+1)+' / '+n+'</div>'+
+      '<div class="syc-n">'+(showBrand?'<b class="syc-mark"><i></i><i></i><i></i><i></i></b>':'')+
+        '<span>'+(i+1)+' / '+n+'</span></div>'+
       '<div class="syc-in">'+
       '<div class="syc-ic">'+(String(c.ic).charAt(0)==='@'?this.icon(String(c.ic).slice(1),44,'var(--green)'):c.ic)+'</div>'+
       '<div class="syc-h">'+c.h+'</div>'+
@@ -6171,8 +6201,6 @@ var SYN = window.SYN = {
     return '<div class="sy-sec">How the programme works <span style="letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted);">'+
       (i+1)+' of '+n+'</span></div>'+
       '<div class="syc-stage" id="prog-stage">'+this.buildClip(c,i,n)+
-        '<button class="syc-edge l" onclick="SYN.progPrev()">\u2039</button>'+
-        '<button class="syc-edge r" onclick="SYN.progNext()">\u203A</button>'+
         '<div class="syc-dots">'+this.PROG_CLIPS.map(function(_,k){
           return '<span class="syc-dot'+(k===i?' on':'')+'" onclick="SYN.gotoProg('+k+')"></span>'; }).join('')+'</div>'+
       '</div>'+
@@ -6219,8 +6247,6 @@ var SYN = window.SYN = {
     var slot=document.getElementById('home-syn-clips'); if(!slot) return;
     var n=this.SYN_CLIPS.length, i=this._homeClip, c=this.SYN_CLIPS[i];
     slot.innerHTML='<div class="syc-stage" id="home-stage">'+this.buildClip(c,i,n)+
-      '<button class="syc-edge l" onclick="SYN.homePrev()">\u2039</button>'+
-      '<button class="syc-edge r" onclick="SYN.homeNext()">\u203A</button>'+
       '<div class="syc-dots">'+this.SYN_CLIPS.map(function(_,k){
         return '<span class="syc-dot'+(k===i?' on':'')+'" onclick="SYN.gotoHome('+k+')"></span>'; }).join('')+'</div>'+
       '</div>'+
@@ -6239,8 +6265,6 @@ var SYN = window.SYN = {
     return '<div class="sy-sec">Learn the Syndicate <span style="letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted);">'+
       (i+1)+' of '+n+'</span></div>'+
       '<div class="syc-stage" id="syn-stage">'+this.buildClip(c,i,n)+
-        '<button class="syc-edge l" onclick="SYN.clipPrev()" aria-label="Previous">\u2039</button>'+
-        '<button class="syc-edge r" onclick="SYN.clipNext()" aria-label="Next">\u203A</button>'+
         '<div class="syc-dots">'+this.SYN_CLIPS.map(function(_,k){
           return '<span class="syc-dot'+(k===i?' on':'')+'" onclick="SYN.gotoClip('+k+')"></span>'; }).join('')+'</div>'+
       '</div>'+
@@ -6248,8 +6272,8 @@ var SYN = window.SYN = {
       '<div class="clip-rail" id="syn-clip-rail">'+this.SYN_CLIPS.map(function(x,k){
         // Portrait, compact — a picker, not a second gallery.
         // compact landscape tiles — wide, short, easy to thumb along
-        return '<div class="clip-thumb" onclick="SYN.gotoClip('+k+')" style="width:74px;flex:0 0 74px;opacity:'+(k===i?1:.5)+';">'+
-          '<div class="cw" style="aspect-ratio:16/10;display:grid;place-items:center;background:var(--surface-2);border:1px solid '+(k===i?'var(--green)':'var(--border)')+';border-radius:8px;">'+
+        return '<div class="clip-thumb" onclick="SYN.gotoClip('+k+')" style="width:64px;flex:0 0 64px;opacity:'+(k===i?1:.45)+';">'+
+          '<div class="cw" style="height:34px;display:grid;place-items:center;background:var(--surface-2);border:1px solid '+(k===i?'var(--green)':'var(--border)')+';border-radius:7px;">'+
             '<span style="width:22px;height:22px;display:grid;place-items:center;color:'+(k===i?'var(--green)':'var(--muted)')+';">'+
               (String(x.ic).charAt(0)==='@'?SYN.icon(String(x.ic).slice(1),22):x.ic)+'</span></div>'+
           '<div class="lbl" style="font-size:.54rem;line-height:1.2;margin-top:4px;max-height:2.4em;overflow:hidden;">'+esc(x.lbl)+'</div></div>';
