@@ -804,11 +804,11 @@ body.light .st{background:rgba(0,0,0,.04);}
         <div class="reel-dots" id="reel-dots"></div>
       </div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
-        <button class="pill" onclick="App.openPanel('preds')">Predictions</button>
-        <button class="pill" onclick="App.openPanel('matches')">Fixtures</button>
-        <button class="pill" onclick="App.openPanel('scores')">Scores</button>
-        <button class="pill" onclick="App.openPanel('news')">News</button>
-        <button class="pill" onclick="App.openPanel('reviews')">⭐ Reviews</button>
+        <button class="pill" onclick="App.openPanel('preds')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Predictions</button>
+        <button class="pill" onclick="App.openPanel('matches')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Fixtures</button>
+        <button class="pill" onclick="App.openPanel('scores')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>Scores</button>
+        <button class="pill" onclick="App.openPanel('news')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h6M7 13h10M7 16h10"/></svg>News</button>
+        <button class="pill" onclick="App.openPanel('reviews')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><path d="M12 4l2.4 5 5.6.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.6-.8z"/></svg>Reviews</button>
       </div>
       <div id="hub-preds"><p class="sub" style="font-size:.8rem;">Loading today's predictions…</p></div>
       <div id="hub-statstrip"></div>
@@ -1123,20 +1123,10 @@ const COUNTRIES=[
 {n:'Zambia',d:'+260',c:'ZM'},{n:'Zimbabwe',d:'+263',c:'ZW'},
 ];
 // Public results ledger. Each pick is published BEFORE kickoff (ts) and hash-chained for tamper-evidence.
-const RESULTS=[
-  {ts:'2026-05-24T19:00:00Z',sport:'Football',event:'Man City vs Tottenham',pick:'Both Teams To Score',odds:1.72,result:'won'},
-  {ts:'2026-05-25T18:30:00Z',sport:'Football',event:'Real Madrid vs Sevilla',pick:'Madrid -1 Handicap',odds:1.90,result:'lost'},
-  {ts:'2026-05-27T19:45:00Z',sport:'Football',event:'Inter vs Roma',pick:'Over 2.5 Goals',odds:1.95,result:'won'},
-  {ts:'2026-05-28T20:00:00Z',sport:'Football',event:'PSG vs Lyon',pick:'PSG to Win',odds:1.45,result:'won'},
-  {ts:'2026-05-30T17:00:00Z',sport:'Football',event:'Liverpool vs Everton',pick:'Over 1.5 Goals',odds:1.30,result:'won'},
-  {ts:'2026-05-31T18:30:00Z',sport:'Football',event:'Bayern vs Dortmund',pick:'Both Teams To Score',odds:1.66,result:'lost'},
-  {ts:'2026-06-01T19:00:00Z',sport:'Football',event:'Arsenal vs Chelsea',pick:'Over 2.5 Goals',odds:1.85,result:'won'},
-  {ts:'2026-06-02T19:45:00Z',sport:'Football',event:'Napoli vs Juventus',pick:'Draw',odds:3.10,result:'lost'},
-  {ts:'2026-06-03T20:00:00Z',sport:'Football',event:'Barcelona vs Atletico',pick:'Barcelona to Win',odds:1.75,result:'won'},
-  {ts:'2026-06-04T01:30:00Z',sport:'Basketball',event:'Lakers vs Celtics',pick:'Over 210.5 Points',odds:1.90,result:'won'},
-  {ts:'2026-06-05T19:00:00Z',sport:'Football',event:'Man Utd vs Newcastle',pick:'Under 3.5 Goals',odds:1.55,result:'won'},
-  {ts:'2026-06-06T18:30:00Z',sport:'Basketball',event:'Heat vs Knicks',pick:'Knicks +4.5',odds:1.80,result:'lost'},
-];
+// Demo results were removed entirely. The Verified Results page is fed only by
+// real settled picks from the archive — there is no path that can display
+// invented rows.
+const RESULTS=[];
 
 const ICON={
   plus:'<path d="M12 5v14M5 12h14"/>',
@@ -1805,7 +1795,7 @@ const App={
   
   // ===== IN-PLACE CONTENT PANEL (no more scroll-jumping) =====
   // Mobile: full-screen slide-in with back arrow. Desktop: fills the right preview pane.
-  PANEL_TITLES: { preds:'Today\'s Predictions', matches:'Fixtures', scores:'Live Scores', news:'Football News', reviews:'⭐ Member Reviews' },
+  PANEL_TITLES: { preds:'Today\'s Predictions', matches:'Fixtures', scores:'Live Scores', news:'Football News', reviews:'Member Reviews' },
   // Full-screen clip player (uses your branded animations)
   CLIPS: [
     ['09_brand_intro','\uD83C\uDFAC Brand intro'],
@@ -1963,16 +1953,12 @@ const App={
     }).catch(()=>{el.innerHTML='';});
   },
   loadHubNews(){
-    const el=document.getElementById('hub-realnews'); if(!el)return;
+    // Visitor home gets the same treatment as the rest of the app: the image
+    // slider first, then the article list with thumbnails.
+    const el=document.getElementById('hub-realnews'); if(!el) return;
     if(!API_BASE){ el.innerHTML=''; return; }
-    Api.publicNews().then(r=>{
-      const items=((r&&r.news)||[]).slice(0,6);
-      if(!items.length){ el.innerHTML='<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">News feed is loading \u2014 check back shortly.</p></div>'; return; }
-      el.innerHTML=items.map(n=>`<a href="${n.link}" target="_blank" rel="noopener" class="card" style="display:block;padding:12px 14px;margin-bottom:8px;text-decoration:none;color:inherit;">
-        <div style="font-weight:700;font-size:.84rem;line-height:1.35;">${this.esc(n.title)}</div>
-        <div class="sub" style="font-size:.64rem;margin-top:5px;">${this.esc(n.source)}${n.published?' \u00B7 '+new Date(n.published).toLocaleDateString():''} \u00B7 Read at source ↗</div>
-      </a>`).join('');
-    }).catch(()=>{el.innerHTML='';});
+    el.innerHTML='<div id="news-hero"></div><div id="news-list"><p class="sub">Loading headlines…</p></div>';
+    this.loadNews();
   },
   loadHubReviews(){
     const el=document.getElementById('hub-reviews'); if(!el)return;
@@ -2611,7 +2597,10 @@ const App={
   addPred(){ this._editPred=null; this.openSheet('editpred'); },
   savePred(){
     const g=i=>(document.getElementById(i)||{}).value||'';
-    const data={ sport:g('pr-sport'), match:g('pr-match').trim(), pick:g('pr-pick').trim(), odds:Number(g('pr-odds'))||0, risk:g('pr-risk') };
+    const ko=g('pr-kick'); const kots=ko?Date.parse(ko):null;
+    const data={ sport:g('pr-sport'), match:g('pr-match').trim(), pick:g('pr-pick').trim(),
+                 odds:Number(g('pr-odds'))||0, risk:g('pr-risk'),
+                 league:g('pr-league').trim(), start_ts:(kots&&isFinite(kots))?kots:null };
     if(!data.match||!data.pick){this.toast('Add a match and a pick');return;}
     const ed=this._editPred;
     if(!API_BASE){ if(ed){Object.assign(ed,data);}else{PREDICTIONS.unshift(Object.assign({id:'l'+Date.now(),status:'open'},data));} this._editPred=null; this.closeSheet(); this.renderAdmin(); this.toast('Saved'); return; }
@@ -3020,6 +3009,8 @@ const App={
         <button class="btn btn-out btn-sm" style="margin:-4px 0 12px;height:38px;" onclick="App.openMatchPicker('pred')">\u26BD Open Game Center</button>
         <div class="field"><label>Prediction / pick</label><input class="input" id="pr-pick" value="${this.esc(p.pick||'')}" placeholder="e.g. Home Win, Over 2.5"></div>
         <div class="field"><label>Odds</label><input class="input" id="pr-odds" type="number" step="0.01" inputmode="decimal" value="${p.odds||''}" placeholder="2.10"></div>
+        <div class="field"><label>League</label><input class="input" id="pr-league" value="${p.league||''}" placeholder="Premier League"></div>
+        <div class="field"><label>Kick-off</label><input class="input" id="pr-kick" type="datetime-local" value="${p.start_ts?new Date(p.start_ts-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):''}"></div>
         <div class="field"><label>Risk</label><select class="sel" id="pr-risk">${rOpts}</select></div>
         <button class="btn btn-green" onclick="App.savePred()">${p.id?'Save changes':'Add prediction'}</button>
         <button class="btn btn-dark mt" onclick="App.closeSheet()">Cancel</button>`;
@@ -3258,7 +3249,6 @@ const App={
   },
   async buildChain(){
     let src=await this.loadRealResults();
-    if(!src.length && window.BSP_DEMO_RESULTS===true) src=RESULTS;   // opt-in demo only
     let prev='0000000000000000000000000000000000000000000000000000000000000000';
     const out=[];
     for(const r of src){
