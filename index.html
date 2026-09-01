@@ -356,7 +356,8 @@ body.light .st{background:rgba(0,0,0,.04);}
 .brand-reel{position:relative;width:100%;max-width:420px;margin:0 auto 16px;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#0b0d0f;border:1px solid var(--border);}
 .brand-reel .reel-layer{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;display:block;opacity:0;transition:opacity .6s ease;}
 .brand-reel .reel-layer.show{opacity:1;}
-.reel-edge{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border:none;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);color:#fff;font-size:1.5rem;font-weight:700;cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center;border-radius:50%;line-height:1;}
+/* Arrows removed everywhere — they sat on top of the content. Swipe instead. */
+.reel-edge{display:none;}
 .reel-edge-l{left:8px;}.reel-edge-r{right:8px;}
 .reel-edge:active{background:rgba(0,0,0,.2);}
 
@@ -494,6 +495,13 @@ body.light .st{background:rgba(0,0,0,.04);}
 .winpop-ring{width:64px;height:64px;border-radius:50%;background:rgba(31,209,122,.14);border:2px solid var(--green);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
 .winpop-ring svg{width:32px;height:32px;}
 .winpop-title{font-family:var(--d);font-weight:700;font-size:1.3rem;}
+.hb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px;}
+.hb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  height:76px;border-radius:14px;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);font-size:.72rem;font-weight:600;}
+.hb:active{transform:scale(.97);}
+.hb-ic{width:22px;height:22px;display:grid;place-items:center;}
+.hb-ic svg{width:22px;height:22px;}
 .pm-meta{font-size:.6rem;color:var(--muted);margin-top:3px;letter-spacing:.01em;}
 .winpop-match{font-size:.92rem;color:var(--text);margin-top:8px;font-weight:600;}
 .winpop-odds{font-size:.8rem;color:var(--muted);margin-top:3px;}
@@ -719,7 +727,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 <div class="signal" id="signal"><span id="sig-ic"></span><div id="sig-msg"></div></div>
 <div class="winpop" id="winpop" onclick="App.closeWin()"><div class="winpop-card" onclick="event.stopPropagation()">
   <div class="winpop-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></div>
-  <div class="winpop-title">It won! 🎉</div>
+  <div class="winpop-title">It won!</div>
   <div class="winpop-match" id="winpop-match"></div>
   <div class="winpop-odds" id="winpop-odds"></div>
   <button class="btn btn-green" style="width:100%;margin-top:14px;" onclick="App.closeWin()">Nice</button>
@@ -737,8 +745,8 @@ body.light .st{background:rgba(0,0,0,.04);}
   <div class="drawer-item" onclick="App.go('wallet');App.drawer(false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>Wallet</div>
   <div class="drawer-item" onclick="App.go('arena');App.drawer(false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V10M12 21V4M19 21v-7"/></svg>Live Arena</div>
   <div class="drawer-item" id="drawer-admin" style="display:none;color:var(--gold);" onclick="App.go('admin');App.drawer(false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 6v6c0 5 3.4 7.7 8 10 4.6-2.3 8-5 8-10V6z"/></svg>Admin Console</div>
-  <div class="drawer-item" id="drawer-viewmember" style="display:none;" onclick="App.viewAs('Member')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>👁 Preview as Member</div>
-  <div class="drawer-item" id="drawer-viewpartner" style="display:none;" onclick="App.viewAs('Partner')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-8 0v2"/><circle cx="12" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>👁 Preview as Partner</div>
+  <div class="drawer-item" id="drawer-viewmember" style="display:none;" onclick="App.viewAs('Member')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>Preview as Member</div>
+  <div class="drawer-item" id="drawer-viewpartner" style="display:none;" onclick="App.viewAs('Partner')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-8 0v2"/><circle cx="12" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>Preview as Partner</div>
   <div class="drawer-item" onclick="App.go('settings');App.drawer(false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
   <div class="drawer-item" onclick="App.go('how');App.drawer(false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>How It Works</div>
   <div class="drawer-foot">
@@ -770,12 +778,12 @@ body.light .st{background:rgba(0,0,0,.04);}
       <p class="sub" style="margin-bottom:20px;">Join the <b style="color:var(--green);">Syndicate</b> — a members' group that follows the same verified picks, together. Follow our free daily predictions to see how we perform, then subscribe to unlock the full daily codes and slips. Every result — win or loss — stays on the record. You place your own bets and keep 100% of what you win.</p>
 
       <div class="role-card">
-        <div class="role-top"><div class="role-ic">🎟️</div><div><div class="role-name">Member</div><div class="role-tag" style="color:var(--green);">Subscribe &amp; unlock tips</div></div></div>
+        <div class="role-top"><div class="role-ic" style="display:grid;place-items:center;">${svg('<rect x="2.5" y="7" width="19" height="10" rx="2.5"/><path d="M8 7v10"/>')}</div><div><div class="role-name">Member</div><div class="role-tag" style="color:var(--green);">Subscribe &amp; unlock tips</div></div></div>
         <p class="role-desc">Subscribe to a tier and unlock the full daily bet tips — plus the <b style="color:var(--green);">Syndicate</b>, where the whole group moves on the same pick. You load each code at your own bookmaker and keep 100% of what you win — we never hold your stake.</p>
         <div class="role-actions"><button class="btn btn-out" onclick="App.signin('Member')">Sign In</button><button class="btn btn-green" onclick="App.signin('Member')">Sign Up</button></div>
       </div>
       <div class="role-card">
-        <div class="role-top"><div class="role-ic" style="display:grid;place-items:center;">${App.ic('cash',22)}</div><div><div class="role-name">Partner</div><div class="role-tag" style="color:var(--gold);">Earn commission</div></div></div>
+        <div class="role-top"><div class="role-ic" style="display:grid;place-items:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12h3M3 10h18"/></svg></div><div><div class="role-name">Partner</div><div class="role-tag" style="color:var(--gold);">Earn commission</div></div></div>
         <p class="role-desc">Invite friends and earn a transparent commission on their genuine activity. No recruitment chains, no rewards for sign-ups alone.</p>
         <div class="role-actions"><button class="btn btn-out" onclick="App.signin('Partner')">Sign In</button><button class="btn btn-green" onclick="App.signin('Partner')">Sign Up</button></div>
       </div>
@@ -796,9 +804,9 @@ body.light .st{background:rgba(0,0,0,.04);}
         <div class="reel-dots" id="reel-dots"></div>
       </div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
-        <button class="pill" onclick="App.openPanel('preds')">🎯 Predictions</button>
-        <button class="pill" onclick="App.openPanel('matches')">📅 Fixtures</button>
-        <button class="pill" onclick="App.openPanel('scores')">⚡ Scores</button>
+        <button class="pill" onclick="App.openPanel('preds')">Predictions</button>
+        <button class="pill" onclick="App.openPanel('matches')">Fixtures</button>
+        <button class="pill" onclick="App.openPanel('scores')">Scores</button>
         <button class="pill" onclick="App.openPanel('news')">News</button>
         <button class="pill" onclick="App.openPanel('reviews')">⭐ Reviews</button>
       </div>
@@ -831,14 +839,14 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="eyebrow">Guide</div><h2 class="h2" style="margin:4px 0 6px;">How It Works</h2>
       <p class="sub" style="margin-bottom:16px;">Betstack Pro is a sports-betting community: free daily tips, paid bet tips, and membership perks. We charge for picks and access — we never hold your stake or guarantee a result.</p>
 
-      <div class="sec" style="margin-top:6px;">🎬 Watch &amp; learn</div>
+      <div class="sec" style="margin-top:6px;">Watch &amp; learn</div>
       <div id="how-clips" class="clip-rail"></div>
 
       <div class="sec" style="margin-top:6px;">Getting started</div>
-      <div class="irow"><div class="ic">📝</div><div class="mid"><div class="t">1 · Create an account</div><div class="d">Register with your details, verify you're 18+, set a withdrawal PIN, and pick a membership plan. Browsing tips is free.</div></div></div>
-      <div class="irow"><div class="ic">🎯</div><div class="mid"><div class="t">2 · Follow free predictions</div><div class="d">Three daily predictions are posted in the Arena before kickoff, with results marked openly — wins and losses both.</div></div></div>
-      <div class="irow"><div class="ic">🎟️</div><div class="mid"><div class="t">3 · Unlock bet tips</div><div class="d">Unlock a tip and get every selected game — teams, markets and odds. Rebuild the slip at any bookmaker in your country and stake your own money. You keep 100% of what you win — we're paid only for the tip.</div></div></div>
-      <div class="irow"><div class="ic">💸</div><div class="mid"><div class="t">4 · Top up &amp; withdraw</div><div class="d">Credit is used to unlock tips. Unspent credit is yours and withdrawable anytime; withdrawals are protected by your 4-digit PIN.</div></div></div>
+      <div class="irow"><div class="ic">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/>')}</div><div class="mid"><div class="t">1 · Create an account</div><div class="d">Register with your details, verify you're 18+, set a withdrawal PIN, and pick a membership plan. Browsing tips is free.</div></div></div>
+      <div class="irow"><div class="ic">${svg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>')}</div><div class="mid"><div class="t">2 · Follow free predictions</div><div class="d">Three daily predictions are posted in the Arena before kickoff, with results marked openly — wins and losses both.</div></div></div>
+      <div class="irow"><div class="ic">${svg('<rect x="2.5" y="7" width="19" height="10" rx="2.5"/><path d="M8 7v10"/>')}</div><div class="mid"><div class="t">3 · Unlock bet tips</div><div class="d">Unlock a tip and get every selected game — teams, markets and odds. Rebuild the slip at any bookmaker in your country and stake your own money. You keep 100% of what you win — we're paid only for the tip.</div></div></div>
+      <div class="irow"><div class="ic">${svg('<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12h3M3 10h18"/>')}</div><div class="mid"><div class="t">4 · Top up &amp; withdraw</div><div class="d">Credit is used to unlock tips. Unspent credit is yours and withdrawable anytime; withdrawals are protected by your 4-digit PIN.</div></div></div>
 
       <div class="sec">How bet tips work</div>
       <div class="note" style="background:var(--surface);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/></svg><p>Each tip is a list of selected games — teams, markets and odds — that you can rebuild at <b>any bookmaker in any country</b>. We sell the <b>selections</b> as information. You place and fund every bet yourself on your own account — <b>we never take custody of your stake or your winnings.</b></p></div>
@@ -849,7 +857,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 
       <div class="sec">Fair play &amp; transparency</div>
       <div class="irow"><div class="ic">✅</div><div class="mid"><div class="t">Results stay public</div><div class="d">Every prediction and settled slip keeps its win/loss on the record. A strong history is never a promise of future results.</div></div></div>
-      <div class="irow"><div class="ic">🔓</div><div class="mid"><div class="t">Your money stays yours</div><div class="d">We don't pool, lock, or bet your funds for you. You pay for picks and access; betting happens on your own bookmaker account.</div></div></div>
+      <div class="irow"><div class="ic">${svg('<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 7.5-2"/>')}</div><div class="mid"><div class="t">Your money stays yours</div><div class="d">We don't pool, lock, or bet your funds for you. You pay for picks and access; betting happens on your own bookmaker account.</div></div></div>
 
       <div class="sec">Responsible gambling</div>
       <div class="note" style="border-color:rgba(245,73,92,.35);background:var(--red-dim);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><p><b>Betting carries real risk and you can lose money.</b> Outcomes are never guaranteed. Set limits, never chase losses, and only stake what you can afford to lose. Must be 18+. If gambling stops being fun, take a break or use the self-exclusion tools in Settings → Responsible Gambling.</p></div>
@@ -1046,7 +1054,7 @@ let PREDICTIONS=[
 ];
 // Community chat — interactive; seed messages are clearly labelled as a sample
 let CHAT=[
-  {who:'GoalHunter',me:false,text:'Following the LIV pick today, looks solid 👀',ts:Date.now()-7*3600000},
+  {who:'GoalHunter',me:false,text:'Following the LIV pick today, looks solid',ts:Date.now()-7*3600000},
   {who:'SoccerDad',me:false,text:'How did the midweek double settle?',ts:Date.now()-14*60000},
   {who:'PuntMaster',me:false,text:'Won — Inter & Napoli both came through.',ts:Date.now()-9*60000},
 ];
@@ -1619,12 +1627,12 @@ const App={
       <h3 class="h2" style="text-align:center;margin-bottom:6px;">The Syndicate</h3>
       <p class="sub" style="font-size:.8rem;text-align:center;margin-bottom:16px;">A members' group that moves together on the same verified picks.</p>
       ${[
-        ['💰','Your money stays yours','We never hold or pool anyone\'s money. You stake your own bets at your own bookmaker and keep 100% of what you win.'],
-        ['📋','Everyone gets the same pick','We publish the selection and the booking code before kick-off. You choose whether to place it.'],
+        ['wallet','Your money stays yours','We never hold or pool anyone\'s money. You stake your own bets at your own bookmaker and keep 100% of what you win.'],
+        ['clip','Everyone gets the same pick','We publish the selection and the booking code before kick-off. You choose whether to place it.'],
         ['⭐','A ladder you can climb','Weekly donations set your rank. Higher ranks get the feed first. Donations buy priority — never a return.'],
-        ['🔒','Proof you can check','Every result, win or loss, goes into a permanent Vault with a verifiable ticket. We never delete a loss.'],
-        ['🔴','Live sessions','Gold and VIP get live picks with a minimum-odds floor, plus analyst voice notes on Telegram.']
-      ].map(([ic,t,d])=>`<div style="display:flex;gap:11px;margin-bottom:13px;"><span style="font-size:1.2rem;flex-shrink:0;">${ic}</span><div><div style="font-weight:700;font-size:.86rem;">${t}</div><p class="sub" style="font-size:.74rem;line-height:1.55;margin-top:2px;">${d}</p></div></div>`).join('')}
+        ['lock','Proof you can check','Every result, win or loss, goes into a permanent Vault with a verifiable ticket. We never delete a loss.'],
+        ['live','Live sessions','Gold and VIP get live picks with a minimum-odds floor, plus analyst voice notes on Telegram.']
+      ].map(([ic,t,d])=>`<div style="display:flex;gap:11px;margin-bottom:13px;"><span style="flex-shrink:0;color:var(--green);">${window.SYN&&SYN.ICN&&SYN.ICN[ic]?SYN.icon(ic,22):ic}</span><div><div style="font-weight:700;font-size:.86rem;">${t}</div><p class="sub" style="font-size:.74rem;line-height:1.55;margin-top:2px;">${d}</p></div></div>`).join('')}
       <div class="note" style="margin-top:4px;">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Betting carries real risk and no pick is guaranteed. 18+ only — bet responsibly.</p></div>
       <button class="btn btn-green" style="margin-top:12px;" onclick="App.closeSheet()">Got it</button>`;
     const ov=document.getElementById('overlay'), sh=document.getElementById('sheet');
@@ -1729,19 +1737,7 @@ const App={
       <button class="btn btn-out mt" style="width:100%;" onclick="App.openResults()">${svg('<path d="M3 3v18h18M7 16l4-4 3 3 5-6"/>')} See our verified track record</button>
       <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Your subscription unlocks the tips — you place every bet yourself with your own money at your own bookmaker. We never hold your stake or your winnings. Tips can lose; bet responsibly. 18+.</p></div>
       ${this.bookieStrip()}
-      <div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Football news <span class="sub" style="font-size:.66rem;font-weight:400;">updated daily</span></div>
-      <div id="news-list"><p class="sub">Loading headlines…</p></div>
-      <div class="sec">Tips, Syndicate &amp; Partner</div>
-      <div class="card" style="padding:14px;">
-        <p class="sub" style="font-size:.78rem;line-height:1.6;margin-bottom:10px;"><b style="color:var(--text);">Daily tips</b> are the picks themselves — codes you load at your own bookmaker.
-        <b style="color:var(--green);">The Syndicate</b> is the group that follows them together, with a ladder, live sessions and a permanent record.
-        <b style="color:var(--gold);">The Partner programme</b> pays you a share when people you invite subscribe.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-out btn-sm" style="flex:1;min-width:130px;height:40px;" onclick="App.go('syninfo')">Syndicate</button>
-          <button class="btn btn-out btn-sm" style="flex:1;min-width:130px;height:40px;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')">Partner</button>
-        </div>
-        ${State.role?'':'<button class="btn btn-green" style="height:46px;margin-top:9px;" onclick="App.go(\'hub\')">Join now</button>'}
-      </div><div class=\"sec\" style=\"display:flex;align-items:center;justify-content:space-between;\">This week's games <span id=\"wk-count\" class=\"sub\" style=\"font-size:.7rem;\"></span></div><div id=\"week-games\"><p class=\"sub\">Loading games\u2026</p></div>`;
+      ${this.hubButtons()}`;
     }else if(State.role==='Partner'){
       h=this.installBanner()+`<div class="hero green"><div class="glow"></div>
         <div class="pill-eye" style="margin-bottom:14px;border-color:rgba(255,255,255,.4);">Partner</div>
@@ -1752,14 +1748,12 @@ const App={
       <div class="sec">How the programme works</div>
       <div id="prog-clips-slot"></div>
       <button class="btn btn-out mt" style="width:100%;" onclick="App.go('program')">Full programme details</button>
-      <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Commission is paid on genuine activity only — <b>no rewards for sign-ups alone</b>. Withdrawals are reviewed before payout. 18+.</p></div>`;
+      <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Commission is paid on genuine activity only — <b>no rewards for sign-ups alone</b>. Withdrawals are reviewed before payout. 18+.</p></div>
+      ${this.hubButtons()}`;
     }
-    // ===== PUBLIC CREDIBILITY SECTIONS (busy, data-rich home) =====
-    h+=`<div id="home-statstrip"></div>
-    <div class="sec" style="display:flex;justify-content:space-between;align-items:center;">Match center <span class="sub" style="font-size:.68rem;font-weight:400;">today &amp; tomorrow</span></div>
-    <div id="home-matches"><p class="sub">Loading matches\u2026</p></div>
-    <div class="sec">News &amp; updates</div>
-    <div id="home-news"><p class="sub">Loading\u2026</p></div>`;
+    // Match centre and the news list used to live here and made the page very
+    // long. Both are reachable from the button row instead.
+    h+=`<div id="home-statstrip"></div>`;
     h+=this.membershipCard();
     // paint the Syndicate clip box into the home slot once the HTML is in place
     this.loadNews();
@@ -1798,10 +1792,11 @@ const App={
         ${h2h||'<p class="sub" style="font-size:.72rem;margin:0;">No recent meetings.</p>'}`;
     }).catch(()=>{ box.innerHTML='<p class="sub" style="font-size:.72rem;margin:0;">Could not load stats.</p>'; });
   },
-  statsBtn(fid){ return `<button class="pill" style="font-size:.64rem;padding:4px 9px;" onclick="event.stopPropagation();App.toggleStats('${fid}')">📊 Stats</button><div id="st-${fid}" style="display:none;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);"></div>`; },
+  statsBtn(fid){ return ''; },   // Stats button removed from fixture rows
+  
   // ===== IN-PLACE CONTENT PANEL (no more scroll-jumping) =====
   // Mobile: full-screen slide-in with back arrow. Desktop: fills the right preview pane.
-  PANEL_TITLES: { preds:'🎯 Today\'s Predictions', matches:'📅 Fixtures', scores:'⚡ Live Scores', news:'📰 Football News', reviews:'⭐ Member Reviews' },
+  PANEL_TITLES: { preds:'Today\'s Predictions', matches:'Fixtures', scores:'Live Scores', news:'Football News', reviews:'⭐ Member Reviews' },
   // Full-screen clip player (uses your branded animations)
   CLIPS: [
     ['09_brand_intro','\uD83C\uDFAC Brand intro'],
@@ -1818,6 +1813,7 @@ const App={
     ['13_member_withdrawal','\uD83C\uDFE6 Withdrawals'],
   ],
   renderClipRail(){
+    this.attachReelSwipe&&this.attachReelSwipe();
     const el=document.getElementById('how-clips'); if(!el)return;
     el.innerHTML=this.CLIPS.map(([slug,t])=>`
       <div class="clip-thumb" onclick="App.openClip('${slug}','${t.replace(/'/g,'')}')">
@@ -1859,6 +1855,17 @@ const App={
     hidden.src='/clips.html?v='+Date.now()+'#'+slug;
     hidden.onload=()=>{ hidden.classList.add('show'); showing.classList.remove('show'); this._reelActive=(this._reelActive==='a'?'b':'a'); };
     this.renderReelDots();
+  },
+  attachReelSwipe(){
+    const el=document.getElementById('brand-reel-box'); if(!el||el._sw) return;
+    el._sw=true; let x0=null,y0=null;
+    el.addEventListener('touchstart',e=>{const t=e.changedTouches[0];x0=t.clientX;y0=t.clientY;},{passive:true});
+    el.addEventListener('touchend',e=>{
+      if(x0===null) return; const t=e.changedTouches[0];
+      const dx=t.clientX-x0, dy=t.clientY-y0;
+      if(Math.abs(dx)>42&&Math.abs(dx)>Math.abs(dy)){ dx<0?this.reelNext():this.reelPrev(); }
+      x0=null;
+    },{passive:true});
   },
   reelNext(){ this.reelGoto((this._reelIdx||0)+1); },
   reelPrev(){ this.reelGoto((this._reelIdx||0)-1); },
@@ -2283,7 +2290,7 @@ const App={
       <button class="pill ${this._adminTab==='games'?'active':''}" onclick="App.adminGo('games')">Games</button>
       <button class="pill ${this._adminTab==='syndicate'?'active':''}" onclick="App.adminGo('syndicate')">Syndicate</button>
       <button class="pill ${this._adminTab==='users'?'active':''}" onclick="App.adminGo('users')">Users</button>
-    </div><div id="admin-tab-body"></div><div id="admin-overview" style="display:${this._adminTab==='games'||this._adminTab==='users'||this._adminTab==='syndicate'?'none':'block'}"><div id="admin-stats" class="card" style="padding:12px 14px;margin-bottom:12px;"><p class="sub" style="margin:0;">Loading stats…</p></div><div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Unlock requests <button class="btn btn-out btn-sm" style="height:30px;padding:0 10px;font-size:.68rem;" onclick="App.toggleAlarm()" id="alarm-btn">🔔 Alarm on</button></div><div id="admin-unlocks"><p class="sub">Loading…</p></div><div class="sec">Daily predictions (free)</div>${pred}<div class="sec">Daily bet tips</div>${tips}<div class="sec">Booked slips</div>${tix}<div class="sec">Withdrawal requests</div><div id="admin-payouts"><p class="sub">Loading…</p></div>`+
+    </div><div id="admin-tab-body"></div><div id="admin-overview" style="display:${this._adminTab==='games'||this._adminTab==='users'||this._adminTab==='syndicate'?'none':'block'}"><div id="admin-stats" class="card" style="padding:12px 14px;margin-bottom:12px;"><p class="sub" style="margin:0;">Loading stats…</p></div><div class="sec" style="display:flex;align-items:center;justify-content:space-between;">Unlock requests <button class="btn btn-out btn-sm" style="height:30px;padding:0 10px;font-size:.68rem;" onclick="App.toggleAlarm()" id="alarm-btn">Alarm on</button></div><div id="admin-unlocks"><p class="sub">Loading…</p></div><div class="sec">Daily predictions (free)</div>${pred}<div class="sec">Daily bet tips</div>${tips}<div class="sec">Booked slips</div>${tix}<div class="sec">Withdrawal requests</div><div id="admin-payouts"><p class="sub">Loading…</p></div>`+
       `<div class="sec">Email diagnostics</div><div class="card" style="padding:14px 15px;"><p class="sub" style="margin:0 0 10px;">Send a test verification email to check Resend is configured.</p><input class="input" id="et-to" type="email" placeholder="you@email.com" style="margin-bottom:8px;"><button class="btn btn-out btn-sm" style="height:40px;" onclick="App.emailTest()">Send test email</button><div id="et-result" style="font-size:.8rem;margin-top:10px;color:var(--sub);word-break:break-word;"></div></div></div>`;
     this.loadAdminPayouts();
     this.loadAdminUnlocks();
@@ -2502,9 +2509,9 @@ const App={
       const el=document.getElementById('admin-stats'); if(!el||!s||!s.ok)return;
       const tiers=Object.entries(s.tiers||{}).map(([k,v])=>`${k.toUpperCase()}: <b>${v}</b>`).join(' · ')||'no subscribers yet';
       el.innerHTML=`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;">
-        <span>🟢 Online (15m): <b>${s.online}</b></span>
+        <span>Online (15m): <b>${s.online}</b></span>
         <span>Users: <b>${s.total_users}</b></span>
-        <span>🔓 Pending unlocks: <b style="color:${s.pending_unlocks?'var(--gold)':'var(--green)'}">${s.pending_unlocks}</b></span>
+        <span>Pending unlocks: <b style="color:${s.pending_unlocks?'var(--gold)':'var(--green)'}">${s.pending_unlocks}</b></span>
       </div><div class="sub" style="font-size:.72rem;margin-top:6px;">Subscribers — ${tiers}</div>`;
     }).catch(()=>{});
     Api.adminUnlocks().then(r=>{
@@ -2530,7 +2537,7 @@ const App={
   decideUnlock(id,action){
     Api.adminUnlockDecide(id,action).then(()=>{ this.toast(action==='approved'?'Approved ✅ — user can now view the code':'Rejected'); this.loadAdminUnlocks(); }).catch(()=>this.toast('Could not update — try again'));
   },
-  // Loud looping alarm while unlock requests are pending. Tap 🔔 to mute/unmute.
+  // Loud looping alarm while unlock requests are pending. Tap to mute/unmute.
   startAlarm(){
     if(this._alarmMuted||this._alarmTimer)return;
     try{
@@ -2544,10 +2551,10 @@ const App={
       }catch(e){} };
       beep(); this._alarmTimer=setInterval(beep,1200);
       if(navigator.vibrate)navigator.vibrate([300,150,300]);
-      const btn=document.getElementById('alarm-btn'); if(btn)btn.textContent='🔕 Mute alarm';
+      const btn=document.getElementById('alarm-btn'); if(btn)btn.textContent='Mute alarm';
     }catch(e){}
   },
-  stopAlarm(){ if(this._alarmTimer){clearInterval(this._alarmTimer);this._alarmTimer=null;} const btn=document.getElementById('alarm-btn'); if(btn)btn.textContent=this._alarmMuted?'🔕 Alarm off':'🔔 Alarm on'; },
+  stopAlarm(){ if(this._alarmTimer){clearInterval(this._alarmTimer);this._alarmTimer=null;} const btn=document.getElementById('alarm-btn'); if(btn)btn.textContent=this._alarmMuted?'Alarm off':'Alarm on'; },
   toggleAlarm(){ this._alarmMuted=!this._alarmMuted; if(this._alarmMuted){this.stopAlarm();this.toast('Alarm muted');} else {this.toast('Alarm on');this.loadAdminUnlocks(true);} },
   loadAdminPayouts(){
     if(!API_BASE)return;
@@ -2894,14 +2901,14 @@ const App={
     const fd=new FormData(); fd.append('file',file); fd.append('title',f.title); fd.append('book',f.book); fd.append('odds',f.odds);
     this.toast('Uploading slip…');
     fetch(API_BASE+'/api/admin/slip',{method:'POST',headers:authHeaders(),credentials:'include',body:fd})
-      .then(async res=>{const r=await res.json().catch(()=>({})); if(res.ok&&r.ok){this.closeSheet();this.syncContent();this.toast('Slip posted');this.signal('pending','📢','Slip posted: '+f.title+' (PENDING)');} else if(res.status===401){this.toast('Please sign in again');} else {this.toast('Could not post the slip — please try again');}})
+      .then(async res=>{const r=await res.json().catch(()=>({})); if(res.ok&&r.ok){this.closeSheet();this.syncContent();this.toast('Slip posted');this.signal('pending','','Slip posted: '+f.title+' (PENDING)');} else if(res.status===401){this.toast('Please sign in again');} else {this.toast('Could not post the slip — please try again');}})
       .catch(()=>this.toast('Network error — please try again'));
   },
   addNotif(){
     const t=(document.getElementById('n-title').value||'').trim();
     const m=(document.getElementById('n-msg').value||'').trim();
     if(!t&&!m){this.toast('Add a title or message');return;}
-    this.readImage(document.getElementById('n-img'),(res)=>{if(res===false)return;NOTIFS.unshift({id:Date.now(),title:t||'Notice',msg:m,img:res||null,ts:Date.now(),read:false});this.closeSheet();this.updateBell();this.toast('Notification sent to all users');this.signal('pending','📢',t||'New notification');});
+    this.readImage(document.getElementById('n-img'),(res)=>{if(res===false)return;NOTIFS.unshift({id:Date.now(),title:t||'Notice',msg:m,img:res||null,ts:Date.now(),read:false});this.closeSheet();this.updateBell();this.toast('Notification sent to all users');this.signal('pending','',t||'New notification');});
   },
   updateBell(){const n=NOTIFS.filter(x=>!x.read).length;const d=document.getElementById('bell-dot');if(d)d.style.display=n?'block':'none';},
   renderNotifs(){
@@ -3224,10 +3231,13 @@ const App={
     try{
       const v=await Api.get('/api/syndicate/vault');
       if(v&&v.ok&&v.results&&v.results.length){
-        rows=v.results.filter(r=>r.result==='won'||r.result==='lost').map(r=>({
-          ts:r.ts||r.date||Date.now(), sport:'Football',
-          event:r.pick||r.hash||'Settled pick', pick:r.pick||'\u2014',
-          odds:Number(r.odds)||1.0, result:r.result, ticket:r.hash||'' }));
+        // oldest first so the cumulative chart reads left to right
+        rows=v.results.filter(r=>r.result==='won'||r.result==='lost')
+          .map(r=>({
+            ts:r.ts||Date.parse(r.date)||Date.now(), sport:'Football',
+            event:r.pick||('Ticket '+(r.hash||'').slice(0,10)), pick:r.pick||'Settled pick',
+            odds:Number(r.odds)||1.0, result:r.result, ticket:r.hash||'' }))
+          .sort((a,b)=>a.ts-b.ts);
       }
     }catch(e){}
     if(!rows.length){
@@ -3286,7 +3296,7 @@ const App={
     el.innerHTML=`<div class="nws-wrap">
       <div class="nws-track" id="nws-track" style="transform:translateX(-${this._newsIdx*100}%)">
         ${slides.map(n=>`<div class="nws-slide" onclick="window.open('${this.esc(n.link)}','_blank')">
-          <img src="${this.esc(n.image)}" alt="" loading="lazy" onerror="this.style.display='none'">
+          <img src="${this.esc(n.image)}" alt="" loading="lazy" onerror="App.newsImgFail('${this.esc(n.id)}')">
           <div class="nws-veil"></div>
           <div class="nws-txt">
             <span class="nws-src">${this.esc(n.source)}</span>
@@ -3298,6 +3308,12 @@ const App={
     </div>`;
     this.newsAuto();
     this.attachNewsSwipe();
+  },
+  // A publisher image that 404s used to leave an empty dark panel under the
+  // Syndicate card. Drop that story and repaint — no image, no slide.
+  newsImgFail(id){
+    this._news=(this._news||[]).filter(n=>String(n.id)!==String(id));
+    this.paintNewsHero(); this.paintNewsList();
   },
   newsGo(i){
     const n=(this._newsSlides||[]).length; if(!n) return;
@@ -3341,35 +3357,50 @@ const App={
     { name:'Melbet',    sub:'Load your code',  url:'https://refpa3665.com/L?tag=d_5833225m_45415c_&site=5833225&ad=45415', color:'#f4b740' },
     { name:'BetWinner', sub:'Load your code',  url:'https://bwredir.com/324N?p=%2Fregistration%2F', color:'#4da6ff' }
   ],
-  bookieStrip(){
-    return `<div class="sec">Load your code at</div>
-      <div class="bk-strip">${this.BOOKIES.map(b=>`
-        <div class="bk-card" onclick="window.open('${b.url}','_blank')">
-          <div class="lg" style="color:${b.color};">${b.name}</div>
-          <div class="sb">${b.sub}</div>
-        </div>`).join('')}
-      </div>
-      <p class="sub" style="font-size:.64rem;margin-top:2px;">These are our partner bookmakers and the links are affiliate links — we may earn a commission if you open an account. You always stake your own money and keep 100% of what you win. 18+.</p>`;
+  /* Line-icon helper for App-side markup. Three call sites used App.ic() but
+     it was never defined, which threw the moment a prediction row rendered. */
+  IC:{
+    ball:  '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5l2.8 4.2-2.8 3-2.8-3z"/><path d="M4.2 9.6l4.4 1.3M19.8 9.6l-4.4 1.3M8 19.2l1.4-4.4M16 19.2l-1.4-4.4"/>',
+    crown: '<path d="M4 8l3.5 4L12 5l4.5 7L20 8v9H4z"/>',
+    cash:  '<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12h3M3 10h18"/>',
+    doc:   '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+    users: '<circle cx="9" cy="9" r="3.5"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><path d="M16 6.5a3.5 3.5 0 0 1 0 7M17 19a6.5 6.5 0 0 0-2-4.7"/>',
+    shield:'<path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/>'
   },
-  /* Stamp every posted pick with when it kicks off and when we posted it.
-     Format: ID · 28-09 12:33 am · League — the posted time is what proves a
-     pick went out before kickoff, so it belongs on the card. */
-  // One shared icon set for the whole app — same single-stroke style as the
-  // Full-access shield. Emoji rendered differently on every device and read
-  // as childish next to the rest of the UI.
   ic(k,size,color){
-    const P={
-      users:'<circle cx="9" cy="9" r="3.5"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><path d="M16 6.5a3.5 3.5 0 0 1 0 7M17 19a6.5 6.5 0 0 0-2-4.7"/>',
-      shield:'<path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/>',
-      cash:'<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6 12h.01M18 12h.01"/>',
-      cal:'<rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
-      ball:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.2 2.3-1.2 3.8h-4L8.8 9.8z"/>',
-      news:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h7M7 13h7M17 9v6"/>',
-      crown:'<path d="M4 8l3.5 4L12 5l4.5 7L20 8v9H4z"/>',
-      bolt:'<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>'
-    };
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="${color||'currentColor'}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:${size||20}px;height:${size||20}px;display:block;">${P[k]||P.shield}</svg>`;
+    const dd=this.IC[k]||this.IC.ball;
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="'+(color||'currentColor')+'" stroke-width="1.7" '+
+      'stroke-linecap="round" stroke-linejoin="round" style="width:'+(size||20)+'px;height:'+(size||20)+'px;display:inline-block;vertical-align:middle;">'+dd+'</svg>';
   },
+  /* One row of destinations instead of repeating whole sections on home.
+     Predictions, fixtures, news and results all live elsewhere already. */
+  hubButtons(){
+    const b=(label,icon,go,color)=>`<button class="hb" onclick="${go}"${color?` style="border-color:${color};color:${color};"`:''}>
+        <span class="hb-ic">${svg(icon)}</span><span>${label}</span></button>`;
+    return `<div class="sec">Explore</div>
+      <div class="hb-grid">
+        ${b('Predictions','<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',"App.go('arena')")}
+        ${b('Fixtures','<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/>',"App.go('matches')")}
+        ${b('News','<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h6M7 13h10M7 16h10"/>',"App.openNews()")}
+        ${b('Results','<path d="M3 3v18h18M7 16l4-4 3 3 5-6"/>',"App.openResults()")}
+        ${b('Syndicate','<circle cx="9" cy="9" r="3.5"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><path d="M16 6.5a3.5 3.5 0 0 1 0 7M17 19a6.5 6.5 0 0 0-2-4.7"/>',"App.go('syninfo')",'var(--green)')}
+        ${b('Partner','<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12h3M3 10h18"/>',"App.go('program')",'var(--gold)')}
+      </div>`;
+  },
+  // News lives on its own page so home stays short.
+  openNews(){
+    let el=document.getElementById('view-news');
+    if(!el){ el=document.createElement('div'); el.className='page'; el.id='view-news';
+      document.getElementById('content').appendChild(el); }
+    el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:1.4rem;cursor:pointer;" onclick="App.go('home')">&#8249;</span>
+        <h2 class="h2" style="flex:1;">Football news</h2></div>
+      <div id="news-hero"></div>
+      <div id="news-list"><p class="sub">Loading headlines…</p></div>`;
+    this.show('news');
+    this.loadNews();
+  },
+  /* Timestamp helper: 28-09 12:33 pm. Used on every posted pick. */
   stamp(ts){
     if(!ts) return '';
     const d=new Date(ts); if(isNaN(d)) return '';
@@ -3377,15 +3408,31 @@ const App={
     let h=d.getHours(); const ap=h<12?'am':'pm'; h=h%12||12;
     return p(d.getDate())+'-'+p(d.getMonth()+1)+' '+p(h)+':'+p(d.getMinutes())+' '+ap;
   },
+  /* Stamp every pick with its reference, kickoff, league and posted time. The
+     posted time is what shows a pick went out before kickoff. */
   pickMeta(p){
     const bits=[];
-    if(p.id) bits.push('#'+String(p.id).slice(-6));
-    const ko=this.stamp(p.start_ts);
+    const ref=p.ref||p.id;
+    if(ref) bits.push('ID: '+String(ref).replace(/^pred-|^tip-/,'').slice(-6).toUpperCase());
+    const ko=this.stamp(p.start_ts||p.kickoff||p.kick_off);
     if(ko) bits.push('KO '+ko);
     if(p.league) bits.push(this.esc(p.league));
-    const po=this.stamp(p.posted_at);
+    const po=this.stamp(p.posted_at||p.created_at);
+    if(po) bits.push('posted '+po);
     const line=bits.join(' \u00B7 ');
-    return line ? `<div class="pm-meta">${line}${po?` <span style="color:var(--faint);">\u00B7 posted ${po}</span>`:''}</div>` : '';
+    return line ? `<div class="pm-meta">${line}</div>` : '';
+  },
+  bookieStrip(){
+    // Neutral grey buttons, centred. Brand colours here made it look like an
+    // advert; the bookmaker's own name is enough.
+    return `<div class="sec">Load your code at</div>
+      <div class="bk-strip">${this.BOOKIES.map(b=>`
+        <button class="bk-card" onclick="window.open('${b.url}','_blank')">
+          <span class="lg">${b.name}</span>
+          <span class="sb">Sign up · load your code</span>
+        </button>`).join('')}
+      </div>
+      <p class="sub" style="font-size:.64rem;margin-top:4px;text-align:center;">Partner bookmakers. These are affiliate links — we may earn a commission if you open an account. You stake your own money and keep 100% of what you win. 18+.</p>`;
   },
   openResults(){this._resultsBack=this.currentView();this.show('results');this.renderResults();},
   resultsBack(){const v=this._resultsBack||'hub';this.show(v==='results'?'hub':v);},
@@ -5342,14 +5389,15 @@ else boot();
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .nws-row .bd .m{font-size:.63rem;color:var(--faint);margin-top:4px;}
 /* bookmaker partner strip */
-.bk-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch;}
-.bk-card{flex:0 0 auto;min-width:112px;padding:12px 10px;border-radius:13px;background:var(--surface);
-  border:1px solid var(--border);text-align:center;}
-.bk-card .lg{font-family:var(--d);font-weight:800;font-size:.9rem;margin-bottom:3px;}
-.bk-card .sb{font-size:.58rem;color:var(--muted);}
+.bk-strip{display:flex;gap:8px;justify-content:center;padding:2px 0 6px;flex-wrap:wrap;}
+.bk-card{flex:1 1 0;min-width:96px;max-width:150px;padding:11px 8px;border-radius:12px;
+  background:transparent;border:1px solid var(--border-2);text-align:center;
+  display:flex;flex-direction:column;gap:3px;color:var(--muted);}
+.bk-card .lg{font-family:var(--d);font-weight:800;font-size:.86rem;color:var(--muted);}
+.bk-card .sb{font-size:.55rem;color:var(--faint);line-height:1.25;}
 .bk-card:active{transform:scale(.97);}
 /* ---- Syndicate explainer clips (rendered inline, no iframe) ---- */
-.syc-stage{position:relative;width:100%;aspect-ratio:16/10;max-height:none;border-radius:18px;overflow:hidden;margin:0 auto;
+.syc-stage{position:relative;width:100%;aspect-ratio:4/3;max-height:none;border-radius:18px;overflow:hidden;margin:0 auto;
   touch-action:pan-y;user-select:none;cursor:grab;
   border:1px solid var(--border);
   background:radial-gradient(120% 90% at 15% 0%,rgba(31,209,122,.10),transparent 60%),
@@ -5360,7 +5408,7 @@ else boot();
   background-size:32px 32px;animation:sycDrift 24s linear infinite;}
 @keyframes sycDrift{to{background-position:32px 32px,32px 32px;}}
 .syc-in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
-  padding:34px 18px 56px;overflow:hidden;}
+  padding:26px 18px 54px;overflow:hidden;}
 .syc-brand{display:none;}
 .syc-brand b{display:flex;align-items:flex-end;gap:2.5px;height:15px;}
 .syc-brand b i{display:block;width:3.2px;border-radius:1px;background:var(--green);animation:sycEq 1.5s ease-in-out infinite;}
@@ -5407,6 +5455,7 @@ else boot();
 .syc-node.g{border-color:rgba(31,209,122,.4);color:var(--green);}
 .syc-node.gold{border-color:rgba(244,183,64,.4);color:var(--gold);}
 .syc-node.bad{border-color:rgba(245,73,92,.4);color:var(--red);}
+.syc-node.mute{border-color:var(--border-2);color:var(--muted);}
 .syc-arw{color:var(--faint);animation:sycNudge 1.6s ease-in-out infinite;}
 @keyframes sycNudge{0%,100%{transform:translateX(0);}50%{transform:translateX(4px);}}
 .syc-crowd{display:flex;gap:4px;flex-wrap:wrap;}
@@ -5718,11 +5767,11 @@ var SYN = window.SYN = {
       (wired?'':'<p class="sub" style="font-size:.68rem;margin-top:10px;">Syndicate backend not wired yet — this is your live layout. Status fills in once the <code style="color:var(--green);">/api/syndicate</code> routes are live.</p>')+
       joinBtn+
       (m ? '<div style="display:flex;gap:8px;margin-top:12px;">'+
-        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--gold);color:var(--gold);" onclick="SYN.openDonate()">&#11088; Donate</button>'+
-        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--green);color:var(--green);" onclick="SYN.openSlip()">&#128203; Submit slip</button>'+
-        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;" onclick="SYN.pushFeeds()">&#128276; Push feeds</button>'+
+        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--gold);color:var(--gold);" onclick="SYN.openDonate()">Donate</button>'+
+        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--green);color:var(--green);" onclick="SYN.openSlip()">Submit slip</button>'+
+        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;" onclick="SYN.pushFeeds()">Push feeds</button>'+
       '</div>'+
-      (this.tierHasTelegram(myTier())?'<button class="btn btn-green btn-sm" style="height:44px;margin-top:8px;" onclick="SYN.getInvite()">&#128241; Telegram</button>':'')
+      (this.tierHasTelegram(myTier())?'<button class="btn btn-green btn-sm" style="height:44px;margin-top:8px;" onclick="SYN.getInvite()">Telegram</button>':'')
       : '')+
     '</div>';
   },
@@ -5907,7 +5956,9 @@ var SYN = window.SYN = {
     link:  '<path d="M10 13a4 4 0 0 0 6 .5l2-2a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 11a4 4 0 0 0-6-.5l-2 2A4 4 0 0 0 11.7 18l1-1"/>',
     scale: '<path d="M12 4v16M7 20h10M4 9l4-4 4 4M4 9a4 4 0 0 0 8 0M12 9l4-4 4 4M12 9a4 4 0 0 0 8 0"/>',
     alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
-    users: '<circle cx="9" cy="9" r="3.5"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><path d="M16 6.5a3.5 3.5 0 0 1 0 7M17 19a6.5 6.5 0 0 0-2-4.7"/>'
+    users: '<circle cx="9" cy="9" r="3.5"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><path d="M16 6.5a3.5 3.5 0 0 1 0 7M17 19a6.5 6.5 0 0 0-2-4.7"/>',
+    user:  '<circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.5a7 7 0 0 1 14 0"/>',
+    userx: '<circle cx="10.5" cy="8.5" r="3.4"/><path d="M4 19.5a6.8 6.8 0 0 1 11-4.4"/><path d="M17 16l4 4M21 16l-4 4"/>'
   },
   icon:function(k,size,color){
     var d=this.ICN[k]||this.ICN.shield;
@@ -5918,7 +5969,7 @@ var SYN = window.SYN = {
     {id:'what', ic:'@users', lbl:'What the Syndicate is',
      h:'What the <em>Syndicate</em> is',
      p:'A members\u2019 group that follows the <b>same verified picks</b>, together. We publish the selection, the code and the proof \u2014 you decide whether to place it.',
-     viz:{t:'crowd', v:['\u25CF','\u25CF','\u25CF','\u25CF','\u25CF','\u25CF','\u25CF','\u25CF']},
+     viz:{t:'crowd', v:['@user','@user','@user','@user','@user','@user','@user','@user']},
      pill:'One group, one pick, one direction'},
 
     {id:'money', ic:'@wallet', lbl:'You keep your own money',
@@ -5968,7 +6019,7 @@ var SYN = window.SYN = {
     {id:'whysusp', ic:'@block', lbl:'Why members get suspended',
      h:'Why members get <em class="r">suspended</em>',
      p:'A syndicate only works if the people in it <b>actually follow it</b>. Passengers weaken the whole group.',
-     viz:{t:'crowd', v:['\u2713','\u2713','\u2713','\u2715','\u2713','\u2713','\u2715','\u2713'], out:[3,6]},
+     viz:{t:'crowd', v:['@user','@user','@user','@userx','@user','@user','@userx','@user'], out:[3,6]},
      li:[['No slip submitted \u2014 you didn\u2019t play','r'],['Donation lapsed for the week','r'],
          ['Slip code doesn\u2019t match the tip','r'],['One account shared between people','r']]},
 
@@ -5999,7 +6050,7 @@ var SYN = window.SYN = {
     {id:'floor', ic:'@down', lbl:'The odds floor',
      h:'The <em>odds floor</em>',
      p:'Live prices move by the second. Every pick is posted at a price, with a <b>floor</b> underneath it.',
-     viz:{t:'flow', v:[['Posted 1.95',''],['Floor 1.75','gold'],['1.50 \u2014 skip','bad']]},
+     viz:{t:'flow', v:[['Posted 1.95','mute'],['Floor 1.75','gold'],['1.50 \u2014 skip','bad']]},
      li:[['Shortening odds often mean money agrees with the pick',''],
          ['At or above the floor, the price still holds value',''],
          ['Below the floor, the edge is gone \u2014 <b>let it go</b>','r'],
@@ -6090,7 +6141,8 @@ var SYN = window.SYN = {
       if(v.t==='crowd'){
         inner='<div class="syc-crowd">'+v.v.map(function(x,k){
           var out=(v.out||[]).indexOf(k)>=0?' out':'';
-          return '<span class="syc-pn'+out+'" style="animation-delay:'+(0.28+k*0.05).toFixed(2)+'s">'+x+'</span>';
+          var body=(String(x).charAt(0)==='@')?SYN.icon(String(x).slice(1),15):x;
+          return '<span class="syc-pn'+out+'" style="animation-delay:'+(0.28+k*0.05).toFixed(2)+'s">'+body+'</span>';
         }).join('')+'</div>';
       } else if(v.t==='flow'){
         inner='<div class="syc-flow">'+v.v.map(function(x,k){
@@ -6272,11 +6324,11 @@ var SYN = window.SYN = {
       '<div class="clip-rail" id="syn-clip-rail">'+this.SYN_CLIPS.map(function(x,k){
         // Portrait, compact — a picker, not a second gallery.
         // compact landscape tiles — wide, short, easy to thumb along
-        return '<div class="clip-thumb" onclick="SYN.gotoClip('+k+')" style="width:64px;flex:0 0 64px;opacity:'+(k===i?1:.45)+';">'+
-          '<div class="cw" style="height:34px;display:grid;place-items:center;background:var(--surface-2);border:1px solid '+(k===i?'var(--green)':'var(--border)')+';border-radius:7px;">'+
-            '<span style="width:22px;height:22px;display:grid;place-items:center;color:'+(k===i?'var(--green)':'var(--muted)')+';">'+
-              (String(x.ic).charAt(0)==='@'?SYN.icon(String(x.ic).slice(1),22):x.ic)+'</span></div>'+
-          '<div class="lbl" style="font-size:.54rem;line-height:1.2;margin-top:4px;max-height:2.4em;overflow:hidden;">'+esc(x.lbl)+'</div></div>';
+        return '<div class="clip-thumb" onclick="SYN.gotoClip('+k+')" style="width:44px;flex:0 0 44px;opacity:'+(k===i?1:.45)+';">'+
+          '<div class="cw" style="width:44px;height:24px;display:grid;place-items:center;background:var(--surface-2);border:1px solid '+(k===i?'var(--green)':'var(--border)')+';border-radius:6px;">'+
+            '<span style="width:15px;height:15px;display:grid;place-items:center;color:'+(k===i?'var(--green)':'var(--muted)')+';">'+
+              (String(x.ic).charAt(0)==='@'?SYN.icon(String(x.ic).slice(1),15):x.ic)+'</span></div>'+
+          '<div class="lbl" style="font-size:.48rem;line-height:1.1;margin-top:3px;max-height:2.2em;overflow:hidden;">'+esc(x.lbl)+'</div></div>';
       }).join('')+'</div>';
   },
   /* Swipe paging. Arrows were covering the content, so the stage is now
