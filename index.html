@@ -495,13 +495,13 @@ body.light .st{background:rgba(0,0,0,.04);}
 .winpop-ring{width:64px;height:64px;border-radius:50%;background:rgba(31,209,122,.14);border:2px solid var(--green);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
 .winpop-ring svg{width:32px;height:32px;}
 .winpop-title{font-family:var(--d);font-weight:700;font-size:1.3rem;}
-.hb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px;}
-.hb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  height:76px;border-radius:14px;background:var(--surface);border:1px solid var(--border);
-  color:var(--text);font-size:.72rem;font-weight:600;}
+.hb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:4px;}
+.hb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  height:56px;border-radius:11px;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);font-size:.6rem;font-weight:600;padding:0 2px;}
 .hb:active{transform:scale(.97);}
-.hb-ic{width:22px;height:22px;display:grid;place-items:center;}
-.hb-ic svg{width:22px;height:22px;}
+.hb-ic{width:17px;height:17px;display:grid;place-items:center;}
+.hb-ic svg{width:17px;height:17px;}
 .pm-meta{font-size:.6rem;color:var(--muted);margin-top:3px;letter-spacing:.01em;}
 .winpop-match{font-size:.92rem;color:var(--text);margin-top:8px;font-weight:600;}
 .winpop-odds{font-size:.8rem;color:var(--muted);margin-top:3px;}
@@ -778,7 +778,7 @@ body.light .st{background:rgba(0,0,0,.04);}
       <p class="sub" style="margin-bottom:20px;">Join the <b style="color:var(--green);">Syndicate</b> — a members' group that follows the same verified picks, together. Follow our free daily predictions to see how we perform, then subscribe to unlock the full daily codes and slips. Every result — win or loss — stays on the record. You place your own bets and keep 100% of what you win.</p>
 
       <div class="role-card">
-        <div class="role-top"><div class="role-ic" style="display:grid;place-items:center;">${svg('<rect x="2.5" y="7" width="19" height="10" rx="2.5"/><path d="M8 7v10"/>')}</div><div><div class="role-name">Member</div><div class="role-tag" style="color:var(--green);">Subscribe &amp; unlock tips</div></div></div>
+        <div class="role-top"><div class="role-ic" style="display:grid;place-items:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><rect x="2.5" y="7" width="19" height="10" rx="2.5"/><path d="M8 7v10"/></svg></div><div><div class="role-name">Member</div><div class="role-tag" style="color:var(--green);">Subscribe &amp; unlock tips</div></div></div>
         <p class="role-desc">Subscribe to a tier and unlock the full daily bet tips — plus the <b style="color:var(--green);">Syndicate</b>, where the whole group moves on the same pick. You load each code at your own bookmaker and keep 100% of what you win — we never hold your stake.</p>
         <div class="role-actions"><button class="btn btn-out" onclick="App.signin('Member')">Sign In</button><button class="btn btn-green" onclick="App.signin('Member')">Sign Up</button></div>
       </div>
@@ -843,10 +843,10 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div id="how-clips" class="clip-rail"></div>
 
       <div class="sec" style="margin-top:6px;">Getting started</div>
-      <div class="irow"><div class="ic">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/>')}</div><div class="mid"><div class="t">1 · Create an account</div><div class="d">Register with your details, verify you're 18+, set a withdrawal PIN, and pick a membership plan. Browsing tips is free.</div></div></div>
-      <div class="irow"><div class="ic">${svg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>')}</div><div class="mid"><div class="t">2 · Follow free predictions</div><div class="d">Three daily predictions are posted in the Arena before kickoff, with results marked openly — wins and losses both.</div></div></div>
-      <div class="irow"><div class="ic">${svg('<rect x="2.5" y="7" width="19" height="10" rx="2.5"/><path d="M8 7v10"/>')}</div><div class="mid"><div class="t">3 · Unlock bet tips</div><div class="d">Unlock a tip and get every selected game — teams, markets and odds. Rebuild the slip at any bookmaker in your country and stake your own money. You keep 100% of what you win — we're paid only for the tip.</div></div></div>
-      <div class="irow"><div class="ic">${svg('<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12h3M3 10h18"/>')}</div><div class="mid"><div class="t">4 · Top up &amp; withdraw</div><div class="d">Credit is used to unlock tips. Unspent credit is yours and withdrawable anytime; withdrawals are protected by your 4-digit PIN.</div></div></div>
+      <div class="irow"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></div><div class="mid"><div class="t">1 · Create an account</div><div class="d">Register with your details, verify you're 18+, set a withdrawal PIN, and pick a membership plan. Browsing tips is free.</div></div></div>
+      <div class="irow"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg></div><div class="mid"><div class="t">2 · Follow free predictions</div><div class="d">Three daily predictions are posted in the Arena before kickoff, with results marked openly — wins and losses both.</div></div></div>
+      <div class="irow"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><rect x="2.5" y="7" width="19" height="10" rx="2.5"/><path d="M8 7v10"/></svg></div><div class="mid"><div class="t">3 · Unlock bet tips</div><div class="d">Unlock a tip and get every selected game — teams, markets and odds. Rebuild the slip at any bookmaker in your country and stake your own money. You keep 100% of what you win — we're paid only for the tip.</div></div></div>
+      <div class="irow"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12h3M3 10h18"/></svg></div><div class="mid"><div class="t">4 · Top up &amp; withdraw</div><div class="d">Credit is used to unlock tips. Unspent credit is yours and withdrawable anytime; withdrawals are protected by your 4-digit PIN.</div></div></div>
 
       <div class="sec">How bet tips work</div>
       <div class="note" style="background:var(--surface);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 0-7 7 5 5 0 0 0 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/></svg><p>Each tip is a list of selected games — teams, markets and odds — that you can rebuild at <b>any bookmaker in any country</b>. We sell the <b>selections</b> as information. You place and fund every bet yourself on your own account — <b>we never take custody of your stake or your winnings.</b></p></div>
@@ -857,7 +857,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 
       <div class="sec">Fair play &amp; transparency</div>
       <div class="irow"><div class="ic">✅</div><div class="mid"><div class="t">Results stay public</div><div class="d">Every prediction and settled slip keeps its win/loss on the record. A strong history is never a promise of future results.</div></div></div>
-      <div class="irow"><div class="ic">${svg('<rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 7.5-2"/>')}</div><div class="mid"><div class="t">Your money stays yours</div><div class="d">We don't pool, lock, or bet your funds for you. You pay for picks and access; betting happens on your own bookmaker account.</div></div></div>
+      <div class="irow"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 7.5-2"/></svg></div><div class="mid"><div class="t">Your money stays yours</div><div class="d">We don't pool, lock, or bet your funds for you. You pay for picks and access; betting happens on your own bookmaker account.</div></div></div>
 
       <div class="sec">Responsible gambling</div>
       <div class="note" style="border-color:rgba(245,73,92,.35);background:var(--red-dim);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><p><b>Betting carries real risk and you can lose money.</b> Outcomes are never guaranteed. Set limits, never chase losses, and only stake what you can afford to lose. Must be 18+. If gambling stops being fun, take a break or use the self-exclusion tools in Settings → Responsible Gambling.</p></div>
@@ -1590,6 +1590,15 @@ const App={
     }).join('');
   },
   membershipCard(){
+    // Admins hold full access, not a plan — showing "Bronze plan" was wrong.
+    if(State.isAdmin){
+      return `<div class="sec">Your access</div>
+      <div class="card" style="display:flex;align-items:center;gap:14px;">
+        <div class="role-ic" style="width:46px;height:46px;border-color:var(--gold);color:var(--gold);">${svg('<path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/>')}</div>
+        <div style="flex:1;"><div style="font-family:var(--d);font-weight:700;">Administrator</div><div class="sub" style="font-size:.76rem;">Full access — every tier is unlocked.</div></div>
+        <button class="btn btn-out btn-sm" style="height:38px;" onclick="App.go('admin')">Console</button>
+      </div>`;
+    }
     const plan=(State.tier&&State.tier!=='none')?TIERS.find(x=>x.key===State.tier):null;
     if(!plan){
       return `<div class="sec">Membership</div>
@@ -3227,29 +3236,25 @@ const App={
      empty record is honest, a fabricated one is not. RESULTS stays only as a
      local demo seed and is used ONLY when explicitly enabled. */
   async loadRealResults(){
-    let rows=[];
+    // The archive is the source of truth: every settled pick, with the match,
+    // the price, when it kicked off and when we posted it.
+    try{
+      const r=await Api.get('/api/results/public');
+      if(r&&r.ok&&r.results&&r.results.length) return r.results;
+    }catch(e){}
+    // Fall back to the Proof Vault for anything logged there directly.
     try{
       const v=await Api.get('/api/syndicate/vault');
       if(v&&v.ok&&v.results&&v.results.length){
-        // oldest first so the cumulative chart reads left to right
-        rows=v.results.filter(r=>r.result==='won'||r.result==='lost')
-          .map(r=>({
-            ts:r.ts||Date.parse(r.date)||Date.now(), sport:'Football',
-            event:r.pick||('Ticket '+(r.hash||'').slice(0,10)), pick:r.pick||'Settled pick',
-            odds:Number(r.odds)||1.0, result:r.result, ticket:r.hash||'' }))
+        return v.results.filter(x=>x.result==='won'||x.result==='lost')
+          .map(x=>({
+            ts:x.ts||Date.parse(x.date)||Date.now(), sport:'Football',
+            event:x.pick||('Ticket '+(x.hash||'').slice(0,10)), pick:x.pick||'Settled pick',
+            odds:Number(x.odds)||1.0, result:x.result, ticket:x.hash||'' }))
           .sort((a,b)=>a.ts-b.ts);
       }
     }catch(e){}
-    if(!rows.length){
-      try{
-        const p=await Api.get('/api/predictions/settled');
-        if(p&&p.ok&&p.predictions) rows=p.predictions.filter(x=>x.result).map(x=>({
-          ts:x.settled_at||x.start_ts||Date.now(), sport:x.sport||'Football',
-          event:x.match||x.event||'', pick:x.pick||'', odds:Number(x.odds)||1.0,
-          result:(x.result==='won'||x.result==='win')?'won':'lost' }));
-      }catch(e){}
-    }
-    return rows;
+    return [];
   },
   async buildChain(){
     let src=await this.loadRealResults();
@@ -3375,7 +3380,9 @@ const App={
   /* One row of destinations instead of repeating whole sections on home.
      Predictions, fixtures, news and results all live elsewhere already. */
   hubButtons(){
-    const b=(label,icon,go,color)=>`<button class="hb" onclick="${go}"${color?` style="border-color:${color};color:${color};"`:''}>
+    // Four compact pills. Syndicate and Partner already have their own cards
+    // higher up the page, so repeating them here was noise.
+    const b=(label,icon,go)=>`<button class="hb" onclick="${go}">
         <span class="hb-ic">${svg(icon)}</span><span>${label}</span></button>`;
     return `<div class="sec">Explore</div>
       <div class="hb-grid">
@@ -3383,8 +3390,6 @@ const App={
         ${b('Fixtures','<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/>',"App.go('matches')")}
         ${b('News','<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h6M7 13h10M7 16h10"/>',"App.openNews()")}
         ${b('Results','<path d="M3 3v18h18M7 16l4-4 3 3 5-6"/>',"App.openResults()")}
-        ${b('Syndicate','<circle cx="9" cy="9" r="3.5"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><path d="M16 6.5a3.5 3.5 0 0 1 0 7M17 19a6.5 6.5 0 0 0-2-4.7"/>',"App.go('syninfo')",'var(--green)')}
-        ${b('Partner','<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M16 12h3M3 10h18"/>',"App.go('program')",'var(--gold)')}
       </div>`;
   },
   // News lives on its own page so home stays short.
@@ -6834,7 +6839,8 @@ var SYN = window.SYN = {
   _rq:{q:'',from:'',to:'',kind:'all',tier:'all',result:'all'},
   aRecordsView:function(b){
     var q=this._rq;
-    b.innerHTML='<div class="sy-note" style="margin-bottom:12px;">Every pick is written here the moment it is posted, with its own reference and the exact server time. Search by reference, match, code or league. Records are never deleted.</div>'+
+    b.innerHTML='<div class="sy-note" style="margin-bottom:10px;">Every pick is written here the moment it is posted, with its own reference and the exact server time. Search by reference, match, code or league. Records are never deleted.</div>'+
+      '<button class="btn btn-out btn-sm" style="height:40px;margin-bottom:12px;border-color:var(--green);color:var(--green);" onclick="SYN.openAddPick()">+ Add a settled pick</button>'+
       '<input class="input" id="rec-q" placeholder="Search reference, match, pick, code\u2026" value="'+esc(q.q)+'" style="height:44px;margin-bottom:8px;">'+
       '<div style="display:flex;gap:8px;margin-bottom:8px;">'+
         '<div class="field" style="flex:1;"><label>From</label><input class="input" id="rec-from" type="date" value="'+esc(q.from)+'" style="height:42px;"></div>'+
@@ -6854,6 +6860,53 @@ var SYN = window.SYN = {
       '<button class="btn btn-green btn-sm" style="height:42px;" onclick="SYN.recSearch()">Search records</button>'+
       '<div id="rec-out" style="margin-top:12px;"><p class="sub">Loading\u2026</p></div>';
     this.recSearch();
+  },
+  /* Log a pick with its result. This is what fills the public Verified Results
+     page — match, price, kickoff and outcome all come from here. */
+  openAddPick:function(){
+    var body='<div class="grab"></div><h3 class="h2" style="margin-bottom:4px;">Add a settled pick</h3>'+
+      '<p class="sub" style="font-size:.76rem;margin-bottom:14px;">This writes to the permanent archive and appears on the public Verified Results page.</p>'+
+      '<div class="field"><label>Match *</label><input class="input" id="ap-match" placeholder="Arsenal vs Chelsea" style="height:46px;"></div>'+
+      '<div class="field" style="margin-top:9px;"><label>Pick *</label><input class="input" id="ap-pick" placeholder="Over 2.5 Goals" style="height:46px;"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:9px;">'+
+        '<div class="field" style="flex:1;"><label>Odds</label><input class="input" id="ap-odds" inputmode="decimal" placeholder="1.90" style="height:46px;"></div>'+
+        '<div class="field" style="flex:1.4;"><label>League</label><input class="input" id="ap-league" placeholder="Premier League" style="height:46px;"></div>'+
+      '</div>'+
+      '<div class="field" style="margin-top:9px;"><label>Kick-off</label><input class="input" id="ap-ko" type="datetime-local" style="height:46px;"></div>'+
+      '<div class="field" style="margin-top:9px;"><label>Result</label>'+
+        '<div style="display:flex;gap:8px;margin-top:6px;">'+
+          '<button class="btn btn-out btn-sm" id="ap-won" style="flex:1;height:44px;border-color:var(--green);color:var(--green);" onclick="SYN.apRes(\'won\')">Won</button>'+
+          '<button class="btn btn-out btn-sm" id="ap-lost" style="flex:1;height:44px;" onclick="SYN.apRes(\'lost\')">Lost</button>'+
+          '<button class="btn btn-out btn-sm" id="ap-void" style="flex:1;height:44px;" onclick="SYN.apRes(\'void\')">Void</button>'+
+        '</div></div>'+
+      '<div class="field" style="margin-top:9px;"><label>Ticket / bet ID (optional)</label><input class="input" id="ap-ticket" placeholder="bookmaker bet ID" style="height:46px;"></div>'+
+      '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.saveAddPick()">Write to record</button>';
+    this.sheet(body);
+    this.apResult='won'; this.apRes('won');
+  },
+  apResult:'won',
+  apRes:function(v){
+    this.apResult=v;
+    [['won','var(--green)'],['lost','var(--red)'],['void','var(--muted)']].forEach(function(x){
+      var el=document.getElementById('ap-'+x[0]); if(!el) return;
+      var on=(x[0]===v);
+      el.style.borderColor=on?x[1]:'var(--border-2)';
+      el.style.color=on?x[1]:'var(--text)';
+    });
+  },
+  saveAddPick:function(){
+    var g=function(id){ var e=document.getElementById(id); return e?String(e.value||'').trim():''; };
+    if(!g('ap-match')&&!g('ap-pick')){ if(App&&App.toast)App.toast('Enter the match and pick'); return; }
+    var ko=g('ap-ko'); var kots=ko?Date.parse(ko):null;
+    Api.post('/api/admin/picks/add',{
+      match:g('ap-match'), pick:g('ap-pick'), league:g('ap-league'),
+      odds:parseFloat(g('ap-odds'))||null, kickoff_ts:isFinite(kots)?kots:null,
+      result:this.apResult, ticket:g('ap-ticket'), kind:'prediction'
+    }).then(function(r){
+      if(r&&r.ok){ if(App&&App.closeSheet)App.closeSheet();
+        if(App&&App.toast)App.toast('Recorded as '+(r.ref||'')); SYN.recSearch(); }
+      else if(App&&App.toast)App.toast((r&&r.error)||'Could not save');
+    }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
   },
   recSearch:function(){
     var g=function(id){ var e=document.getElementById(id); return e?e.value:''; };
