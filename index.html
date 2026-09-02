@@ -502,6 +502,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .hb:active{transform:scale(.97);}
 .hb-ic{width:17px;height:17px;display:grid;place-items:center;}
 .hb-ic svg{width:17px;height:17px;}
+.pm-ko{font-family:var(--b);font-weight:600;font-size:.66rem;color:var(--gold);margin-left:8px;white-space:nowrap;}
 .pm-meta{font-size:.6rem;color:var(--muted);margin-top:3px;letter-spacing:.01em;}
 .winpop-match{font-size:.92rem;color:var(--text);margin-top:8px;font-weight:600;}
 .winpop-odds{font-size:.8rem;color:var(--muted);margin-top:3px;}
@@ -924,6 +925,7 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="menu-card">
         <div class="menu-item" onclick="App.openSheet('aichat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="lab">Ask BetBot (AI assistant)</span><span class="chev">›</span></div>
         <div class="menu-item" onclick="App.joinTelegram()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 3-9 9M22 3l-7 19-4-8-8-4z"/></svg><span class="lab">Join VIP Telegram group</span><span class="chev">›</span></div>
+        <div class="menu-item" onclick="window.SYN&&SYN.getInvite&&SYN.getInvite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 3-9 9M22 3l-7 19-4-8-8-4z"/></svg><span class="lab">Telegram groups</span><span class="chev">›</span></div>
         <div class="menu-item" id="menu-connect-tg" style="display:none;" onclick="App.connectTelegram()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 3-9 9M22 3l-7 19-4-8-8-4z"/></svg><span class="lab">Connect my Telegram<span id="tg-connect-state" style="color:var(--green);font-size:.7rem;font-weight:600;margin-left:6px;"></span></span><span class="chev">›</span></div>
         <div class="menu-item" onclick="App.contactEmail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.2z"/></svg><span class="lab">Contact support</span><span class="chev">›</span></div>
         <div class="menu-item" onclick="App.contactEmail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span class="lab">Report a problem</span><span class="chev">›</span></div>
@@ -1489,7 +1491,7 @@ const App={
     const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
     const draw=(list)=>{
       if(!list||!list.length){ el.innerHTML='<p class="sub" style="font-size:.8rem;">No predictions posted yet — check back soon.</p>'; return; }
-      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
+      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${p.start_ts?`<span class="pm-ko">${this.stamp(p.start_ts)}</span>`:''}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
     };
     if(API_BASE){
       Api.getPredictions().then(r=>{
@@ -1695,7 +1697,7 @@ const App={
       const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
       const preds=(PREDICTIONS||[]).slice(0,4).map(p=>`<div class="predmini">
         <span class="pm-sport">${sportIc(p.sport)}</span>
-        <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div>
+        <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${p.start_ts?`<span class="pm-ko">${this.stamp(p.start_ts)}</span>`:''}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div>
         <span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
       const codeCards=CODES.map(c=>{
         const owned=State.codes.has(String(c.id));const rc=c.risk.toLowerCase();
@@ -2466,8 +2468,36 @@ const App={
     const body=document.getElementById('admin-tab-body'); if(!body)return;
     body.innerHTML=`<input class="input" placeholder="Search name, email, username\u2026" style="margin-bottom:10px;" oninput="App._userQ=this.value.toLowerCase();App.paintUsers()">
       <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px;">${['all','online','members','partners','admins'].map(f=>`<button class="pill ${this._userFilter===f?'active':''}" style="flex-shrink:0;" onclick="App._userFilter='${f}';App.paintUsers()">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}</div>
+      <div id="dupe-warn"></div>
       <div id="users-list"><p class="sub">Loading users\u2026</p></div>`;
+    this.checkDuplicateEmails();
     Api.adminUsers().then(r=>{ this._users=(r&&r.users)||[]; this.paintUsers(); }).catch(()=>{const el=document.getElementById('users-list');if(el)el.innerHTML='<p class="sub">Could not load users.</p>';});
+  },
+  /* Removing an account deletes the person's data but deliberately leaves the
+     pick archive alone — that record has to survive for disputes. */
+  removeUser(id,label){
+    if(!confirm('Remove '+label+'?\n\nTheir account and personal data are deleted. Posted picks stay in the archive.')) return;
+    Api.post('/api/admin/users/delete',{id}).then(r=>{
+      if(r&&r.ok){ this.toast('Removed '+(r.removed||label)); this.renderAdminUsers(); }
+      else this.toast((r&&r.error)||'Could not remove');
+    }).catch(()=>this.toast('Network error'));
+  },
+  // Pre-launch check: duplicate emails block the unique index from being built.
+  checkDuplicateEmails(){
+    Api.get('/api/admin/users/duplicates').then(r=>{
+      const el=document.getElementById('dupe-warn'); if(!el||!r||!r.ok) return;
+      const d=r.duplicates||[];
+      if(!d.length && r.unique_index){
+        el.innerHTML='<div class="sy-note" style="border-style:solid;border-color:var(--green);color:var(--green);">One account per email is enforced.</div>';
+        return;
+      }
+      if(d.length){
+        el.innerHTML='<div class="sy-note" style="border-style:solid;border-color:var(--red);color:var(--red);">'+
+          '<b>'+d.length+' email'+(d.length>1?'s are':' is')+' used by more than one account.</b><br>'+
+          d.slice(0,8).map(x=>App.esc(x.email)+' × '+x.n).join('<br>')+
+          '<br><br>Remove the extra accounts below — the one-account-per-email rule cannot switch on until they are gone.</div>';
+      }
+    }).catch(()=>{});
   },
   paintUsers(){
     const el=document.getElementById('users-list'); if(!el)return;
@@ -2495,6 +2525,9 @@ const App={
           <div><span class="sub">Status:</span> ${u.online?'\uD83D\uDFE2 Online now':(u.last_seen?'Last seen '+new Date(u.last_seen).toLocaleString():'Never seen')}</div>
           <div><span class="sub">Telegram:</span> ${u.tg_linked?'\u2705 Linked':'Not linked'}</div>
           <div><span class="sub">Referral code:</span> ${this.esc(u.ref_code||'\u2014')} \u00B7 <span class="sub">Referred:</span> ${u.referred||0} \u00B7 <span class="sub">Balance:</span> $${Number(u.ref_balance||0).toFixed(2)} \u00B7 <span class="sub">Payouts:</span> ${u.payout_count||0}</div>
+          <div><span class="sub">User ID:</span> <span style="font-family:var(--d);font-size:.7rem;">${this.esc(u.id||'')}</span></div>
+          ${u.role==='admin'?'':`<button class="btn btn-out btn-sm" style="height:36px;margin-top:10px;border-color:var(--red);color:var(--red);"
+            onclick="event.stopPropagation();App.removeUser('${this.esc(u.id)}','${this.esc(u.username||u.email||'this user')}')">Remove user</button>`}
         </div></div>`;
     }).join('');
   },
@@ -6548,12 +6581,21 @@ var SYN = window.SYN = {
       else if(App&&App.toast)App.toast((r&&r.error)||'Could not submit');
     }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
   },
+  /* Members get two rooms: their tier's group and the general group everyone
+     shares. Show both rather than guessing which one they wanted. */
   getInvite:function(){
-    if(typeof Api==='undefined'||!Api.get){ return; }
+    if(typeof Api==='undefined'||!Api.get) return;
     if(App&&App.toast)App.toast('Checking your access\u2026');
     Api.get('/api/syndicate/invite').then(function(r){
-      if(r&&r.ok&&r.url){ try{ window.open(r.url,'_blank'); }catch(e){} if(App&&App.toast)App.toast('Opening your channel'); }
-      else if(App&&App.toast)App.toast((r&&r.error)||'No active invite \u2014 check your donation & slip');
+      if(!(r&&r.ok)){ if(App&&App.toast)App.toast((r&&r.error==='not_compliant')?'Submit a slip and donate to unlock your group':((r&&r.error)||'No group available yet')); return; }
+      var tierName=(r.tier||'').toUpperCase();
+      var body='<div class="grab"></div><h3 class="h2" style="margin-bottom:4px;">Telegram groups</h3>'+
+        '<p class="sub" style="font-size:.78rem;margin-bottom:14px;">Picks and analyst voice notes land in your tier group. The general group is for everyone.</p>'+
+        (r.tierUrl?'<button class="btn btn-green" style="height:50px;margin-bottom:9px;" onclick="window.open(\''+r.tierUrl+'\',\'_blank\')">Open '+esc(tierName)+' group</button>':
+                   '<div class="sy-note" style="margin-bottom:9px;">Your tier group isn\u2019t set up yet.</div>')+
+        (r.general?'<button class="btn btn-out" style="height:48px;" onclick="window.open(\''+r.general+'\',\'_blank\')">Open general group</button>':'')+
+        '<p class="sub" style="font-size:.66rem;margin-top:12px;text-align:center;">Picks and voice notes only \u2014 never money. 18+.</p>';
+      SYN.sheet(body);
     }).catch(function(){ if(App&&App.toast)App.toast('Network error'); });
   },
   sheet:function(html){
