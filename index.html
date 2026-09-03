@@ -1145,7 +1145,10 @@ const EYE_SHOW='<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><cir
 const EYE_HIDE='<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M6.06 6.06A18.45 18.45 0 0 0 1 12s4 7 11 7a9.12 9.12 0 0 0 3.94-.88"/><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
 
 const App={
-  init(){ setTimeout(()=>document.getElementById('splash').classList.add('out'),2300);
+  init(){
+    // Capture mode replaces the whole page, so guard anything that expects the
+    // normal shell to still be there.
+    setTimeout(()=>{ const sp=document.getElementById('splash'); if(sp) sp.classList.add('out'); },2300);
     setInterval(()=>{ if(this.pruneChat() && this.arenaCur==='chat' && document.getElementById('view-arena').classList.contains('active')) this.renderChat(); },60000);
     // Admin is reachable ONLY when the backend confirms role=admin (via restoreSession → /api/auth/me). No URL/hash shortcut.
     if(AUTH_TOKEN){ this.restoreSession(); }
@@ -1491,7 +1494,7 @@ const App={
     const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
     const draw=(list)=>{
       if(!list||!list.length){ el.innerHTML='<p class="sub" style="font-size:.8rem;">No predictions posted yet — check back soon.</p>'; return; }
-      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${p.start_ts?`<span class="pm-ko">${this.stamp(p.start_ts)}</span>`:''}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
+      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${this.koChip(p)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
     };
     if(API_BASE){
       Api.getPredictions().then(r=>{
@@ -1697,7 +1700,7 @@ const App={
       const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
       const preds=(PREDICTIONS||[]).slice(0,4).map(p=>`<div class="predmini">
         <span class="pm-sport">${sportIc(p.sport)}</span>
-        <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${p.start_ts?`<span class="pm-ko">${this.stamp(p.start_ts)}</span>`:''}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div>
+        <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${this.koChip(p)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div>
         <span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
       const codeCards=CODES.map(c=>{
         const owned=State.codes.has(String(c.id));const rc=c.risk.toLowerCase();
@@ -3438,6 +3441,17 @@ const App={
   },
   /* Stamp every pick with its reference, kickoff, league and posted time. The
      posted time is what shows a pick went out before kickoff. */
+  /* Kick-off chip shown right after the team names. Labelled "KO" so it can
+     never be read as the posted time, and hidden when the stored kickoff is
+     really just the creation timestamp (older picks saved before the kickoff
+     field existed). */
+  koChip(p){
+    const ko=p.start_ts||p.kickoff||p.kick_off;
+    if(!ko) return '';
+    const posted=p.posted_at||p.created_at;
+    if(posted && Math.abs(Number(ko)-Number(posted))<120000) return '';  // same moment = not a real kickoff
+    return `<span class="pm-ko">KO ${this.stamp(ko)}</span>`;
+  },
   pickMeta(p){
     const bits=[];
     const ref=p.ref||p.id;
@@ -5751,6 +5765,8 @@ var SYN = window.SYN = {
        'You place your own bets and keep 100% of what you win. Donations buy rank &amp; priority only — never a return, never a stake. 18+ &middot; bet responsibly.<br>'+
        '<a onclick="SYN.openTerms()" style="color:var(--green);text-decoration:underline;cursor:pointer;">Syndicate terms</a></p>';
     body.innerHTML=h;
+    this.paintAlarmBtn();
+    this.watchPicks();
   },
   hero:function(tier, m, wired){
     var meta=tierMeta().filter(function(t){return t.key===tier;})[0]||{name:tier,color:'#8a909a'};
@@ -5799,7 +5815,11 @@ var SYN = window.SYN = {
         '<button class="btn btn-out btn-sm" style="flex:1;height:42px;border-color:var(--green);color:var(--green);" onclick="SYN.openSlip()">Submit slip</button>'+
         '<button class="btn btn-out btn-sm" style="flex:1;height:42px;" onclick="SYN.pushFeeds()">Push feeds</button>'+
       '</div>'+
-      (this.tierHasTelegram(myTier())?'<button class="btn btn-green btn-sm" style="height:44px;margin-top:8px;" onclick="SYN.getInvite()">Telegram</button>':'')
+      '<button class="btn btn-green btn-sm" style="height:44px;margin-top:8px;" onclick="SYN.openTier()">'+'<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\' stroke-linecap=\'round\' stroke-linejoin=\'round\' style=\'width:16px;height:16px;vertical-align:-3px;margin-right:6px;\'><path d=\'m22 3-9 9M22 3l-7 19-4-8-8-4z\'/></svg>'+'Syndicate group</button>'+
+      '<div style="display:flex;gap:8px;margin-top:8px;">'+
+        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;" onclick="SYN.openGeneral()">'+'<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\' stroke-linecap=\'round\' stroke-linejoin=\'round\' style=\'width:16px;height:16px;vertical-align:-3px;margin-right:6px;\'><path d=\'m22 3-9 9M22 3l-7 19-4-8-8-4z\'/></svg>'+'General</button>'+
+        '<button class="btn btn-out btn-sm" style="flex:1;height:42px;" id="syn-alarm-btn" onclick="SYN.toggleAlarm()">'+'<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\' stroke-linecap=\'round\' stroke-linejoin=\'round\' style=\'width:16px;height:16px;vertical-align:-3px;margin-right:6px;\'><path d=\'M18 15V10a6 6 0 1 0-12 0v5l-1.5 3h15z\'/><path d=\'M10 21h4\'/></svg>'+'Pick alarm</button>'+
+      '</div>'
       : '')+
     '</div>';
   },
@@ -6553,6 +6573,84 @@ var SYN = window.SYN = {
   /* Push feeds: a member who has been off the feed (suspended, or just come
      back online) taps this to opt straight back into syndicate pushes, so the
      notify list only holds people who actually want the next drop. */
+  /* ---------------- Pick alarm ----------------
+     When a pick drops, members who opted in get a buzz: a vibration pattern,
+     a distinct rising three-tone chime, and a notification. The tone is
+     generated with the Web Audio API so there's no audio file to ship and it
+     can't be confused with a normal message sound.
+
+     Honest limits: browsers only allow sound after the user has interacted
+     with the page at least once, and iOS Safari will not play audio from a
+     background push. So this fires reliably when the app is open, and falls
+     back to a system notification + vibration when it isn't. */
+  alarmOn:function(){ try{ return localStorage.getItem('bsp_alarm')!=='off'; }catch(e){ return true; } },
+  setAlarm:function(on){
+    try{ localStorage.setItem('bsp_alarm', on?'on':'off'); }catch(e){}
+    if(on) this.buzz(true);
+    if(App&&App.toast)App.toast(on?'Pick alarm on':'Pick alarm off');
+  },
+  /* Rising three-tone chime — deliberately unlike a normal notification. */
+  buzz:function(preview){
+    if(!preview && !this.alarmOn()) return;
+    try{
+      var AC=window.AudioContext||window.webkitAudioContext;
+      if(AC){
+        var ctx=this._ac||(this._ac=new AC());
+        if(ctx.state==='suspended') ctx.resume();
+        [[880,0],[1174,0.16],[1568,0.32]].forEach(function(step){
+          var o=ctx.createOscillator(), g=ctx.createGain();
+          o.type='triangle'; o.frequency.value=step[0];
+          o.connect(g); g.connect(ctx.destination);
+          var t=ctx.currentTime+step[1];
+          g.gain.setValueAtTime(0.0001,t);
+          g.gain.exponentialRampToValueAtTime(0.35,t+0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001,t+0.30);
+          o.start(t); o.stop(t+0.32);
+        });
+      }
+    }catch(e){}
+    try{ if(navigator.vibrate) navigator.vibrate([120,60,120,60,260]); }catch(e){}
+  },
+  /* Full alert: chime + vibration + a notification the member can tap. */
+  pickAlarm:function(title, body, href){
+    this.buzz();
+    try{
+      if(window.Notification && Notification.permission==='granted'){
+        var n=new Notification(title||'New syndicate pick', {
+          body: body||'Tap to open', tag:'bsp-pick', renotify:true,
+          vibrate:[120,60,120,60,260], icon:'/icon-192.png', badge:'/icon-192.png'
+        });
+        n.onclick=function(){ try{ window.focus(); }catch(e){} if(href) location.href=href; n.close(); };
+      }
+    }catch(e){}
+  },
+  askAlarmPermission:function(){
+    var self=this;
+    try{
+      if(!window.Notification){ if(App&&App.toast)App.toast('Alerts not supported on this browser'); return; }
+      Notification.requestPermission().then(function(p){
+        if(p==='granted'){ self.setAlarm(true); }
+        else if(App&&App.toast) App.toast('Allow notifications to get the pick buzz');
+      });
+    }catch(e){}
+  },
+  /* Poll for new pushes while the app is open, so a member who is looking at
+     the app still gets the buzz even without a service-worker push. */
+  watchPicks:function(){
+    var self=this;
+    if(this._watch) return;
+    this._watch=setInterval(function(){
+      if(typeof Api==='undefined'||!Api.get) return;
+      Api.get('/api/syndicate/latest').then(function(r){
+        if(!(r&&r.ok&&r.pick)) return;
+        var last=null; try{ last=localStorage.getItem('bsp_lastpick'); }catch(e){}
+        if(r.pick.ref && r.pick.ref!==last){
+          try{ localStorage.setItem('bsp_lastpick', r.pick.ref); }catch(e){}
+          if(last) self.pickAlarm('New syndicate pick', r.pick.text||'Tap to open', '#syndicate');
+        }
+      }).catch(function(){});
+    }, 45000);
+  },
   pushFeeds:function(){
     if(typeof Api==='undefined'||!Api.post){ if(App&&App.toast)App.toast('Not available'); return; }
     var self=this;
@@ -6583,6 +6681,41 @@ var SYN = window.SYN = {
   },
   /* Members get two rooms: their tier's group and the general group everyone
      shares. Show both rather than guessing which one they wanted. */
+  _invite:null,
+  fetchInvite:function(cb){
+    if(this._invite) return cb(this._invite);
+    var self=this;
+    Api.get('/api/syndicate/invite').then(function(r){ self._invite=r; cb(r); }).catch(function(){ cb(null); });
+  },
+  // Straight into the member's own tier channel — no menu in between.
+  openTier:function(){
+    if(App&&App.toast)App.toast('Opening your channel\u2026');
+    this.fetchInvite(function(r){
+      if(!(r&&r.ok)){ if(App&&App.toast)App.toast((r&&r.error==='not_compliant')?'Submit a slip and donate to unlock your channel':'No channel available yet'); return; }
+      var url=r.tierUrl||r.url;
+      if(!url){ if(App&&App.toast)App.toast('Your tier channel isn\u2019t set up yet'); return; }
+      try{ window.open(url,'_blank'); }catch(e){ location.href=url; }
+    });
+  },
+  openGeneral:function(){
+    this.fetchInvite(function(r){
+      var url=(r&&r.general)||'';
+      if(!url){ if(App&&App.toast)App.toast('General group isn\u2019t set up yet'); return; }
+      try{ window.open(url,'_blank'); }catch(e){ location.href=url; }
+    });
+  },
+  toggleAlarm:function(){
+    if(this.alarmOn()) this.setAlarm(false);
+    else if(window.Notification && Notification.permission!=='granted') this.askAlarmPermission();
+    else this.setAlarm(true);
+    this.paintAlarmBtn();
+  },
+  paintAlarmBtn:function(){
+    var b=document.getElementById('syn-alarm-btn'); if(!b) return;
+    var on=this.alarmOn();
+    b.style.borderColor = on ? 'var(--green)' : 'var(--border-2)';
+    b.style.color       = on ? 'var(--green)' : 'var(--text)';
+  },
   getInvite:function(){
     if(typeof Api==='undefined'||!Api.get) return;
     if(App&&App.toast)App.toast('Checking your access\u2026');
@@ -7036,9 +7169,50 @@ var SYN = window.SYN = {
 };
 
 /* boot */
+/* ---------------- Clip capture mode ----------------
+   ?clip=<id> renders one clip full-screen with no app chrome — built for
+   screen-recording into a GIF or short video.
+     ?clip=whygroup        one Syndicate clip
+     ?clip=p3              one Partner clip
+     ?clip=all&loop=1      every Syndicate clip, auto-advancing
+     ?clip=partner&loop=1  every Partner clip, auto-advancing
+   Tap or press → to step manually. &w=1080&h=1350 forces a size. */
+function clipCaptureMode(){
+  var q=new URLSearchParams(location.search);
+  var want=q.get('clip');
+  if(!want) return false;
+
+  var W=parseInt(q.get('w'),10)||1080, H=parseInt(q.get('h'),10)||1350;
+  var loop=q.get('loop')==='1';
+  var partner=(want==='partner' || /^p\d+$/.test(want));
+  var set=partner ? SYN.PROG_CLIPS : SYN.SYN_CLIPS;
+
+  var idx=0;
+  if(want!=='all' && want!=='partner'){
+    for(var i=0;i<set.length;i++){ if(set[i].id===want){ idx=i; break; } }
+  }
+
+  document.body.innerHTML='<div id="capstage" class="syc-stage"></div>';
+  document.body.style.cssText='margin:0;background:#000;display:grid;place-items:center;min-height:100vh;overflow:hidden;';
+  var st=document.getElementById('capstage');
+  st.style.cssText='width:'+W+'px;max-width:100vw;aspect-ratio:'+W+'/'+H+
+    ';border-radius:0;margin:0;position:relative;overflow:hidden;';
+
+  var draw=function(){ st.innerHTML=SYN.buildClip(set[idx%set.length], idx%set.length, set.length); };
+  draw();
+  if(loop) setInterval(function(){ idx++; draw(); }, 4000);
+  document.body.addEventListener('click', function(){ idx++; draw(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key==='ArrowRight'||e.key===' '){ idx++; draw(); }
+    if(e.key==='ArrowLeft'){ idx=(idx-1+set.length)%set.length; draw(); }
+  });
+  return true;
+}
+
 function boot(){
   if(typeof App==='undefined' || !App.go){ return setTimeout(boot,180); }
   SYN.install();
+  if(clipCaptureMode()) return;   // capture mode takes over the page entirely
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
 else boot();
