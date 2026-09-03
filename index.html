@@ -924,7 +924,8 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div class="sec">Support &amp; community</div>
       <div class="menu-card">
         <div class="menu-item" onclick="App.openSheet('aichat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="lab">Ask BetBot (AI assistant)</span><span class="chev">›</span></div>
-        <div class="menu-item" onclick="App.joinTelegram()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 3-9 9M22 3l-7 19-4-8-8-4z"/></svg><span class="lab">Join VIP Telegram group</span><span class="chev">›</span></div>
+        <div class="menu-item" onclick="App.shareJoin()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M12 16V3M8 7l4-4 4 4"/></svg><span class="lab">Share Betstack Pro</span><span class="chev">›</span></div>
+        <div class="menu-item" onclick="App.joinTelegram()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 3-9 9M22 3l-7 19-4-8-8-4z"/></svg><span class="lab">Join our Telegram community</span><span class="chev">›</span></div>
         <div class="menu-item" onclick="window.SYN&&SYN.getInvite&&SYN.getInvite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 3-9 9M22 3l-7 19-4-8-8-4z"/></svg><span class="lab">Telegram groups</span><span class="chev">›</span></div>
         <div class="menu-item" id="menu-connect-tg" style="display:none;" onclick="App.connectTelegram()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 3-9 9M22 3l-7 19-4-8-8-4z"/></svg><span class="lab">Connect my Telegram<span id="tg-connect-state" style="color:var(--green);font-size:.7rem;font-weight:600;margin-left:6px;"></span></span><span class="chev">›</span></div>
         <div class="menu-item" onclick="App.contactEmail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.2z"/></svg><span class="lab">Contact support</span><span class="chev">›</span></div>
@@ -1494,7 +1495,8 @@ const App={
     const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
     const draw=(list)=>{
       if(!list||!list.length){ el.innerHTML='<p class="sub" style="font-size:.8rem;">No predictions posted yet — check back soon.</p>'; return; }
-      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${this.koChip(p)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
+      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${this.koChip(p)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span>
+      <button class="pill" style="font-size:.58rem;padding:3px 8px;margin-left:6px;" onclick='event.stopPropagation();App.sharePick(${JSON.stringify({ref:p.ref||p.id,match:p.match,pick:p.pick,odds:p.odds})})'>Share</button></div>`).join('');
     };
     if(API_BASE){
       Api.getPredictions().then(r=>{
@@ -1701,7 +1703,8 @@ const App={
       const preds=(PREDICTIONS||[]).slice(0,4).map(p=>`<div class="predmini">
         <span class="pm-sport">${sportIc(p.sport)}</span>
         <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${this.koChip(p)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div>
-        <span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span></div>`).join('');
+        <span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span>
+      <button class="pill" style="font-size:.58rem;padding:3px 8px;margin-left:6px;" onclick='event.stopPropagation();App.sharePick(${JSON.stringify({ref:p.ref||p.id,match:p.match,pick:p.pick,odds:p.odds})})'>Share</button></div>`).join('');
       const codeCards=CODES.map(c=>{
         const owned=State.codes.has(String(c.id));const rc=c.risk.toLowerCase();
         const badge=c.sure?`<span class="tierbadge vip">VIP · Sure</span>`:`<span class="tierbadge">${this.tierName(this.neededTier(c))}+</span>`;
@@ -2231,7 +2234,9 @@ const App={
         <div class="bal-val">${this.money(r.balance)}</div><div class="bal-chg">${svg(ICON.up)} 10% of every payment from people you invite</div>
         <div class="bal-actions"><button class="btn ${canWithdraw?'btn-green':'btn-dark'}" ${canWithdraw?'':'disabled style="opacity:.55"'} onclick="App.openSheet('payout')">${svg(ICON.up)} ${r.pending?'Withdrawal under review':'Withdraw (min $'+r.min+')'}</button></div></div>
       <div class="sec">Your invite link</div>
-      <div class="ref-code"><b>${r.ref_code||'—'}</b><button class="btn btn-out btn-sm" style="width:auto;height:36px;padding:0 14px;" onclick="App.copyText('${link}')">Copy</button></div>
+      <div class="ref-code"><b>${r.ref_code||'—'}</b>
+        <button class="btn btn-out btn-sm" style="width:auto;height:36px;padding:0 12px;" onclick="App.copyText('${link}')">Copy</button>
+        <button class="btn btn-green btn-sm" style="width:auto;height:36px;padding:0 12px;" onclick="App.shareJoin()">Share</button></div>
       <button class="btn btn-green btn-sm" style="height:42px;" onclick="App.shareInvite('${link}')">${svg(ICON.up)} Share my link</button>
       <p class="sub" style="font-size:.82rem;margin:9px 2px 10px;">You've invited <b style="color:var(--fg);">${r.referred||0}</b> ${r.referred===1?'person':'people'}. You earn <b style="color:var(--green);">10%</b> of every membership payment they make — for as long as they stay.</p>
       ${tasks}
@@ -3405,6 +3410,55 @@ const App={
   },
   /* One row of destinations instead of repeating whole sections on home.
      Predictions, fixtures, news and results all live elsewhere already. */
+  /* ---------------- Sharing ----------------
+     Every share goes through /s/... on the API, which serves Open Graph tags
+     so the link unfurls into a proper preview card in Telegram, WhatsApp, X
+     and Facebook, then redirects a real visitor into the app.
+     Uses the native share sheet where available, clipboard everywhere else. */
+  shareBase(){
+    return (typeof API_BASE!=='undefined' && API_BASE) ? API_BASE.replace(/\/$/,'') : location.origin;
+  },
+  shareUrl(kind, key){
+    return this.shareBase()+'/s/'+kind+(key?('/'+encodeURIComponent(key)):'');
+  },
+  doShare(title, text, url){
+    const data={ title, text, url };
+    try{
+      if(navigator.share){ navigator.share(data).catch(()=>{}); return; }
+    }catch(e){}
+    try{
+      navigator.clipboard.writeText(text+'\n'+url);
+      this.toast('Link copied — paste it anywhere');
+    }catch(e){ this.toast(url); }
+  },
+  shareClip(id, label){
+    this.doShare('Betstack Pro — the Syndicate',
+      (label||'How the Syndicate works')+' — Betstack Pro',
+      this.shareUrl('clip', id));
+  },
+  sharePick(p){
+    const ref=p.ref||p.id||'';
+    const bits=[p.match||'', p.pick||''].filter(Boolean).join(' — ');
+    const odds=p.odds?(' @'+Number(p.odds).toFixed(2)):'';
+    this.doShare('Betstack Pro pick', bits+odds+' · published before kickoff', this.shareUrl('pick', ref));
+  },
+  shareResults(){
+    this.doShare('Betstack Pro — verified results',
+      'Every pick we make, win or loss, on the permanent record. Check it yourself.',
+      this.shareUrl('results'));
+  },
+  // Signup link carries the member's referral code when they have one.
+  shareJoin(){
+    const code=(State.ref&&State.ref.ref_code)||'';
+    this.doShare('Join Betstack Pro',
+      'A transparent betting syndicate — every result stays on the record and you keep 100% of what you win.',
+      code ? this.shareUrl('join', code) : this.shareUrl('join'));
+  },
+  shareBtn(onclick, label){
+    return `<button class="btn btn-out btn-sm" style="height:38px;" onclick="${onclick}">
+      ${svg('<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M12 16V3M8 7l4-4 4 4"/>')}
+      ${label||'Share'}</button>`;
+  },
   hubButtons(){
     // Four compact pills. Syndicate and Partner already have their own cards
     // higher up the page, so repeating them here was noise.
@@ -6304,7 +6358,10 @@ var SYN = window.SYN = {
         '<div class="syc-dots">'+this.PROG_CLIPS.map(function(_,k){
           return '<span class="syc-dot'+(k===i?' on':'')+'" onclick="SYN.gotoProg('+k+')"></span>'; }).join('')+'</div>'+
       '</div>'+
-      '<div style="text-align:center;font-size:.76rem;font-weight:700;margin:8px 0;">'+esc(c.lbl)+'</div>';
+      '<div style="display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0;">'+
+        '<span style="font-size:.76rem;font-weight:700;">'+esc(c.lbl)+'</span>'+
+        '<button class="pill" style="font-size:.62rem;padding:4px 10px;" onclick="App.shareClip(\''+c.id+'\',\''+esc(c.lbl).replace(/'/g,"")+'\')">Share</button>'+
+      '</div>';
   },
   gotoProg:function(i){
     var n=this.PROG_CLIPS.length; this._progClip=((i%n)+n)%n;
@@ -6350,8 +6407,11 @@ var SYN = window.SYN = {
       '<div class="syc-dots">'+this.SYN_CLIPS.map(function(_,k){
         return '<span class="syc-dot'+(k===i?' on':'')+'" onclick="SYN.gotoHome('+k+')"></span>'; }).join('')+'</div>'+
       '</div>'+
-      '<div style="text-align:center;font-size:.76rem;font-weight:700;margin:8px 0 0;">'+esc(c.lbl)+
-      ' <span class="sub" style="font-weight:600;">('+(i+1)+'/'+n+')</span></div>';
+      '<div style="display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0 0;">'+
+        '<span style="font-size:.76rem;font-weight:700;">'+esc(c.lbl)+'</span>'+
+        '<span class="sub" style="font-weight:600;">('+(i+1)+'/'+n+')</span>'+
+        '<button class="pill" style="font-size:.62rem;padding:4px 10px;" onclick="App.shareClip(\''+c.id+'\',\''+esc(c.lbl).replace(/'/g,"")+'\')">Share</button>'+
+      '</div>';
     this.attachSwipe('home-stage', function(){SYN.homeNext();}, function(){SYN.homePrev();});
   },
   gotoHome:function(i){
@@ -6368,7 +6428,10 @@ var SYN = window.SYN = {
         '<div class="syc-dots">'+this.SYN_CLIPS.map(function(_,k){
           return '<span class="syc-dot'+(k===i?' on':'')+'" onclick="SYN.gotoClip('+k+')"></span>'; }).join('')+'</div>'+
       '</div>'+
-      '<div style="text-align:center;font-size:.76rem;font-weight:700;margin:8px 0;">'+esc(c.lbl)+'</div>'+
+      '<div style="display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0;">'+
+        '<span style="font-size:.76rem;font-weight:700;">'+esc(c.lbl)+'</span>'+
+        '<button class="pill" style="font-size:.62rem;padding:4px 10px;" onclick="App.shareClip(\''+c.id+'\',\''+esc(c.lbl).replace(/'/g,"")+'\')">Share</button>'+
+      '</div>'+
       '<div class="clip-rail" id="syn-clip-rail">'+this.SYN_CLIPS.map(function(x,k){
         // Portrait, compact — a picker, not a second gallery.
         // compact landscape tiles — wide, short, easy to thumb along
