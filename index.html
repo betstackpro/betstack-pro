@@ -3533,7 +3533,16 @@ const App={
   openResults(){this._resultsBack=this.currentView();this.show('results');this.renderResults();},
   resultsBack(){const v=this._resultsBack||'hub';this.show(v==='results'?'hub':v);},
   trendSvg(chain){
-    const n=chain.length;if(!n)return'';let w=0;const pts=chain.map((c,i)=>{if(c.result==='won')w++;return w/(i+1);});
+    const n=chain.length;
+    // With no picks yet, still draw the frame and the 50% line so the chart
+    // reads as a chart waiting for data rather than a blank hole.
+    if(!n){
+      const W=320,H=96,pad=10, mid=pad+0.5*(H-2*pad);
+      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:96px;display:block;">
+        <line x1="${pad}" y1="${mid}" x2="${W-pad}" y2="${mid}" stroke="rgba(255,255,255,.18)" stroke-width="1" stroke-dasharray="4 4"/>
+      </svg>`;
+    }
+    let w=0;const pts=chain.map((c,i)=>{if(c.result==='won')w++;return w/(i+1);});
     const W=320,H=96,pad=10;const x=i=>n===1?W/2:pad+i*((W-2*pad)/(n-1));const y=v=>pad+(1-v)*(H-2*pad);
     const line=pts.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
     const area=`M${x(0).toFixed(1)} ${(H-pad).toFixed(1)} `+pts.map((v,i)=>`L${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')+` L${x(n-1).toFixed(1)} ${(H-pad).toFixed(1)} Z`;
@@ -3550,23 +3559,12 @@ const App={
     const chain=await this.buildChain();this._chain=chain;
     // No settled picks yet -> keep the page's full framing (stats grid at zero,
     // same copy) rather than a bare message. It must never invent a record.
-    if(!chain.length){
-      el.innerHTML=back+`
-        <div class="eyebrow">Transparency</div><h2 class="h2" style="margin:4px 0 6px;">Verified Results</h2>
-        <p class="sub" style="margin-bottom:14px;">Every pick is published before kickoff and recorded in a hash chain. Each entry's fingerprint includes the one before it, so no past result can be edited or removed without breaking every fingerprint after it. This page is computed live in your browser.</p>
-        <div class="res-stats">
-          <div class="res-stat"><div class="v">0</div><div class="k">Picks</div></div>
-          <div class="res-stat"><div class="v" style="color:var(--green);">0</div><div class="k">Won</div></div>
-          <div class="res-stat"><div class="v" style="color:var(--red);">0</div><div class="k">Lost</div></div>
-          <div class="res-stat"><div class="v">\u2014</div><div class="k">Hit rate</div></div>
-        </div>
-        <div class="empty" style="margin-top:14px;"><div class="ic">${svg(ICON.doc)}</div>
-          <p><b>The record starts here.</b><br>Every pick that settles is written to this page automatically \u2014 wins and losses both. We would rather show you an empty record than numbers we cannot prove.</p></div>`;
-      return;
-    }
+    // One layout for every case. With no picks it still renders the full page —
+    // stats at zero, a flat chart, the chain tools and the filters — so the
+    // record looks the same on day one as it will on day one hundred.
     const f=this._resFilter||(this._resFilter={result:'all',sport:'all'});
     const won=chain.filter(c=>c.result==='won').length,lost=chain.length-won;
-    const rate=Math.round(won/chain.length*100);
+    const rate=chain.length?Math.round(won/chain.length*100):0;
     let units=0;chain.forEach(c=>units+=c.result==='won'?(c.odds-1):-1);
     const fmt=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+new Date(t).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     const sports=['all',...Array.from(new Set(chain.map(c=>c.sport)))];
@@ -3576,7 +3574,10 @@ const App={
     const rows=shown.length?shown.map(o=>`<div class="res-row" onclick="App.openSheet('entry','${o.i}')">
         <div class="res-main"><div class="res-ev">${this.esc(o.c.event)}</div><div class="res-pick">${this.esc(o.c.pick)} · @ ${o.c.odds.toFixed(2)} · ${o.c.sport}</div><div class="res-date">${fmt(o.c.ts)} · published pre-kickoff</div></div>
         <div class="res-right"><span class="res-badge ${o.c.result}">${o.c.result.toUpperCase()}</span><span class="res-hash">${o.c.hash.slice(0,10)}…</span></div></div>`).join('')
-      :`<div class="empty"><div class="ic">${svg(ICON.doc)}</div><p>No picks match this filter.</p></div>`;
+      :(chain.length
+          ? `<div class="empty"><div class="ic">${svg(ICON.doc)}</div><p>No picks match this filter.</p></div>`
+          : `<div class="empty"><div class="ic">${svg(ICON.doc)}</div>
+              <p><b>The record starts here.</b><br>Every pick that settles is written to this page automatically — wins and losses both. We would rather show you an empty record than numbers we cannot prove.</p></div>`);
     el.innerHTML=back+`
       <div class="eyebrow">Transparency</div><h2 class="h2" style="margin:4px 0 6px;">Verified Results</h2>
       <p class="sub" style="margin-bottom:14px;">Every pick is published before kickoff and recorded in a hash chain. Each entry's fingerprint includes the one before it, so no past result can be edited or removed without breaking every fingerprint after it. This page is computed live in your browser.</p>
@@ -3584,12 +3585,13 @@ const App={
         <div class="res-stat"><div class="v">${chain.length}</div><div class="k">Picks</div></div>
         <div class="res-stat"><div class="v" style="color:var(--green);">${won}</div><div class="k">Won</div></div>
         <div class="res-stat"><div class="v" style="color:var(--red);">${lost}</div><div class="k">Lost</div></div>
-        <div class="res-stat"><div class="v">${rate}%</div><div class="k">Hit rate</div></div>
+        <div class="res-stat"><div class="v">${chain.length?rate+'%':'\u2014'}</div><div class="k">Hit rate</div></div>
       </div>
       <div class="sec">Cumulative hit rate</div>
-      <div class="res-chart">${this.trendSvg(chain)}<div class="res-chart-x"><span>${fmt(chain[0].ts).split(' ')[0]}</span><span>50% line</span><span>${fmt(chain[chain.length-1].ts).split(' ')[0]}</span></div></div>
+      <div class="res-chart">${this.trendSvg(chain)}<div class="res-chart-x"><span>${chain.length?fmt(chain[0].ts).split(' ')[0]:''}</span><span>50% line</span><span>${chain.length?fmt(chain[chain.length-1].ts).split(' ')[0]:''}</span></div></div>
       <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><p>Net result at 1 unit flat stake: <b style="color:${units>=0?'var(--green)':'var(--red)'};">${units>=0?'+':''}${units.toFixed(2)} units</b> across ${chain.length} settled picks. A positive record is never a guarantee of future results — picks lose too, and they all stay on this page.</p></div>
-      <div style="display:flex;gap:9px;margin:4px 0 14px;"><button class="btn btn-out btn-sm" style="flex:1;" onclick="App.verifyChain()">Verify chain</button><button class="btn btn-out btn-sm" style="flex:1;" onclick="App.copyLedger()">Copy ledger (JSON)</button></div>
+      <div style="display:flex;gap:9px;margin:4px 0 9px;"><button class="btn btn-out btn-sm" style="flex:1;" onclick="App.verifyChain()">Verify chain</button><button class="btn btn-out btn-sm" style="flex:1;" onclick="App.copyLedger()">Copy ledger (JSON)</button></div>
+      <button class="btn btn-green btn-sm" style="height:44px;margin-bottom:14px;" onclick="App.shareResults()">Share our record</button>
       <div class="sec">Full record</div>
       <div class="res-filters"><div class="res-chips">${chip('result','all','All')}${chip('result','won','Won')}${chip('result','lost','Lost')}</div>${sportSel}</div>
       <p class="sub" style="font-size:.72rem;margin:2px 2px 8px;">Showing ${shown.length} of ${chain.length} picks. Stats and the chain always cover the full record.</p>
