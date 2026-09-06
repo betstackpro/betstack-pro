@@ -7019,38 +7019,137 @@ var SYN = window.SYN = {
   /* Insert a real fixture (and its price) into a pick field, so you never type
      a match name by hand. Reuses the Match Center's already-loaded fixtures. */
   _lastFixture:null,
+  /* Full bookmaker-style game picker: date chips, league filter, kickoff-window
+     buttons, odds-range and a live search — so the admin can narrow to exactly
+     the games they want instead of scrolling one giant list. */
+  _fxq:'', _fxDay:'all', _fxLeague:'all', _fxWin:'all', _fxOdds:'all',
   addFromGames:function(targetId, oddsId){
     var self=this;
+    this._fxTarget=targetId; this._fxOdds=oddsId||'';
     var go=function(){
       var fx=(window.MC&&MC.fx)||[];
       if(!fx.length){ if(App&&App.toast)App.toast('No games loaded \u2014 open Games first'); return; }
-      var body='<div class="grab"></div><h3 class="h2" style="margin-bottom:4px;">Pick a game</h3>'+
-        '<p class="sub" style="font-size:.76rem;margin-bottom:12px;">Tap a match to drop it into the pick, with its 1X2 price.</p>'+
-        '<input class="input" placeholder="Search team or league\u2026" style="height:44px;margin-bottom:10px;" oninput="SYN._fxq=this.value.toLowerCase();SYN.paintFxPick(\''+targetId+'\',\''+(oddsId||'')+'\')">'+
-        '<div id="syn-fx-list"></div>';
-      self.sheet(body);
-      self._fxq='';
-      self.paintFxPick(targetId, oddsId||'');
+      self._fxq=''; self._fxDay='all'; self._fxLeague='all'; self._fxWin='all'; self._fxOdds='all';
+      self.sheet(self.pickerShell());
+      self.paintPicker();
     };
     if(window.MC && (MC.fx||[]).length) return go();
     if(window.MC && MC.load){ MC.load(); if(App&&App.toast)App.toast('Loading games\u2026'); setTimeout(go, 900); return; }
     if(App&&App.toast)App.toast('Games not available');
   },
-  paintFxPick:function(targetId, oddsId){
-    var el=document.getElementById('syn-fx-list'); if(!el) return;
-    var q=this._fxq||'';
-    var fx=((window.MC&&MC.fx)||[]).filter(function(f){
-      return !q || ((f.home+' '+f.away+' '+(f.league||'')).toLowerCase().indexOf(q)>=0);
-    }).slice(0,40);
-    if(!fx.length){ el.innerHTML='<p class="sub">No games match.</p>'; return; }
-    el.innerHTML=fx.map(function(f){
-      var od=f._od||{}, h=(od.h2h||{});
-      var t=new Date(f.start_ts);
-      return '<div class="sy-mrow" onclick="SYN.chooseFx(\''+esc(String(f.id))+'\',\''+targetId+'\',\''+(oddsId||'')+'\')">'+
-        '<div class="mid"><div class="n">'+esc(f.home)+' vs '+esc(f.away)+'</div>'+
-        '<div class="s">'+esc(f.league||'')+' \u00B7 '+t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</div></div>'+
-        (h.Home?'<span class="sy-tag active">'+Number(h.Home).toFixed(2)+'</span>':'')+'</div>';
-    }).join('');
+  pickerShell:function(){
+    return '<div class="grab"></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
+        '<h3 class="h2" style="flex:1;margin:0;">Add a game</h3>'+
+        '<span class="sub" id="fx-count" style="font-size:.7rem;"></span></div>'+
+      '<input class="input" placeholder="\uD83D\uDD0D Search team or league\u2026" style="height:44px;margin-bottom:9px;" '+
+        'oninput="SYN._fxq=this.value.toLowerCase();SYN.paintPicker()">'+
+      '<div id="fx-filters"></div>'+
+      '<div id="fx-list" style="max-height:52vh;overflow-y:auto;margin-top:8px;"></div>';
+  },
+  fxFilters:function(){
+    var fx=(window.MC&&MC.fx)||[];
+    // build day chips from the actual fixtures
+    var days={}, leagues={};
+    fx.forEach(function(f){
+      var d=new Date(f.start_ts); var k=d.toISOString().slice(0,10);
+      days[k]=(days[k]||0)+1;
+      if(f.league) leagues[f.league]=(leagues[f.league]||0)+1;
+    });
+    var today=new Date().toISOString().slice(0,10);
+    var tom=new Date(Date.now()+864e5).toISOString().slice(0,10);
+    var self=this;
+    var chip=function(val,label,active){
+      return '<button class="pill'+(active?' active':'')+'" style="flex-shrink:0;font-size:.7rem;" '+
+        'onclick="SYN._fxDay=\''+val+'\';SYN.paintPicker()">'+label+'</button>';
+    };
+    var dayRow='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;">'+
+      chip('all','All ('+fx.length+')', this._fxDay==='all')+
+      chip('today','Today ('+(days[today]||0)+')', this._fxDay==='today')+
+      chip('tom','Tomorrow ('+(days[tom]||0)+')', this._fxDay==='tom')+
+      Object.keys(days).sort().filter(function(k){return k!==today&&k!==tom;}).map(function(k){
+        var d=new Date(k+'T00:00:00');
+        return chip(k, d.toLocaleDateString(undefined,{weekday:'short',day:'numeric'})+' ('+days[k]+')', self._fxDay===k);
+      }).join('')+'</div>';
+
+    // kickoff window
+    var winRow='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;">'+
+      ['all:Any time','3:Next 3h','6:Next 6h','12:Next 12h','24:Next 24h'].map(function(w){
+        var parts=w.split(':');
+        return '<button class="pill'+(self._fxWin===parts[0]?' active':'')+'" style="flex-shrink:0;font-size:.68rem;" '+
+          'onclick="SYN._fxWin=\''+parts[0]+'\';SYN.paintPicker()">'+parts[1]+'</button>';
+      }).join('')+'</div>';
+
+    // odds range (on the home price)
+    var oddRow='<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;">'+
+      ['all:Any odds','low:1.20\u20131.80','mid:1.80\u20132.50','high:2.50+'].map(function(o){
+        var parts=o.split(':');
+        return '<button class="pill'+(self._fxOdds===parts[0]?' active':'')+'" style="flex-shrink:0;font-size:.68rem;" '+
+          'onclick="SYN._fxOdds=\''+parts[0]+'\';SYN.paintPicker()">'+parts[1]+'</button>';
+      }).join('')+'</div>';
+
+    // league dropdown
+    var lgOpts='<option value="all">All leagues ('+Object.keys(leagues).length+')</option>'+
+      Object.keys(leagues).sort().map(function(l){
+        return '<option value="'+esc(l)+'"'+(self._fxLeague===l?' selected':'')+'>'+esc(l)+' ('+leagues[l]+')</option>';
+      }).join('');
+    var lgRow='<select class="sel" style="height:40px;font-size:.8rem;margin-bottom:2px;" '+
+      'onchange="SYN._fxLeague=this.value;SYN.paintPicker()">'+lgOpts+'</select>';
+
+    return dayRow+winRow+oddRow+lgRow;
+  },
+  fxFiltered:function(){
+    var q=this._fxq||'', self=this;
+    var today=new Date().toISOString().slice(0,10);
+    var tom=new Date(Date.now()+864e5).toISOString().slice(0,10);
+    return ((window.MC&&MC.fx)||[]).filter(function(f){
+      if(q && (f.home+' '+f.away+' '+(f.league||'')).toLowerCase().indexOf(q)<0) return false;
+      var dk=new Date(f.start_ts).toISOString().slice(0,10);
+      if(self._fxDay==='today' && dk!==today) return false;
+      if(self._fxDay==='tom' && dk!==tom) return false;
+      if(self._fxDay!=='all' && self._fxDay!=='today' && self._fxDay!=='tom' && dk!==self._fxDay) return false;
+      if(self._fxLeague!=='all' && f.league!==self._fxLeague) return false;
+      if(self._fxWin!=='all'){
+        var hrs=(f.start_ts-Date.now())/3600000;
+        if(hrs<0 || hrs>Number(self._fxWin)) return false;
+      }
+      if(self._fxOdds!=='all'){
+        var h=((f._od||{}).h2h||{}).Home||0;
+        if(self._fxOdds==='low'  && !(h>=1.2 && h<1.8)) return false;
+        if(self._fxOdds==='mid'  && !(h>=1.8 && h<2.5)) return false;
+        if(self._fxOdds==='high' && !(h>=2.5)) return false;
+      }
+      return true;
+    }).sort(function(a,b){ return a.start_ts-b.start_ts; });
+  },
+  paintPicker:function(){
+    var fl=document.getElementById('fx-filters'); if(fl) fl.innerHTML=this.fxFilters();
+    var el=document.getElementById('fx-list'); if(!el) return;
+    var list=this.fxFiltered();
+    var cnt=document.getElementById('fx-count'); if(cnt) cnt.textContent=list.length+' game'+(list.length===1?'':'s');
+    if(!list.length){ el.innerHTML='<div class="empty" style="padding:24px;">No games match these filters.</div>'; return; }
+    // group by league for a bookmaker feel
+    var groups={}; list.slice(0,120).forEach(function(f){ var l=f.league||'Other'; (groups[l]=groups[l]||[]).push(f); });
+    var self=this;
+    el.innerHTML=Object.keys(groups).map(function(lg){
+      return '<div class="sy-sec" style="margin:10px 0 6px;">\u26BD '+esc(lg)+' <span class="sub" style="font-weight:400;">'+groups[lg].length+'</span></div>'+
+        groups[lg].map(function(f){
+          var od=f._od||{}, h=(od.h2h||{});
+          var t=new Date(f.start_ts);
+          var chips = (h.Home||h.Draw||h.Away)
+            ? '<div style="display:flex;gap:4px;flex-shrink:0;">'+
+                [['1',h.Home],['X',h.Draw],['2',h.Away]].map(function(o){
+                  return o[1]?'<span class="sy-tag" style="min-width:40px;text-align:center;font-family:var(--d);">'+Number(o[1]).toFixed(2)+'</span>':'';
+                }).join('')+'</div>'
+            : '<span class="sub" style="font-size:.64rem;">tap to pick</span>';
+          return '<div class="sy-mrow" style="cursor:pointer;" onclick="SYN.chooseFx(\''+esc(String(f.id))+'\',\''+self._fxTarget+'\',\''+(self._fxOdds||'')+'\')">'+
+            '<div style="min-width:44px;text-align:center;flex-shrink:0;">'+
+              '<div style="font-weight:700;font-size:.72rem;">'+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</div>'+
+              '<div class="sub" style="font-size:.58rem;">'+t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</div></div>'+
+            '<div class="mid" style="flex:1;min-width:0;"><div class="n" style="font-size:.84rem;">'+esc(f.home)+' <span class="sub" style="font-weight:400;">v</span> '+esc(f.away)+'</div></div>'+
+            chips+'</div>';
+        }).join('');
+    }).join('') + (list.length>120?'<p class="sub" style="text-align:center;font-size:.66rem;margin-top:8px;">Showing first 120 \u2014 narrow with the filters above.</p>':'');
   },
   chooseFx:function(fid, targetId, oddsId){
     var f=((window.MC&&MC.fx)||[]).filter(function(x){return String(x.id)===String(fid);})[0];
