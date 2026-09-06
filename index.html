@@ -5809,6 +5809,7 @@ var SYN = window.SYN = {
     h+='<div class="sy-sec">Your tier &amp; how to climb</div>';
     h+=this.tierPerks(tier);
     // explainer clips — every topic, skippable, back/forth like the home reel
+    h+='<div id="syn-inbox-slot"></div>';
     h+='<div id="syn-clips-slot">'+this.clipBoxHtml()+'</div>';
     setTimeout(function(){ SYN.attachSwipe('syn-stage', function(){SYN.clipNext();}, function(){SYN.clipPrev();}); },0);
     // proof vault teaser
@@ -5823,6 +5824,7 @@ var SYN = window.SYN = {
     body.innerHTML=h;
     this.paintAlarmBtn();
     this.watchPicks();
+    this.loadInbox();
   },
   hero:function(tier, m, wired){
     var meta=tierMeta().filter(function(t){return t.key===tier;})[0]||{name:tier,color:'#8a909a'};
@@ -6715,6 +6717,27 @@ var SYN = window.SYN = {
         }
       }).catch(function(){});
     }, 45000);
+  },
+  loadInbox:function(){
+    if(typeof Api==='undefined'||!Api.get) return;
+    var self=this;
+    Api.get('/api/syndicate/inbox').then(function(r){
+      var slot=document.getElementById('syn-inbox-slot'); if(!slot) return;
+      var items=(r&&r.items)||[];
+      if(!items.length){ slot.innerHTML=''; return; }
+      slot.innerHTML='<div class="sy-sec" style="display:flex;justify-content:space-between;align-items:center;">Your picks'+
+          (r.unseen?' <span class="sy-chip" style="background:var(--gold);color:#1a1400;">'+r.unseen+' new</span>':'')+'</div>'+
+        items.slice(0,6).map(function(x){
+          return '<div class="sy-card" style="padding:12px 14px;margin-bottom:7px;'+(x.seen?'':'border-color:var(--gold);')+'">'+
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'+
+              '<b style="font-size:.82rem;">'+esc(x.title||'Pick')+'</b>'+
+              (x.code?'<span style="font-family:var(--d);font-size:.66rem;color:var(--green);">'+esc(x.code)+'</span>':'')+
+              '<span class="sub" style="margin-left:auto;font-size:.62rem;">'+App.stamp(x.created_at)+'</span></div>'+
+            '<div class="sub" style="font-size:.78rem;line-height:1.5;white-space:pre-wrap;">'+esc(x.body||'')+'</div>'+
+          '</div>';
+        }).join('');
+      if(r.unseen){ Api.post('/api/syndicate/inbox/seen',{}).catch(function(){}); }
+    }).catch(function(){});
   },
   pushFeeds:function(){
     if(typeof Api==='undefined'||!Api.post){ if(App&&App.toast)App.toast('Not available'); return; }
