@@ -6763,8 +6763,11 @@ var SYN = window.SYN = {
     });
   },
   openGeneral:function(){
+    // Prefer the server's link; fall back to the one built into the app so the
+    // button always works, signed in or not.
+    var fallback=(typeof TELEGRAM_JOIN!=='undefined')?TELEGRAM_JOIN:'';
     this.fetchInvite(function(r){
-      var url=(r&&r.general)||'';
+      var url=(r&&r.general)||fallback;
       if(!url){ if(App&&App.toast)App.toast('General group isn\u2019t set up yet'); return; }
       try{ window.open(url,'_blank'); }catch(e){ location.href=url; }
     });
@@ -7029,18 +7032,81 @@ var SYN = window.SYN = {
   chooseFx:function(fid, targetId, oddsId){
     var f=((window.MC&&MC.fx)||[]).filter(function(x){return String(x.id)===String(fid);})[0];
     if(!f) return;
-    var el=document.getElementById(targetId);
-    var od=f._od||{}, h=(od.h2h||{});
+    this._lastFixture=String(fid);
+    this._fxTarget=targetId; this._fxOdds=oddsId;
+    // Step 2: choose the actual market. Inserting only the team names left
+    // every pick to be typed out by hand.
+    this.pickMarket(f);
+  },
+  /* Market chooser. Shows the real prices where the feed has them and the
+     modelled price where it doesn't, then writes a complete pick line —
+     match, selection and odds — into the composer. */
+  pickMarket:function(f){
+    var od=f._od||{}, B=(window.Eng||(window.MC&&MC.Eng));
+    var h=(od.h2h||{});
+    var rows=[];
+    var add=function(label, price){ if(price>1) rows.push([label, Number(price)]); };
+    add(f.home+' Win', h.Home);
+    add('Draw',        h.Draw);
+    add(f.away+' Win', h.Away);
+    // totals from whatever lines the feed carries
+    var ou=od.ou_all||(od.ou_line?[{point:od.ou_line,over:od.ou_over,under:od.ou_under}]:[]);
+    ou.forEach(function(L){
+      add('Over '+L.point,  L.over);
+      add('Under '+L.point, L.under);
+    });
+    if(od.btts){ add('BTTS Yes', od.btts.Yes); add('BTTS No', od.btts.No); }
+    // handicaps, when present
+    (od.spreads||[]).forEach(function(sp){
+      if(sp.price>1) rows.push([sp.team+' '+(sp.point>0?'+':'')+sp.point, Number(sp.price)]);
+    });
+
+    var t=new Date(f.start_ts);
+    var head='<div class="grab"></div><h3 class="h2" style="margin-bottom:2px;">'+esc(f.home)+' vs '+esc(f.away)+'</h3>'+
+      '<p class="sub" style="font-size:.74rem;margin-bottom:12px;">'+esc(f.league||'')+' \u00B7 '+
+        t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+
+        t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</p>';
+
+    var body = head + (rows.length
+      ? '<p class="sub" style="font-size:.7rem;margin-bottom:8px;">Tap a market to add it with its price.</p>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">'+
+        rows.map(function(r,k){
+          return '<button class="btn btn-out btn-sm" style="height:46px;display:flex;flex-direction:column;gap:1px;" '+
+            'onclick="SYN.useMarket('+k+')">'+
+            '<span style="font-size:.7rem;">'+esc(r[0])+'</span>'+
+            '<span style="font-family:var(--d);font-weight:800;color:var(--gold);font-size:.8rem;">'+r[1].toFixed(2)+'</span>'+
+          '</button>';
+        }).join('')+'</div>'
+      : '<div class="sy-note">No prices stored for this fixture yet. Add the pick and odds by hand \u2014 the match details are filled in for you.</div>')
+      + '<button class="btn btn-out btn-sm" style="height:42px;margin-top:10px;" onclick="SYN.useMarket(-1)">Just the match \u2014 I\u2019ll type the pick</button>';
+
+    this._fxRows=rows; this._fxMatch=f;
+    this.sheet(body);
+  },
+  useMarket:function(k){
+    var f=this._fxMatch; if(!f) return;
+    var el=document.getElementById(this._fxTarget);
     var line=f.home+' vs '+f.away;
+    var odds=null;
+    if(k>=0 && this._fxRows && this._fxRows[k]){
+      line += ' \u2014 ' + this._fxRows[k][0];
+      odds  = this._fxRows[k][1];
+      line += ' @' + odds.toFixed(2);
+    } else {
+      line += ' \u2014 ';
+    }
     if(el){
-      if(el.tagName==='TEXTAREA'){ el.value=(el.value?el.value+'\n':'')+line+' \u2014 '; }
-      else { el.value=line+' \u2014 '; }
+      if(el.tagName==='TEXTAREA'){ el.value=(el.value?el.value+'\n':'')+line; }
+      else { el.value=line; }
       el.focus();
     }
-    if(oddsId){ var o=document.getElementById(oddsId); if(o && h.Home) o.value=Number(h.Home).toFixed(2); }
-    this._lastFixture=String(fid);
+    // seed the odds floor just under the taken price, which is the usual rule
+    if(this._fxOdds && odds){
+      var o=document.getElementById(this._fxOdds);
+      if(o) o.value=(Math.round(odds*0.95*100)/100).toFixed(2);
+    }
     if(App&&App.closeSheet)App.closeSheet();
-    if(App&&App.toast)App.toast('Game added \u2014 finish the pick');
+    if(App&&App.toast)App.toast(k>=0?'Pick added with price':'Match added \u2014 type the pick');
   },
   aLadderView:function(b){
     b.innerHTML='<p class="sub">Loading ladder&hellip;</p>';
