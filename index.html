@@ -817,7 +817,7 @@ body.light .st{background:rgba(0,0,0,.04);}
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
         <button class="pill" onclick="App.openPanel('preds')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Predictions</button>
         <button class="pill" onclick="App.openPanel('matches')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Fixtures</button>
-        <button class="pill" onclick="App.openPanel('live')"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:6px;vertical-align:1px;animation:livePulse 1.1s infinite;"></span>Live</button>
+
         <button class="pill" onclick="App.openPanel('news')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h6M7 13h10M7 16h10"/></svg>News</button>
         <button class="pill" onclick="App.openPanel('reviews')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><path d="M12 4l2.4 5 5.6.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.6-.8z"/></svg>Reviews</button>
       </div>
@@ -2821,16 +2821,26 @@ const App={
       const mEl=document.getElementById('pr-match'); if(mEl&&parent.match)mEl.value=parent.match;
       const pEl=document.getElementById('pr-pick'); if(pEl)pEl.value=pickName;
       const oEl=document.getElementById('pr-odds'); if(oEl)oEl.value=price||'';
-      this.toast('Pick + odds set');
+      // auto-fill the kick-off from the chosen fixture so every posted pick
+      // carries its KO time without the admin typing it
+      const kEl=document.getElementById('pr-kick');
+      if(kEl && parent.date){
+        const dt=parent.time?(parent.date+'T'+parent.time):parent.date;
+        const ts=Date.parse(dt);
+        if(isFinite(ts)) kEl.value=new Date(ts-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+      }
+      const lEl=document.getElementById('pr-league');
+      if(lEl && parent.league && !lEl.value) lEl.value=parent.league;
+      this.toast('Pick, odds & kick-off set');
     } else {
       this.addSelRow({match:parent.match, date:parent.date, time:parent.time, pick:pickName, odds:price||''});
       this.toast('Game + pick + odds added');
     }
   },
-  choseMatch(match,date,time,odds){
+  choseMatch(match,date,time,odds,league){
     const ov=document.getElementById('match-picker'); if(ov)ov.remove();
     let od={}; try{ od=typeof odds==='string'?JSON.parse(odds||'{}'):(odds||{}); }catch(e){}
-    this._pickMatch={match,date,time,odds:od};
+    this._pickMatch={match,date,time,odds:od,league:league||''};
     this.openMarketPicker();
   },
   // Full bookmaker market catalog (1xBet/MSport-grade). Odds fill from the API;
@@ -3654,7 +3664,7 @@ const App={
       <line x1="${pad}" y1="${y(0.5).toFixed(1)}" x2="${W-pad}" y2="${y(0.5).toFixed(1)}" stroke="var(--border-2)" stroke-width="1" stroke-dasharray="3 3"/>
       <path d="${area}" fill="rgba(31,209,122,.10)"/><path d="${line}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round"/>${dots}</svg>`;
   },
-  setResFilter(kind,val){this._resFilter=this._resFilter||{result:'all',sport:'all'};this._resFilter[kind]=val;this.renderResults();},
+  setResFilter(kind,val){this._resFilter=this._resFilter||{result:'all',sport:'all',from:'',to:''};this._resFilter[kind]=val;this.renderResults();},
   async renderResults(){
     const el=document.getElementById('results-body');
     const back=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;"><div class="icon-btn" style="margin-left:-8px;" onclick="App.resultsBack()">${svg('<path d="M19 12H5M12 19l-7-7 7-7"/>')}</div></div>`;
@@ -3665,13 +3675,23 @@ const App={
     // One layout for every case. With no picks it still renders the full page —
     // stats at zero, a flat chart, the chain tools and the filters — so the
     // record looks the same on day one as it will on day one hundred.
-    const f=this._resFilter||(this._resFilter={result:'all',sport:'all'});
+    const f=this._resFilter||(this._resFilter={result:'all',sport:'all',from:'',to:''});
     const won=chain.filter(c=>c.result==='won').length,lost=chain.length-won;
     const rate=chain.length?Math.round(won/chain.length*100):0;
     let units=0;chain.forEach(c=>units+=c.result==='won'?(c.odds-1):-1);
     const fmt=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+new Date(t).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     const sports=['all',...Array.from(new Set(chain.map(c=>c.sport)))];
-    const shown=chain.map((c,i)=>({c,i})).filter(o=>(f.result==='all'||o.c.result===f.result)&&(f.sport==='all'||o.c.sport===f.sport));
+    const inDate=(ts)=>{
+      if(!f.from && !f.to) return true;
+      const d=new Date(ts); const day=d.toISOString().slice(0,10);
+      if(f.from && day < f.from) return false;
+      if(f.to   && day > f.to)   return false;
+      return true;
+    };
+    const shown=chain.map((c,i)=>({c,i})).filter(o=>
+      (f.result==='all'||o.c.result===f.result) &&
+      (f.sport==='all'||o.c.sport===f.sport) &&
+      inDate(o.c.ts));
     const chip=(kind,val,label)=>`<button class="res-chip ${f[kind]===val?'on':''}" onclick="App.setResFilter('${kind}','${val}')">${label}</button>`;
     const sportSel=`<select class="sel" style="height:38px;" onchange="App.setResFilter('sport',this.value)">${sports.map(s=>`<option value="${s}" ${f.sport===s?'selected':''}>${s==='all'?'All sports':s}</option>`).join('')}</select>`;
     const rows=shown.length?shown.map(o=>`<div class="res-row" onclick="App.openSheet('entry','${o.i}')">
@@ -3697,6 +3717,11 @@ const App={
       <button class="btn btn-green btn-sm" style="height:44px;margin-bottom:14px;" onclick="App.shareResults()">Share our record</button>
       <div class="sec">Full record</div>
       <div class="res-filters"><div class="res-chips">${chip('result','all','All')}${chip('result','won','Won')}${chip('result','lost','Lost')}</div>${sportSel}</div>
+      <div style="display:flex;gap:8px;align-items:end;margin:0 0 8px;">
+        <div style="flex:1;"><label class="sub" style="font-size:.6rem;display:block;margin-bottom:3px;">From</label><input class="input" type="date" style="height:40px;" value="${f.from||''}" onchange="App.setResFilter('from',this.value)"></div>
+        <div style="flex:1;"><label class="sub" style="font-size:.6rem;display:block;margin-bottom:3px;">To</label><input class="input" type="date" style="height:40px;" value="${f.to||''}" onchange="App.setResFilter('to',this.value)"></div>
+        ${(f.from||f.to)?`<button class="btn btn-out btn-sm" style="height:40px;" onclick="App.setResFilter('from','');App.setResFilter('to','')">Clear</button>`:''}
+      </div>
       <p class="sub" style="font-size:.72rem;margin:2px 2px 8px;">Showing ${shown.length} of ${chain.length} picks. Stats and the chain always cover the full record.</p>
       <div class="card" style="padding:2px 16px;">${rows}</div>
       <div class="note" style="margin-top:14px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><p>How to trust this: each fingerprint is the SHA-256 of the previous fingerprint plus the entry. For full tamper-proofing in production, the backend should also publish each fingerprint to an external, append-only log (a public timestamp service, signed feed, or blockchain anchor) so even the operator can't rewrite history.</p></div>`;
@@ -4411,6 +4436,55 @@ var MC = window.MC = {
   },
 
   /* ---------- render: page shell ---------- */
+  view:'all',
+  setView:function(v){
+    this.view=v;
+    var live=document.getElementById('mc-live-wrap'), all=document.getElementById('mc-all-wrap');
+    document.querySelectorAll('.mc-tab').forEach(function(b){ b.classList.remove('on'); });
+    (document.querySelectorAll('.mc-tab')[v==='live'?1:0]||{}).classList&&document.querySelectorAll('.mc-tab')[v==='live'?1:0].classList.add('on');
+    if(live) live.style.display=(v==='live')?'block':'none';
+    if(all)  all.style.display =(v==='live')?'none':'block';
+    if(v==='live') this.loadLive();
+  },
+  /* Live view inside Games: picked matches with a ticking score, refreshed
+     every 20s. Shows real detail (score, minute, league) or an honest empty
+     state explaining why it's empty. */
+  _liveTimer:null,
+  loadLive:function(){
+    var el=document.getElementById('mc-live-wrap'); if(!el) return;
+    var self=this;
+    if(typeof Api==='undefined'||!Api.get){ el.innerHTML='<div class="sy-note">Live needs a connection.</div>'; return; }
+    var paint=function(){
+      Api.get('/api/live/games').then(function(r){
+        var games=(r&&r.games)||[];
+        if(!games.length){
+          el.innerHTML='<div class="empty" style="padding:26px;">'+
+            '<div class="ic">'+svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>')+'</div>'+
+            '<p><b>No picked games in play.</b><br>Games you post a pick on appear here live \u2014 with the score and minute \u2014 as they kick off. If a match is live now and still not here, the live feed hasn\u2019t updated yet.</p></div>';
+          return;
+        }
+        var esc=function(x){return self.esc?self.esc(x):String(x||'');};
+        var live=games.filter(function(g){return g.state==='live';});
+        el.innerHTML=(live.length?'<div class="sy-note" style="border-color:var(--red);color:var(--red);margin-bottom:10px;">'+live.length+' game'+(live.length>1?'s':'')+' live now</div>':'')+
+          games.map(function(g){
+            var t=new Date(g.start_ts), right;
+            if(g.state==='live'){
+              right='<div style="text-align:right;flex-shrink:0;"><div style="font-family:var(--d);font-weight:800;font-size:1.2rem;">'+(g.sh==null?0:g.sh)+'<span class="sub"> \u2013 </span>'+(g.sa==null?0:g.sa)+'</div>'+
+                '<div style="font-size:.62rem;font-weight:800;color:var(--red);display:flex;align-items:center;gap:4px;justify-content:flex-end;"><span style="width:6px;height:6px;border-radius:50%;background:var(--red);animation:livePulse 1.1s infinite;"></span>'+(g.minute?g.minute+"'":'LIVE')+'</div></div>';
+            } else if(g.state==='ft'){
+              right='<div style="text-align:right;flex-shrink:0;"><div style="font-family:var(--d);font-weight:800;font-size:1.05rem;">'+(g.sh==null?0:g.sh)+'<span class="sub"> \u2013 </span>'+(g.sa==null?0:g.sa)+'</div><div style="font-size:.6rem;font-weight:800;color:var(--muted);">FULL TIME</div></div>';
+            } else {
+              right='<div style="text-align:right;flex-shrink:0;"><div style="font-weight:700;font-size:.82rem;color:var(--gold);">'+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</div><div class="sub" style="font-size:.6rem;">'+t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</div></div>';
+            }
+            return '<div class="card" style="padding:13px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px;'+(g.state==='live'?'border-color:rgba(245,73,92,.4);':'')+'">'+
+              '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.9rem;">'+esc(g.home)+' <span class="sub" style="font-weight:400;">v</span> '+esc(g.away)+'</div><div class="sub" style="font-size:.66rem;margin-top:2px;">'+esc(g.league||'')+'</div></div>'+right+'</div>';
+          }).join('');
+      }).catch(function(){ el.innerHTML='<div class="sy-note">Could not load live games.</div>'; });
+    };
+    paint();
+    clearInterval(this._liveTimer);
+    this._liveTimer=setInterval(function(){ if(document.getElementById('mc-live-wrap')&&self.view==='live') paint(); else clearInterval(self._liveTimer); }, 20000);
+  },
   render:function(){
     var el=document.getElementById('view-matches'); if(!el) return;
     el.innerHTML =
@@ -4418,30 +4492,39 @@ var MC = window.MC = {
         '<h2 class="h2" style="flex:1;">Games</h2>'+
         '<button class="pill" style="font-size:.66rem;padding:5px 10px;" onclick="MC.load(true)">&#8635;</button>'+
       '</div>'+
-      '<p class="sub" style="font-size:.7rem;margin-bottom:12px;">Full match detail &amp; markets &middot; tap a game to open all picks.</p>'+
+      '<p class="sub" style="font-size:.7rem;margin-bottom:10px;">Full match detail &amp; markets &middot; tap a game to open all picks.</p>'+
+      // Two views inside Games: the full selector, and Live (picked matches
+      // ticking in real time). Members and admin both see it.
+      '<div class="mc-tabs" style="margin-bottom:12px;">'+
+        '<button class="mc-tab'+((this.view!=='live')?' on':'')+'" onclick="MC.setView(\'all\')">All games</button>'+
+        '<button class="mc-tab'+((this.view==='live')?' on':'')+'" onclick="MC.setView(\'live\')"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:5px;vertical-align:1px;animation:livePulse 1.1s infinite;"></span>Live</button>'+
+      '</div>'+
+      '<div id="mc-live-wrap" style="display:'+((this.view==='live')?'block':'none')+';"></div>'+
+      '<div id="mc-all-wrap" style="display:'+((this.view==='live')?'none':'block')+';">'+
       '<input class="input" style="height:46px;margin-bottom:10px;" placeholder="&#128269; Search league or team&hellip;" '+
         'oninput="MC.q=this.value.toLowerCase();MC.paint()">'+
       '<div class="mc-selbar">'+
         '<span class="mc-seltitle">Selector</span>'+
         '<button class="mc-drop" id="mc-d-time" onclick="MC.panel(\'time\')">Start Time <i>&#9660;</i></button>'+
         '<button class="mc-drop" id="mc-d-odds" onclick="MC.panel(\'odds\')">Odds Range <i>&#9660;</i></button>'+
+        '<button class="mc-drop" id="mc-d-lg" onclick="MC.panel(\'lg\')">Leagues <i>&#9660;</i></button>'+
       '</div>'+
       '<div class="mc-panel" id="mc-p-time"></div>'+
       '<div class="mc-panel" id="mc-p-odds"></div>'+
       '<div class="mc-panel" id="mc-p-lg"></div>'+
-      '<div id="mc-list"><p class="sub">Loading matches&hellip;</p></div>';
+      '<div id="mc-list"><p class="sub">Loading matches&hellip;</p></div>'+
+      '</div>';   // close mc-all-wrap
+    if(this.view==='live') this.loadLive();
     this.paintFab();
   },
   panel:function(which){
     this.open = (this.open===which) ? null : which;
     // opening any panel also reveals the league tree, exactly like MSport
-    ['time','odds'].forEach(function(k){
+    ['time','odds','lg'].forEach(function(k){
       var b=document.getElementById('mc-d-'+k), p=document.getElementById('mc-p-'+k);
       if(b)b.classList.toggle('on', MC.open===k);
       if(p)p.classList.toggle('open', MC.open===k);
     });
-    var lg=document.getElementById('mc-p-lg');
-    if(lg) lg.classList.toggle('open', !!this.open);
     if(this.open){ this.draft=JSON.parse(JSON.stringify(this.live)); }
     this.paintPanels();
   },
@@ -4450,7 +4533,7 @@ var MC = window.MC = {
     var t=document.getElementById('mc-p-time'), o=document.getElementById('mc-p-odds'), l=document.getElementById('mc-p-lg');
     if(t&&this.open==='time') t.innerHTML=this.tplTime();
     if(o&&this.open==='odds') o.innerHTML=this.tplOdds();
-    if(l) l.innerHTML=this.tplLeagues()+this.tplApply();
+    if(l&&this.open==='lg') l.innerHTML=this.tplLeagues()+this.tplApply();
   },
   tplTime:function(){
     var self=this, s=this.draft;
