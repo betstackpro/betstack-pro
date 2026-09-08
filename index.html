@@ -32,7 +32,7 @@ body.light{--bg:#f2f4f7;--surface:#fff;--surface-2:#fff;--surface-3:#eef0f4;
   --border:rgba(0,0,0,.08);--border-2:rgba(0,0,0,.16);--text:#0d1015;--muted:#5b616d;--faint:#9aa0ac;
   --green-dim:rgba(31,209,122,.14);--gold-dim:rgba(244,183,64,.16);--red-dim:rgba(245,73,92,.1);--shadow:0 16px 44px rgba(0,0,0,.1);}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html{font-size:89%;}   /* base bumped 81% -> 89% (+10%) for readability */
+html{font-size:94%;}   /* base bumped 81% -> 89% (+10%) for readability */
 html,body{height:100%;}
 body{font-family:var(--b);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased;}
 ::-webkit-scrollbar{width:0;height:0;}
@@ -502,6 +502,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .hb:active{transform:scale(.97);}
 .hb-ic{width:17px;height:17px;display:grid;place-items:center;}
 .hb-ic svg{width:17px;height:17px;}
+.pm-koline{font-family:var(--d);font-weight:700;font-size:.72rem;color:var(--gold);margin-top:1px;}
 .pm-ko{font-family:var(--b);font-weight:600;font-size:.66rem;color:var(--gold);margin-left:8px;white-space:nowrap;}
 /* Live match tracker chip */
 .pm-live{display:inline-flex;align-items:center;gap:5px;margin-left:8px;font-size:.64rem;font-weight:800;
@@ -513,7 +514,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .pm-ft{display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-size:.62rem;font-weight:800;
   padding:2px 7px;border-radius:6px;background:var(--surface-3);color:var(--muted);}
 .pm-ft .sc{font-family:var(--d);color:var(--text);}
-.pm-meta{font-size:.6rem;color:var(--muted);margin-top:3px;letter-spacing:.01em;}
+.pm-meta{font-size:.66rem;color:var(--muted);margin-top:3px;letter-spacing:.01em;}
 .winpop-match{font-size:.92rem;color:var(--text);margin-top:8px;font-weight:600;}
 .winpop-odds{font-size:.8rem;color:var(--muted);margin-top:3px;}
 .paywait{display:flex;gap:8px;justify-content:center;margin-top:6px;}.paywait-dot{width:10px;height:10px;border-radius:50%;background:var(--green);animation:paywait-b 1.2s infinite ease-in-out both;}
@@ -1506,7 +1507,7 @@ const App={
     const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
     const draw=(list)=>{
       if(!list||!list.length){ el.innerHTML='<p class="sub" style="font-size:.8rem;">No predictions posted yet — check back soon.</p>'; return; }
-      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${this.liveChip(p)||this.koChip(p)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span>
+      el.innerHTML=list.slice(0,6).map(p=>`<div class="predmini"><span class="pm-sport">${sportIc(p.sport)}</span><div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${this.liveChip(p)||''}</div>${this.koLine(p)}<div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div><span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span>
       <button class="pill" style="font-size:.58rem;padding:3px 8px;margin-left:6px;" onclick='event.stopPropagation();App.sharePick(${JSON.stringify({ref:p.ref||p.id,match:p.match,pick:p.pick,odds:p.odds})})'>Share</button></div>`).join('');
     };
     if(API_BASE){
@@ -1713,7 +1714,7 @@ const App={
       const sportIc=s=>App.ic(({Football:'ball',Basketball:'ball',Tennis:'ball'})[s]||'crown',16);
       const preds=(PREDICTIONS||[]).slice(0,4).map(p=>`<div class="predmini">
         <span class="pm-sport">${sportIc(p.sport)}</span>
-        <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${this.liveChip(p)||this.koChip(p)}</div><div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div>
+        <div class="predmini-l"><div class="pm-match">${this.esc(p.match)}${this.liveChip(p)||''}</div>${this.koLine(p)}<div class="pm-pick">${this.esc(p.pick)} · @${(typeof p.odds==='number'?p.odds.toFixed(2):p.odds)}</div>${this.pickMeta(p)}</div>
         <span class="pm-stat ${p.status||'open'}">${(p.status||'open').toUpperCase()}</span>
       <button class="pill" style="font-size:.58rem;padding:3px 8px;margin-left:6px;" onclick='event.stopPropagation();App.sharePick(${JSON.stringify({ref:p.ref||p.id,match:p.match,pick:p.pick,odds:p.odds})})'>Share</button></div>`).join('');
       const codeCards=CODES.map(c=>{
@@ -3612,6 +3613,14 @@ const App={
     }
     return '';
   },
+  // Kickoff line shown under the match name: "7/09 20:00".
+  koLine(p){
+    const ko=p.start_ts||p.kickoff||p.kick_off;
+    if(!ko) return '';
+    const d=new Date(ko); if(isNaN(d)) return '';
+    const z=n=>String(n).padStart(2,'0');
+    return `<div class="pm-koline">${z(d.getDate())}/${z(d.getMonth()+1)} ${z(d.getHours())}:${z(d.getMinutes())}</div>`;
+  },
   koChip(p){
     const ko=p.start_ts||p.kickoff||p.kick_off;
     if(!ko) return '';
@@ -4967,8 +4976,8 @@ var MC = window.MC = {
         { t:'Double Chance', k:'three', picks:P(['1X ('+HN+'/Draw)','12 (No draw)','X2 (Draw/'+AN+')']) },
         { t:'Draw No Bet', k:'two', picks:P([HN+' DNB',AN+' DNB']) },
         OU('Over/Under Goals',[0.5,1.5,2.5,3.5,4.5]),
-        { t:'Both Teams To Score', k:'two', picks:P(['Yes','No']) },
-        { t:'Total Goals Odd/Even', k:'two', picks:P(['Odd','Even']) }
+        { t:'Both Teams To Score', k:'two', picks:P(['BTTS Yes','BTTS No']) },
+        { t:'Total Goals Odd/Even', k:'two', picks:P(['Total Goals Odd','Total Goals Even']) }
       ],
       handicap:[
         { t:'European Handicap', k:'grid', picks:P([HN+' -1',HN+' -2','Draw -1','Draw -2',AN+' +1',AN+' +2']) },
@@ -4978,26 +4987,26 @@ var MC = window.MC = {
       goals:[
         OU('Over/Under Goals',[0.5,1.5,2.5,3.5,4.5,5.5,6.5]),
         { t:'Multigoals', k:'grid', picks:P(['0-1 goals','1-2 goals','1-3 goals','1-4 goals','2-3 goals','2-4 goals','2-5 goals','3-4 goals','3-5 goals','3-6 goals','4-6 goals']) },
-        { t:'Exact Total Goals', k:'grid', picks:P(['0 goals','1 goal','2 goals','3 goals','4 goals','5 goals','6+ goals']) },
-        { t:'Goal Range', k:'grid', picks:P(['0-1','2-3','4-6','7+']) },
-        { t:'Correct Score', k:'grid', picks:P(scores) },
-        { t:'Race To 2 Goals', k:'three', picks:P([HN,'Neither',AN]) },
-        { t:'Race To 3 Goals', k:'three', picks:P([HN,'Neither',AN]) },
-        { t:'First Team To Score', k:'three', picks:P([HN,'No goal',AN]) },
-        { t:'Last Team To Score', k:'three', picks:P([HN,'No goal',AN]) }
+        { t:'Exact Total Goals', k:'grid', picks:P(['Exactly 0 goals','Exactly 1 goal','Exactly 2 goals','Exactly 3 goals','Exactly 4 goals','Exactly 5 goals','Exactly 6+ goals']) },
+        { t:'Goal Range', k:'grid', picks:P(['Goal Range 0-1','Goal Range 2-3','Goal Range 4-6','Goal Range 7+']) },
+        { t:'Correct Score', k:'grid', picks:P(scores.map(function(x){return 'Correct Score '+x;})) },
+        { t:'Race To 2 Goals', k:'three', picks:P(['Race to 2 \u2014 '+HN,'Race to 2 \u2014 Neither','Race to 2 \u2014 '+AN]) },
+        { t:'Race To 3 Goals', k:'three', picks:P(['Race to 3 \u2014 '+HN,'Race to 3 \u2014 Neither','Race to 3 \u2014 '+AN]) },
+        { t:'First Team To Score', k:'three', picks:P(['First Goal '+HN,'First Goal None','First Goal '+AN]) },
+        { t:'Last Team To Score', k:'three', picks:P(['Last Goal '+HN,'Last Goal None','Last Goal '+AN]) }
       ],
       halves:[
-        { t:'Half Time Result', k:'three', picks:P(['Home','Draw','Away']) },
-        { t:'Half Time / Full Time', k:'grid', picks:P(htft) },
+        { t:'Half Time Result', k:'three', picks:P(['HT Result '+HN,'HT Result Draw','HT Result '+AN]) },
+        { t:'Half Time / Full Time', k:'grid', picks:P(htft.map(function(x){return 'HT/FT '+x;})) },
         OU('1st Half Over/Under',[0.5,1.5,2.5],'','1st Half'),
         OU('2nd Half Over/Under',[0.5,1.5,2.5],'','2nd Half'),
-        { t:'1st Half BTTS', k:'two', picks:P(['Yes','No']) },
-        { t:'2nd Half BTTS', k:'two', picks:P(['Yes','No']) },
-        { t:'1st Half Double Chance', k:'three', picks:P(['1X','12','X2']) },
-        { t:'1st Half Correct Score', k:'grid', picks:P(['0-0','1-0','0-1','1-1','2-0','0-2','2-1','1-2','2-2']) },
-        { t:'Highest Scoring Half', k:'three', picks:P(['1st half','Equal','2nd half']) },
-        { t:'Goal In Both Halves', k:'two', picks:P(['Yes','No']) },
-        { t:'Both Halves Over 0.5', k:'two', picks:P(['Yes','No']) }
+        { t:'1st Half BTTS', k:'two', picks:P(['1st Half BTTS Yes','1st Half BTTS No']) },
+        { t:'2nd Half BTTS', k:'two', picks:P(['2nd Half BTTS Yes','2nd Half BTTS No']) },
+        { t:'1st Half Double Chance', k:'three', picks:P(['1st Half DC 1X','1st Half DC 12','1st Half DC X2']) },
+        { t:'1st Half Correct Score', k:'grid', picks:P(['1st Half CS 0-0','1st Half CS 1-0','1st Half CS 0-1','1st Half CS 1-1','1st Half CS 2-0','1st Half CS 0-2','1st Half CS 2-1','1st Half CS 1-2','1st Half CS 2-2']) },
+        { t:'Highest Scoring Half', k:'three', picks:P(['Highest Half \u2014 1st','Highest Half \u2014 Equal','Highest Half \u2014 2nd']) },
+        { t:'Goal In Both Halves', k:'two', picks:P(['Goal Both Halves Yes','Goal Both Halves No']) },
+        { t:'Both Halves Over 0.5', k:'two', picks:P(['Both Halves Over 0.5 Yes','Both Halves Over 0.5 No']) }
       ],
       teams:[
         OU(HN+' Total Goals',[0.5,1.5,2.5,3.5]),
@@ -5011,17 +5020,17 @@ var MC = window.MC = {
       ],
       corners:[
         OU('Total Corners',[7.5,8.5,9.5,10.5,11.5,12.5],' corners'),
-        { t:'Corners Odd/Even', k:'two', picks:P(['Odd','Even']) },
-        { t:'Corners 3-Way', k:'three', picks:P([HN+' most corners','Equal',AN+' most corners']) },
+        { t:'Corners Odd/Even', k:'two', picks:P(['Corners Odd','Corners Even']) },
+        { t:'Corners 3-Way', k:'three', picks:P(['Most Corners '+HN,'Most Corners Equal','Most Corners '+AN]) },
         { t:HN+' Corners', k:'grid', picks:P([HN+' over 3.5',HN+' over 4.5',HN+' over 5.5',HN+' over 6.5']) },
         { t:AN+' Corners', k:'grid', picks:P([AN+' over 3.5',AN+' over 4.5',AN+' over 5.5',AN+' over 6.5']) },
-        { t:'First Corner', k:'two', picks:P([HN,AN]) }
+        { t:'First Corner', k:'two', picks:P(['First Corner '+HN,'First Corner '+AN]) }
       ],
       cards:[
         OU('Total Cards',[2.5,3.5,4.5,5.5,6.5],' cards'),
-        { t:'Cards Odd/Even', k:'two', picks:P(['Odd','Even']) },
-        { t:'Most Cards', k:'three', picks:P([HN,'Equal',AN]) },
-        { t:'Red Card Shown', k:'two', picks:P(['Yes','No']) },
+        { t:'Cards Odd/Even', k:'two', picks:P(['Cards Odd','Cards Even']) },
+        { t:'Most Cards', k:'three', picks:P(['Most Cards '+HN,'Most Cards Equal','Most Cards '+AN]) },
+        { t:'Red Card Shown', k:'two', picks:P(['Red Card Yes','Red Card No']) },
         { t:HN+' Cards', k:'grid', picks:P([HN+' over 0.5',HN+' over 1.5',HN+' over 2.5',HN+' over 3.5']) },
         { t:AN+' Cards', k:'grid', picks:P([AN+' over 0.5',AN+' over 1.5',AN+' over 2.5',AN+' over 3.5']) }
       ],
@@ -5032,10 +5041,10 @@ var MC = window.MC = {
         { t:'Double Chance & BTTS', k:'grid', picks:P(['1X & BTTS','12 & BTTS','X2 & BTTS','1X & no BTTS','12 & no BTTS','X2 & no BTTS']) }
       ],
       specials:[
-        { t:'Winning Margin', k:'grid', picks:P([HN+' by 1',HN+' by 2',HN+' by 3+','Draw',AN+' by 1',AN+' by 2',AN+' by 3+']) },
+        { t:'Winning Margin', k:'grid', picks:P(['Margin '+HN+' by 1','Margin '+HN+' by 2','Margin '+HN+' by 3+','Margin Draw','Margin '+AN+' by 1','Margin '+AN+' by 2','Margin '+AN+' by 3+']) },
         { t:'Total Goals 0-1 / 2-3 / 4+', k:'three', picks:P(['Total 0-1 goals','Total 2-3 goals','Total 4+ goals']) },
-        { t:'Penalty Awarded', k:'two', picks:P(['Yes','No']) },
-        { t:'Own Goal', k:'two', picks:P(['Yes','No']) }
+        { t:'Penalty Awarded', k:'two', picks:P(['Penalty Awarded Yes','Penalty Awarded No']) },
+        { t:'Own Goal', k:'two', picks:P(['Own Goal Yes','Own Goal No']) }
       ],
       builder:[
         { t:'Popular Combinations', k:'builder', picks:P([
@@ -5082,11 +5091,11 @@ var MC = window.MC = {
           {lab:AN+' DNB', price:0, model:g?g.p2/(g.p1+g.p2):null} ]},
         { t:'Over/Under Goals', k:'ou', lines:[lineRow(0.5),lineRow(1.5),lineRow(2.5),lineRow(3.5),lineRow(4.5)] },
         { t:'Both Teams To Score', k:'two', picks:[
-          {k:'Yes', lab:'Yes', price:num(od.btts&&od.btts.Yes), model:g?Eng.btts(g):null},
-          {k:'No',  lab:'No',  price:num(od.btts&&od.btts.No),  model:g?1-Eng.btts(g):null} ]},
+          {k:'Yes', lab:'BTTS Yes', price:num(od.btts&&od.btts.Yes), model:g?Eng.btts(g):null},
+          {k:'No',  lab:'BTTS No',  price:num(od.btts&&od.btts.No),  model:g?1-Eng.btts(g):null} ]},
         { t:'Total Goals Odd/Even', k:'two', picks:[
-          {lab:'Odd',  price:0, model:g?Eng.totalOdd(g):null},
-          {lab:'Even', price:0, model:g?1-Eng.totalOdd(g):null} ]}
+          {lab:'Total Goals Odd',  price:0, model:g?Eng.totalOdd(g):null},
+          {lab:'Total Goals Even', price:0, model:g?1-Eng.totalOdd(g):null} ]}
       ],
       handicap:[
         { t:'European Handicap', k:'three', picks:(function(){
@@ -5131,13 +5140,13 @@ var MC = window.MC = {
             var h2=0,a2=0,nn=0,i,j;
             for(i=0;i<9;i++)for(j=0;j<9;j++){ var p=g.m[i][j];
               if(i>=2&&i>j) h2+=p; else if(j>=2&&j>i) a2+=p; else nn+=p; }
-            return [{lab:HN, price:0, model:h2},{lab:'Neither', price:0, model:nn},{lab:AN, price:0, model:a2}]; })() },
+            return [{lab:HN, price:0, model:h2},{lab:'Race to 2 — Neither', price:0, model:nn},{lab:AN, price:0, model:a2}]; })() },
         { t:'Race To 3 Goals', k:'three', picks:(function(){
             if(!g) return [];
             var h3=0,a3=0,nn=0,i,j;
             for(i=0;i<9;i++)for(j=0;j<9;j++){ var p=g.m[i][j];
               if(i>=3&&i>j) h3+=p; else if(j>=3&&j>i) a3+=p; else nn+=p; }
-            return [{lab:HN, price:0, model:h3},{lab:'Neither', price:0, model:nn},{lab:AN, price:0, model:a3}]; })() },
+            return [{lab:HN, price:0, model:h3},{lab:'Race to 3 — Neither', price:0, model:nn},{lab:AN, price:0, model:a3}]; })() },
         { t:'Goal Range', k:'grid', picks:(function(){
             if(!g) return [];
             return [['0-1',0,1],['2-3',2,3],['4-6',4,6],['7+',7,20]].map(function(r){
@@ -5145,13 +5154,13 @@ var MC = window.MC = {
         { t:'Correct Score', k:'grid', picks:(g?Eng.scores(g,12):[]).map(function(s){
             return {lab:s.s, price:0, model:s.p}; }) },
         { t:'Both Halves Over 0.5', k:'two', picks:[
-          {lab:'Yes', price:0, model:(hg&&sg)?Eng.over(hg,0.5)*Eng.over(sg,0.5):null},
-          {lab:'No',  price:0, model:(hg&&sg)?1-Eng.over(hg,0.5)*Eng.over(sg,0.5):null} ]}
+          {lab:'Both Halves Over 0.5 Yes', price:0, model:(hg&&sg)?Eng.over(hg,0.5)*Eng.over(sg,0.5):null},
+          {lab:'Both Halves Over 0.5 No',  price:0, model:(hg&&sg)?1-Eng.over(hg,0.5)*Eng.over(sg,0.5):null} ]}
       ],
       halves:[
         { t:'Half Time Result', k:'three', picks:[
           {lab:HN+' win', price:0, model:hg&&hg.p1},
-          {lab:'Draw',    price:0, model:hg&&hg.px},
+          {lab:'HT Result Draw',    price:0, model:hg&&hg.px},
           {lab:AN+' win', price:0, model:hg&&hg.p2} ]},
         { t:'1st Half Over/Under', k:'ou', lines:(function(){
             if(!hg) return [];
@@ -5162,8 +5171,8 @@ var MC = window.MC = {
             return [0.5,1.5,2.5].map(function(L){ var pv=Eng.over(sg,L);
               return { line:String(L), over:{lab:'2nd Half Over '+L,price:0,model:pv}, under:{lab:'2nd Half Under '+L,price:0,model:1-pv} }; }); })() },
         { t:'1st Half BTTS', k:'two', picks:[
-          {lab:'Yes', price:0, model:hg&&Eng.btts(hg)},
-          {lab:'No',  price:0, model:hg?1-Eng.btts(hg):null} ]},
+          {lab:'1st Half BTTS Yes', price:0, model:hg&&Eng.btts(hg)},
+          {lab:'1st Half BTTS No',  price:0, model:hg?1-Eng.btts(hg):null} ]},
         { t:'Half Time / Full Time', k:'grid', picks:(function(){
             if(!g) return [];
             var hf=Eng.grid(M.lh*0.44,M.la*0.44);
@@ -5176,12 +5185,12 @@ var MC = window.MC = {
         { t:'2nd Half BTTS', k:'two', picks:(function(){
             if(!g) return [];
             var sf=Eng.grid(M.lh*0.56,M.la*0.56);
-            return [{lab:'Yes',price:0,model:Eng.btts(sf)},{lab:'No',price:0,model:1-Eng.btts(sf)}]; })() },
+            return [{lab:'2nd Half BTTS Yes',price:0,model:Eng.btts(sf)},{lab:'2nd Half BTTS No',price:0,model:1-Eng.btts(sf)}]; })() },
         { t:'1st Half Double Chance', k:'three', picks:(function(){
             if(!g) return [];
             var hf=Eng.grid(M.lh*0.44,M.la*0.44);
-            return [{lab:'1X',price:0,model:hf.p1+hf.px},{lab:'12',price:0,model:hf.p1+hf.p2},
-                    {lab:'X2',price:0,model:hf.px+hf.p2}]; })() },
+            return [{lab:'1st Half DC 1X',price:0,model:hf.p1+hf.px},{lab:'1st Half DC 12',price:0,model:hf.p1+hf.p2},
+                    {lab:'1st Half DC X2',price:0,model:hf.px+hf.p2}]; })() },
         { t:'1st Half Correct Score', k:'grid', picks:(function(){
             if(!g) return [];
             var hf=Eng.grid(M.lh*0.44,M.la*0.44);
@@ -5190,13 +5199,13 @@ var MC = window.MC = {
             if(!g) return [];
             var hf=Eng.grid(M.lh*0.44,M.la*0.44), sf=Eng.grid(M.lh*0.56,M.la*0.56);
             var b=Eng.over(hf,0.5)*Eng.over(sf,0.5);
-            return [{lab:'Yes',price:0,model:b},{lab:'No',price:0,model:1-b}]; })() },
+            return [{lab:'Goal Both Halves Yes',price:0,model:b},{lab:'Goal Both Halves No',price:0,model:1-b}]; })() },
         { t:'Highest Scoring Half', k:'three', picks:(function(){
             if(!hg||!sg) return [];
             var e1=M.lh*0.44+M.la*0.44, e2=M.lh*0.56+M.la*0.56;
             var tot=e1+e2||1;
             return [{lab:'1st Half', price:0, model:e1/tot*0.9},
-                    {lab:'Equal',    price:0, model:0.16},
+                    {lab:'Highest Half — Equal',    price:0, model:0.16},
                     {lab:'2nd Half', price:0, model:e2/tot*0.9}]; })() }
       ],
       teams:[
@@ -5285,7 +5294,7 @@ var MC = window.MC = {
           { t:'Total Corners', k:'ou', lines:[line(7.5),line(8.5),line(9.5),line(10.5),line(11.5),line(12.5)] },
           { t:'Corners Odd/Even', k:'two', picks:(function(){
               var o=0,i; for(i=0;i<19;i++){ if(i%2) o+=Eng.pois(i,muC); }
-              return [{lab:'Odd',price:0,model:o},{lab:'Even',price:0,model:1-o}]; })() },
+              return [{lab:'Corners Odd',price:0,model:o},{lab:'Corners Even',price:0,model:1-o}]; })() },
           { t:'Corners 3-Way (handicap 0)', k:'three', picks:[
               {lab:HN+' most corners', price:0, model:cGrid.p1},
               {lab:'Equal', price:0, model:cGrid.px},
@@ -5308,14 +5317,14 @@ var MC = window.MC = {
           { t:'Total Cards', k:'ou', lines:[line(2.5),line(3.5),line(4.5),line(5.5),line(6.5)] },
           { t:'Cards Odd/Even', k:'two', picks:(function(){
               var o=0,i; for(i=0;i<13;i++){ if(i%2) o+=Eng.pois(i,muK); }
-              return [{lab:'Odd',price:0,model:o},{lab:'Even',price:0,model:1-o}]; })() },
+              return [{lab:'Cards Odd',price:0,model:o},{lab:'Cards Even',price:0,model:1-o}]; })() },
           { t:'Most Cards', k:'three', picks:[
               {lab:HN, price:0, model:kGrid.p1},
-              {lab:'Equal', price:0, model:kGrid.px},
+              {lab:'Most Cards Equal', price:0, model:kGrid.px},
               {lab:AN, price:0, model:kGrid.p2} ]},
           { t:'Red Card Shown', k:'two', picks:(function(){
               var pr=Math.min(0.34, muK*0.055);
-              return [{lab:'Yes',price:0,model:pr},{lab:'No',price:0,model:1-pr}]; })() },
+              return [{lab:'Red Card Yes',price:0,model:pr},{lab:'Red Card No',price:0,model:1-pr}]; })() },
           { t:HN+' Cards', k:'grid', picks:[0.5,1.5,2.5,3.5].map(function(L){
               return {lab:HN+' over '+L, price:0, model:Eng.teamOver(kGrid,'h',L)}; }) },
           { t:AN+' Cards', k:'grid', picks:[0.5,1.5,2.5,3.5].map(function(L){
@@ -5339,7 +5348,7 @@ var MC = window.MC = {
             var noGoal=g.m[0][0];
             var hFirst=(M.lh/(M.lh+M.la||1))*(1-noGoal);
             var aFirst=(M.la/(M.lh+M.la||1))*(1-noGoal);
-            return [{lab:HN, price:0, model:hFirst},{lab:'No goal', price:0, model:noGoal},{lab:AN, price:0, model:aFirst}]; })() }
+            return [{lab:HN, price:0, model:hFirst},{lab:'First Goal None', price:0, model:noGoal},{lab:AN, price:0, model:aFirst}]; })() }
       ],
       builder:[
         { t:'Popular Combinations', k:'builder', picks:(function(){
