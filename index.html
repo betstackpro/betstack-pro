@@ -1988,7 +1988,7 @@ const App={
                 '<div style="font-size:.6rem;font-weight:800;color:var(--muted);">FULL TIME</div></div>';
             } else {
               right='<div style="text-align:right;flex-shrink:0;">'+
-                '<div style="font-weight:700;font-size:.82rem;color:var(--gold);">'+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</div>'+
+                '<div style="font-weight:700;font-size:.82rem;color:var(--gold);">'+t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false})+'</div>'+
                 '<div class="sub" style="font-size:.6rem;">'+t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</div></div>';
             }
             return '<div class="card" style="padding:13px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px;'+
@@ -2004,7 +2004,7 @@ const App={
     clearInterval(this._liveGamesTimer);
     this._liveGamesTimer=setInterval(function(){
       if(document.getElementById('hub-live')) paint(); else clearInterval(self._liveGamesTimer);
-    }, 25000);
+    }, 120000);   // eased to protect D1 quota
   },
   loadHubScores(){
     const el=document.getElementById('hub-scores'); if(!el)return;
@@ -2066,7 +2066,7 @@ const App={
       const groups={};
       fx.slice(0,14).forEach(f=>{ const d=new Date(f.start_ts); const key=d.toDateString()===today?'Today':'Tomorrow'; (groups[key]=groups[key]||[]).push(f); });
       el.innerHTML=Object.entries(groups).map(([g,list])=>`<div class="sub" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">${g}</div>`+list.map(f=>{
-        const t=new Date(f.start_ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        const t=new Date(f.start_ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
         return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
@@ -2440,7 +2440,7 @@ const App={
     el.innerHTML=`<p class="sub" style="font-size:.7rem;margin-bottom:6px;">${total} game${total>1?'s':''}${total>120?' \u00B7 showing first 120 \u2014 use the filter':''}</p>`
     + Object.entries(days).map(([day,list])=>`<div class="sec" style="margin:12px 0 8px;">${day}</div>`+list.map(f=>{
       let odds={}; try{ odds=JSON.parse(f.odds||'{}'); }catch(e){}
-      const t=new Date(f.start_ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      const t=new Date(f.start_ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
       const dt=new Date(f.start_ts).toISOString().slice(0,10);
       const chips=[];
       if(odds.h2h){ if(odds.h2h.Home)chips.push(['1',odds.h2h.Home,f.home+' Win']); if(odds.h2h.Draw)chips.push(['X',odds.h2h.Draw,'Draw']); if(odds.h2h.Away)chips.push(['2',odds.h2h.Away,f.away+' Win']); }
@@ -2541,12 +2541,41 @@ const App={
     body.innerHTML=`<input class="input" placeholder="Search name, email, username\u2026" style="margin-bottom:10px;" oninput="App._userQ=this.value.toLowerCase();App.paintUsers()">
       <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px;">${['all','online','members','partners','admins'].map(f=>`<button class="pill ${this._userFilter===f?'active':''}" style="flex-shrink:0;" onclick="App._userFilter='${f}';App.paintUsers()">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}</div>
       <div id="dupe-warn"></div>
+      <div id="settle-review"></div>
       <div id="users-list"><p class="sub">Loading users\u2026</p></div>`;
     this.checkDuplicateEmails();
+    this.loadSettleReview();
     Api.adminUsers().then(r=>{ this._users=(r&&r.users)||[]; this.paintUsers(); }).catch(()=>{const el=document.getElementById('users-list');if(el)el.innerHTML='<p class="sub">Could not load users.</p>';});
   },
   /* Removing an account deletes the person's data but deliberately leaves the
      pick archive alone — that record has to survive for disputes. */
+  /* Settlement review: proposed results wait for your confirmation. Nothing
+     is published or sent to Telegram until you tap Confirm. */
+  loadSettleReview(){
+    const el=document.getElementById('settle-review'); if(!el) return;
+    Api.get('/api/admin/settle/review').then(r=>{
+      const items=(r&&r.items)||[];
+      if(!items.length){ el.innerHTML=''; return; }
+      el.innerHTML='<div class="sy-note" style="border-style:solid;border-color:var(--gold);color:var(--gold);margin-bottom:10px;">'+
+        '<b>'+items.length+' result'+(items.length>1?'s':'')+' waiting for your confirmation.</b><br>'+
+        'Nothing is posted until you confirm.</div>'+
+        items.map(x=>`<div class="sy-card" style="padding:12px 14px;margin-bottom:7px;">
+          <div style="font-weight:700;font-size:.86rem;">${this.esc(x.match)}</div>
+          <div class="sub" style="font-size:.76rem;">${this.esc(x.pick)} · final ${this.esc(x.score)}</div>
+          <div style="display:flex;gap:7px;margin-top:9px;">
+            <button class="btn btn-out btn-sm" style="flex:1;height:36px;border-color:var(--green);color:var(--green);" onclick="App.confirmSettle('${x.id}','won')">Confirm WON</button>
+            <button class="btn btn-out btn-sm" style="flex:1;height:36px;border-color:var(--red);color:var(--red);" onclick="App.confirmSettle('${x.id}','lost')">Confirm LOST</button>
+            <button class="btn btn-out btn-sm" style="height:36px;" onclick="App.confirmSettle('${x.id}','reject')">Skip</button>
+          </div></div>`).join('');
+    }).catch(()=>{});
+  },
+  confirmSettle(id,result){
+    const body=(result==='reject')?{id,action:'reject'}:{id,result};
+    Api.post('/api/admin/settle/confirm',body).then(r=>{
+      if(r&&r.ok){ this.toast(result==='reject'?'Skipped':'Settled '+result); this.loadSettleReview(); }
+      else this.toast((r&&r.error)||'Could not settle');
+    }).catch(()=>this.toast('Network error'));
+  },
   removeUser(id,label){
     if(!confirm('Remove '+label+'?\n\nTheir account and personal data are deleted. Posted picks stay in the archive.')) return;
     Api.post('/api/admin/users/delete',{id}).then(r=>{
@@ -2776,7 +2805,7 @@ const App={
     el.innerHTML=`<p class="sub" style="font-size:.7rem;margin-bottom:8px;">${fx.length} match${fx.length>1?'es':''}</p>`+Object.entries(byLeague).map(([lg,list])=>`
       <div class="sec" style="margin:12px 0 7px;">\u26BD ${this.esc(lg)} <span class="sub" style="font-size:.62rem;font-weight:400;">(${list.length})</span></div>
       ${list.map(f=>{
-        const dt=new Date(f.start_ts), t=dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), dstr=dt.toISOString().slice(0,10);
+        const dt=new Date(f.start_ts), t=dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}), dstr=dt.toISOString().slice(0,10);
         const day=dt.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
         return `<div class="card" style="padding:12px 14px;margin-bottom:6px;cursor:pointer;" onclick='App.choseMatch("${this.esc(f.home)} vs ${this.esc(f.away)}","${dstr}","${t}",${f.odds?JSON.stringify(f.odds).replace(/"/g,"&quot;"):"null"})'>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
@@ -3560,12 +3589,13 @@ const App={
     this.loadNews();
   },
   /* Timestamp helper: 28-09 12:33 pm. Used on every posted pick. */
+  // 24-hour clock everywhere. This is a global product, so the display must
+  // not flip to am/pm just because a phone is set that way.
   stamp(ts){
     if(!ts) return '';
     const d=new Date(ts); if(isNaN(d)) return '';
     const p=n=>String(n).padStart(2,'0');
-    let h=d.getHours(); const ap=h<12?'am':'pm'; h=h%12||12;
-    return p(d.getDate())+'-'+p(d.getMonth()+1)+' '+p(h)+':'+p(d.getMinutes())+' '+ap;
+    return p(d.getDate())+'-'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());
   },
   /* Stamp every pick with its reference, kickoff, league and posted time. The
      posted time is what shows a pick went out before kickoff. */
@@ -3597,7 +3627,7 @@ const App={
     pull();
     clearInterval(this._liveTimer);
     // only poll while something is actually live or near kickoff; still cheap
-    this._liveTimer=setInterval(pull, 30000);
+    this._liveTimer=setInterval(pull, 120000);   // was 30s — eased to protect D1 quota
   },
   liveChip(p){
     var key=((p.match||'')+'').toLowerCase();
@@ -4483,7 +4513,7 @@ var MC = window.MC = {
             } else if(g.state==='ft'){
               right='<div style="text-align:right;flex-shrink:0;"><div style="font-family:var(--d);font-weight:800;font-size:1.05rem;">'+(g.sh==null?0:g.sh)+'<span class="sub"> \u2013 </span>'+(g.sa==null?0:g.sa)+'</div><div style="font-size:.6rem;font-weight:800;color:var(--muted);">FULL TIME</div></div>';
             } else {
-              right='<div style="text-align:right;flex-shrink:0;"><div style="font-weight:700;font-size:.82rem;color:var(--gold);">'+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</div><div class="sub" style="font-size:.6rem;">'+t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</div></div>';
+              right='<div style="text-align:right;flex-shrink:0;"><div style="font-weight:700;font-size:.82rem;color:var(--gold);">'+t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false})+'</div><div class="sub" style="font-size:.6rem;">'+t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</div></div>';
             }
             return '<div class="card" style="padding:13px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px;'+(g.state==='live'?'border-color:rgba(245,73,92,.4);':'')+'">'+
               '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.9rem;">'+esc(g.home)+' <span class="sub" style="font-weight:400;">v</span> '+esc(g.away)+'</div><div class="sub" style="font-size:.66rem;margin-top:2px;">'+esc(g.league||'')+'</div></div>'+right+'</div>';
@@ -4492,7 +4522,7 @@ var MC = window.MC = {
     };
     paint();
     clearInterval(this._liveTimer);
-    this._liveTimer=setInterval(function(){ if(document.getElementById('mc-live-wrap')&&self.view==='live') paint(); else clearInterval(self._liveTimer); }, 20000);
+    this._liveTimer=setInterval(function(){ if(document.getElementById('mc-live-wrap')&&self.view==='live') paint(); else clearInterval(self._liveTimer); }, 120000);   // eased to protect D1 quota
   },
   render:function(){
     var el=document.getElementById('view-matches'); if(!el) return;
@@ -4717,7 +4747,7 @@ var MC = window.MC = {
     };
     var timeCol = live
       ? '<div class="t" style="color:var(--red)"><span class="mc-live"></span>'+(f.minute?f.minute+"'":'LIVE')+'</div>'
-      : '<div class="t">'+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</div>'+
+      : '<div class="t">'+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false})+'</div>'+
         '<div class="dd">'+d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</div>';
     var sh=(f.score_home!=null?f.score_home:''), sa=(f.score_away!=null?f.score_away:'');
     var scoreCol=(live||fin) ? '<div class="sc">'+sh+'<br>'+sa+'</div>' : '';
@@ -4741,7 +4771,7 @@ var MC = window.MC = {
     else {
       this.slip.push({ id:id, fid:f.id, match:f.home+' vs '+f.away, pick:label,
                        odds:price||0, date:new Date(f.start_ts).toISOString().slice(0,10),
-                       time:new Date(f.start_ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) });
+                       time:new Date(f.start_ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}) });
     }
     this.paintFab();
     if(this.det) this.paintDetail();
@@ -4898,7 +4928,7 @@ var MC = window.MC = {
     var clock = live ? (f.minute? f.minute+"'" : 'LIVE')
               : fin ? 'FT'
               : d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'})+' '+
-                d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+                d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
     var c=f.corners||{}, cd=f.cards||{};
     var na=function(v){ return v==null? '<span class="col na">&ndash;</span>' : '<span class="col">'+v+'</span>'; };
     var row=function(name, corners, cards, ht, ft){
@@ -6935,7 +6965,7 @@ var SYN = window.SYN = {
           if(last) self.pickAlarm('New syndicate pick', r.pick.text||'Tap to open', '#syndicate');
         }
       }).catch(function(){});
-    }, 45000);
+    }, 180000);  // eased to protect D1 quota
   },
   loadInbox:function(){
     if(typeof Api==='undefined'||!Api.get) return;
@@ -7228,7 +7258,7 @@ var SYN = window.SYN = {
   liveSession:null,
   startLive:function(){
     var tier=(document.getElementById('syn-lv-tier')||{}).value||'gold';
-    this.liveSession={ tier:tier||'gold', started:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), picks:0 };
+    this.liveSession={ tier:tier||'gold', started:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}), picks:0 };
     // Announce so members know to come online.
     if(typeof Api!=='undefined'&&Api.post){
       Api.post('/api/admin/syndicate/push',{tier:tier,text:'\uD83D\uDD34 LIVE SESSION starting now \u2014 be online. Picks drop with a minimum-odds floor.',min_odds:null}).catch(function(){});
@@ -7383,7 +7413,7 @@ var SYN = window.SYN = {
             : '<span class="sub" style="font-size:.64rem;">tap to pick</span>';
           return '<div class="sy-mrow" style="cursor:pointer;" onclick="SYN.chooseFx(\''+esc(String(f.id))+'\',\''+self._fxTarget+'\',\''+(self._fxOdds||'')+'\')">'+
             '<div style="min-width:44px;text-align:center;flex-shrink:0;">'+
-              '<div style="font-weight:700;font-size:.72rem;">'+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</div>'+
+              '<div style="font-weight:700;font-size:.72rem;">'+t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false})+'</div>'+
               '<div class="sub" style="font-size:.58rem;">'+t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+'</div></div>'+
             '<div class="mid" style="flex:1;min-width:0;"><div class="n" style="font-size:.84rem;">'+esc(f.home)+' <span class="sub" style="font-weight:400;">v</span> '+esc(f.away)+'</div></div>'+
             chips+'</div>';
@@ -7426,7 +7456,7 @@ var SYN = window.SYN = {
     var head='<div class="grab"></div><h3 class="h2" style="margin-bottom:2px;">'+esc(f.home)+' vs '+esc(f.away)+'</h3>'+
       '<p class="sub" style="font-size:.74rem;margin-bottom:12px;">'+esc(f.league||'')+' \u00B7 '+
         t.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+
-        t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'</p>';
+        t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false})+'</p>';
 
     var body = head + (rows.length
       ? '<p class="sub" style="font-size:.7rem;margin-bottom:8px;">Tap a market to add it with its price.</p>'+
