@@ -4505,8 +4505,7 @@ var MC = window.MC = {
         'oninput="MC.q=this.value.toLowerCase();MC.paint()">'+
       '<div class="mc-selbar">'+
         '<span class="mc-seltitle">Selector</span>'+
-        '<button class="mc-drop" id="mc-d-time" onclick="MC.panel(\'time\')">Start Time <i>&#9660;</i></button>'+
-        '<button class="mc-drop" id="mc-d-odds" onclick="MC.panel(\'odds\')">Odds Range <i>&#9660;</i></button>'+
+        '<button class="mc-drop" id="mc-d-time" onclick="MC.panel(\'time\')">Date &amp; time <i>&#9660;</i></button>'+
         '<button class="mc-drop" id="mc-d-lg" onclick="MC.panel(\'lg\')">Leagues <i>&#9660;</i></button>'+
       '</div>'+
       '<div class="mc-panel" id="mc-p-time"></div>'+
@@ -4627,7 +4626,13 @@ var MC = window.MC = {
   },
   togFav:function(n){ this.fav[n]=!this.fav[n]; event.stopPropagation(); this.paintPanels(); },
   togLg:function(n){ this.draft.leagues[n]=!this.draft.leagues[n]; this.paintPanels(); },
-  setF:function(k,v){ this.draft[k]=v; this.paintPanels(); },
+  setF:function(k,v){
+    this.draft[k]=v;
+    // apply immediately so a tap on Today/Tomorrow filters the list at once
+    this.live=JSON.parse(JSON.stringify(this.draft));
+    this.paintPanels();
+    this.paint();
+  },
   setOdds:function(a,b){ this.draft.oMin=a; this.draft.oMax=b; this.paintPanels(); },
   clearF:function(){
     this.draft={ day:'all', range:'all', hours:0, oMin:'', oMax:'', leagues:{} };
@@ -4663,12 +4668,30 @@ var MC = window.MC = {
         : 'No games stored yet. Run a fixtures refresh from the admin console.')+'</div>';
       return;
     }
-    var byLg={};
-    list.forEach(function(f){ (byLg[f._lg]=byLg[f._lg]||[]).push(f); });
+    // Group by DAY first (Today, Tomorrow, then each date), leagues nested
+    // inside each day — so today's games are always at the top, no scrolling.
+    var self=this;
+    var today=this.dayKey(Date.now());
+    var tom=this.dayKey(Date.now()+86400000);
+    var byDay={};
+    list.forEach(function(f){ var k=self.dayKey(f.start_ts); (byDay[k]=byDay[k]||[]).push(f); });
+    var dayLabel=function(k){
+      if(k===today) return 'Today';
+      if(k===tom) return 'Tomorrow';
+      var d=new Date(k+'T00:00:00');
+      return d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'});
+    };
     el.innerHTML='<p class="sub" style="font-size:.7rem;margin:2px 2px 4px;">'+list.length+' match'+(list.length>1?'es':'')+'</p>'+
-      Object.keys(byLg).map(function(lg){
-        return '<div class="mc-lgsec">&#9917; '+esc(lg)+'<span class="n">'+byLg[lg].length+'</span></div>'+
-          byLg[lg].map(function(f){ return MC.rowHtml(f); }).join('');
+      Object.keys(byDay).sort().map(function(dk){
+        var games=byDay[dk];
+        var byLg={};
+        games.forEach(function(f){ (byLg[f._lg||f.league||'Other']=byLg[f._lg||f.league||'Other']||[]).push(f); });
+        return '<div class="mc-daysec" style="position:sticky;top:0;z-index:2;background:var(--bg);font-family:var(--d);font-weight:800;font-size:.9rem;padding:9px 2px 6px;border-bottom:1px solid var(--border);margin:6px 0 4px;'+
+            (dk===today?'color:var(--green);':'')+'">'+dayLabel(dk)+' <span class="sub" style="font-weight:400;font-size:.66rem;">'+games.length+'</span></div>'+
+          Object.keys(byLg).map(function(lg){
+            return '<div class="mc-lgsec">&#9917; '+esc(lg)+'<span class="n">'+byLg[lg].length+'</span></div>'+
+              byLg[lg].map(function(f){ return MC.rowHtml(f); }).join('');
+          }).join('');
       }).join('');
     this.paintFab();
   },
@@ -4929,11 +4952,12 @@ var MC = window.MC = {
   staticGroups:function(f){
     var HN=f.home, AN=f.away;
     var P=function(labels){ return labels.map(function(l){ return {lab:l, price:0, model:null}; }); };
-    var OU=function(title, lines, suffix){
+    var OU=function(title, lines, suffix, pfx){
+      var P=pfx?(pfx+' '):'';
       return { t:title, k:'ou', lines:lines.map(function(L){
         return { line:String(L),
-          over:{lab:'Over '+L+(suffix||''), price:0, model:null},
-          under:{lab:'Under '+L+(suffix||''), price:0, model:null} }; }) };
+          over:{lab:P+'Over '+L+(suffix||''), price:0, model:null},
+          under:{lab:P+'Under '+L+(suffix||''), price:0, model:null} }; }) };
     };
     var scores=[]; for(var i=0;i<6;i++)for(var j=0;j<6;j++) scores.push(i+'-'+j);
     var htft=[]; ['1','X','2'].forEach(function(a){ ['1','X','2'].forEach(function(b){ htft.push(a+'/'+b); }); });
@@ -4965,8 +4989,8 @@ var MC = window.MC = {
       halves:[
         { t:'Half Time Result', k:'three', picks:P(['Home','Draw','Away']) },
         { t:'Half Time / Full Time', k:'grid', picks:P(htft) },
-        OU('1st Half Over/Under',[0.5,1.5,2.5]),
-        OU('2nd Half Over/Under',[0.5,1.5,2.5]),
+        OU('1st Half Over/Under',[0.5,1.5,2.5],'','1st Half'),
+        OU('2nd Half Over/Under',[0.5,1.5,2.5],'','2nd Half'),
         { t:'1st Half BTTS', k:'two', picks:P(['Yes','No']) },
         { t:'2nd Half BTTS', k:'two', picks:P(['Yes','No']) },
         { t:'1st Half Double Chance', k:'three', picks:P(['1X','12','X2']) },
@@ -5132,11 +5156,11 @@ var MC = window.MC = {
         { t:'1st Half Over/Under', k:'ou', lines:(function(){
             if(!hg) return [];
             return [0.5,1.5,2.5].map(function(L){ var pv=Eng.over(hg,L);
-              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} }; }); })() },
+              return { line:String(L), over:{lab:'1st Half Over '+L,price:0,model:pv}, under:{lab:'1st Half Under '+L,price:0,model:1-pv} }; }); })() },
         { t:'2nd Half Over/Under', k:'ou', lines:(function(){
             if(!sg) return [];
             return [0.5,1.5,2.5].map(function(L){ var pv=Eng.over(sg,L);
-              return { line:String(L), over:{lab:'Over '+L,price:0,model:pv}, under:{lab:'Under '+L,price:0,model:1-pv} }; }); })() },
+              return { line:String(L), over:{lab:'2nd Half Over '+L,price:0,model:pv}, under:{lab:'2nd Half Under '+L,price:0,model:1-pv} }; }); })() },
         { t:'1st Half BTTS', k:'two', picks:[
           {lab:'Yes', price:0, model:hg&&Eng.btts(hg)},
           {lab:'No',  price:0, model:hg?1-Eng.btts(hg):null} ]},
