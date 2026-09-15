@@ -6550,7 +6550,8 @@ var SYN = window.SYN = {
     setTimeout(function(){ SYN.attachSwipe('syn-stage', function(){SYN.clipNext();}, function(){SYN.clipPrev();}); },0);
     var signedIn=!!(window.State && State.role);
     el.innerHTML=
-      '<div style="display:flex;align-items:center;gap:5px;margin-bottom:10px;"><div class="icon-btn" style="margin-left:-8px;" onclick="App.go('hub')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'+
+        '<span style="font-size:1.4rem;cursor:pointer;" onclick="App.go(\''+(signedIn?'home':'hub')+'\')">&#8249;</span>'+
         '<h2 class="h2" style="flex:1;">The Syndicate</h2></div>'+
       '<p class="sub" style="font-size:.84rem;margin-bottom:14px;">A members\u2019 group that follows the same verified picks, together. '+
         'You always stake your own money and keep 100% of what you win.</p>'+
