@@ -801,12 +801,11 @@ body.light .st{background:rgba(0,0,0,.04);}
       </div>
       <div style="height:1px;background:var(--border);margin:11px 0;"></div>
       <div style="display:flex;gap:9px;margin-bottom:10px;">
-        <button class="btn btn-out" style="flex:1;border-color:var(--green);color:var(--green);" onclick="App.go('syninfo')">Why the Syndicate</button>
-        <button class="btn btn-out" style="flex:1;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')">Partner programme</button>
+        <button class="btn btn-out" style="flex:1;border-color:var(--green);color:var(--green);" onclick="App.go('syninfo')">Syndicate Member</button>
+        <button class="btn btn-out" style="flex:1;border-color:var(--gold);color:var(--gold);" onclick="App.go('program')"> Referral Partner </button>
       </div>
-      <button class="btn btn-out" onclick="App.openResults()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 3v18h18M7 16l4-4 3 3 5-6"/></svg> View our verified results</button>
-      <div class="sec">Today's free predictions</div>
-      <p class="sub" style="font-size:.78rem;margin:-6px 0 10px;">Free for everyone. Sign up and subscribe to unlock the full bet tips.</p>
+      <button class="btn btn-out" onclick="App.openResults()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 3v18h18M7 16l4-4 3 3 5-6"/></svg> Verified Results</button>
+     
       
       <div class="brand-reel" id="brand-reel-box">
         <iframe id="reel-a" class="reel-layer show" src="/clips.html#09_brand_intro" title="Betstack Pro" scrolling="no" onload="App.checkReel&&App.checkReel()"></iframe>
@@ -816,12 +815,16 @@ body.light .st{background:rgba(0,0,0,.04);}
         <div class="reel-dots" id="reel-dots"></div>
       </div>
       <div id="hub-nav" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;">
-        <button class="pill" onclick="App.openPanel('preds')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Predictions</button>
+        <button class="pill" onclick="App.openPanel('view-how')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>How it works</button>
         <button class="pill" onclick="App.openPanel('matches')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Fixtures</button>
 
         <button class="pill" onclick="App.openPanel('news')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h6M7 13h10M7 16h10"/></svg>News</button>
         <button class="pill" onclick="App.openPanel('reviews')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><path d="M12 4l2.4 5 5.6.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.6-.8z"/></svg>Reviews</button>
       </div>
+
+ <div class="sec">Today's free predictions</div>
+      <p class="sub" style="font-size:.78rem;margin:-6px 0 10px;">Free for everyone. Sign up and subscribe to unlock the full bet tips.</p>
+
       <div id="hub-preds"><p class="sub" style="font-size:.8rem;">Loading today's predictions…</p></div>
       <div id="hub-statstrip"></div>
     </div>
@@ -1062,15 +1065,15 @@ let TICKETS=[];
 const PERF=[{w:1,h:60},{w:0,h:40},{w:1,h:55},{w:1,h:72},{w:0,h:45},{w:1,h:58},{w:1,h:66},{w:0,h:34},{w:1,h:50},{w:1,h:78},{w:0,h:42},{w:1,h:62}];
 // Daily syndicate predictions (3 games) — admin marks results, shown to everyone
 let PREDICTIONS=[
-  {id:'p1',match:'LIV vs CHE',sport:'Football',league:'Premier League',pick:'Home Win',odds:2.10,risk:'Medium',status:'open'},
-  {id:'p2',match:'BAR vs RMA',sport:'Football',league:'La Liga',pick:'Over 2.5 Goals',odds:1.85,risk:'Low',status:'open'},
-  {id:'p3',match:'BAY vs DOR',sport:'Football',league:'Bundesliga',pick:'BTTS',odds:1.72,risk:'High',status:'open'},
+  {id:'p1',match:'Liverpool vs Chelsea',sport:'Football',league:'Premier League',pick:'Home Win',odds:2.10,risk:'Medium',status:'open'},
+  {id:'p2',match:'Barcelona vs Real Madrid',sport:'Football',league:'La Liga',pick:'Over 2.5 Goals',odds:1.85,risk:'Low',status:'open'},
+  {id:'p3',match:'Bayern Munich vs Dortmound',sport:'Football',league:'Bundesliga',pick:'BTTS',odds:1.72,risk:'High',status:'open'},
 ];
 // Community chat — interactive; seed messages are clearly labelled as a sample
 let CHAT=[
-  {who:'GoalHunter',me:false,text:'Following the LIV pick today, looks solid',ts:Date.now()-7*3600000},
-  {who:'SoccerDad',me:false,text:'How did the midweek double settle?',ts:Date.now()-14*60000},
-  {who:'PuntMaster',me:false,text:'Won — Inter & Napoli both came through.',ts:Date.now()-9*60000},
+  {who:'Admin',me:false,text:'share your review',ts:Date.now()-7*3600000},
+  {who:'Admin',me:false,text:'Hope youre making money here?',ts:Date.now()-14*60000},
+ 
 ];
 // Membership tiers — a fee buys FEATURES (not returns), and never gates withdrawals
 const TIERS=[
@@ -1243,10 +1246,10 @@ const App={
           }).catch(()=>this.toast('Network error during Telegram sign-in'));
         }
       );
-    }catch(e){ this.toast('Telegram widget needs setup \u2014 use email for now'); }
+    }catch(e){ this.toast('Telegram sign-in, coming soon \u2014 use email for now'); }
   },
   googleLogin(){
-    this.toast('Google sign-in is coming soon \u2014 please use email or Telegram');
+    this.toast('Google sign-in, coming soon \u2014 use email for now');
   },
   afterLogin(data){
     if(data.token)setToken(data.token);
