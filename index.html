@@ -1625,6 +1625,13 @@ const App={
         <div style="flex:1;"><div style="font-family:var(--d);font-weight:700;">No active plan</div><div class="sub" style="font-size:.76rem;">Subscribe from $15/mo to unlock tips.</div></div>
         <button class="btn btn-green btn-sm" style="height:38px;" onclick="App.openPlans('manage')">Plans</button>
       </div>
+<button class="btn btn-out mt" style="width:100%;" onclick="App.openResults()">${svg('<path d="M3 3v18h18M7 16l4-4 3 3 5-6"/>')} See our verified track record</button>
+      <div class="note">${svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>')}<p>Your subscription unlocks the tips — you place every bet yourself with your own money at your own bookmaker. We never hold your stake or your winnings. Tips can lose; bet responsibly. 18+.</p></div>
+      ${this.bookieStrip()}
+      ${this.hubButtons()}`;
+    }else if(State.role==='Partner'){
+      h=this.installBanner()+`<div class="hero green"><div class="glow"></div>
+        <div class="pill-eye" style="margin-bottom:14px;border-color:rgba(255,255,255,.4);">Partner</div>
 
 <div style="height:1px;background:var(--border);margin:11px 0;"></div>
 <button class="btn btn-green" onclick="App.logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg> JOIN NOW </button></div>
@@ -3694,7 +3701,7 @@ const App={
           <span class="sb">Click here - Sign up</span>
         </button>`).join('')}
       </div>
-      <p class="sub" style="font-size:.64rem;margin-top:4px;text-align:center;">Trusted Bookmakers. — click to get access to exclusive offers from the above sportsbooks. Place your own bets confidently, and make the most of your first-time bonuses. Convenience and potential rewards all in one place. You stake your own money and keep 100% of what you win. 18+.</p>`;
+      <p class="sub" style="font-size:.64rem;margin-top:4px;text-align:center;">Trusted Bookmakers. — click to get access to exclusive offers from the above sportsbooks. sign up confidently, and make the most of your first-time bonuses. Convenience and potential rewards all in one place. You stake our picks and keep 100% of what you win. 18+.</p>`;
   },
   openResults(){this._resultsBack=this.currentView();this.show('results');this.renderResults();},
   resultsBack(){const v=this._resultsBack||'hub';this.show(v==='results'?'hub':v);},
