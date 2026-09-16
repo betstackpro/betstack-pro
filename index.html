@@ -3506,9 +3506,9 @@ const App={
      Where members load the booking codes. These are affiliate links, which is
      disclosed on the strip — members should know how we're paid. */
   BOOKIES: [
-    { name:'1xBet',     sub:'Load your code',  url:'https://reffpa.com/L?tag=d_5833178m_97c_&site=5833178&ad=97&r=signup', color:'#1a7f37' },
-    { name:'Melbet',    sub:'Load your code',  url:'https://refpa3665.com/L?tag=d_5833225m_45415c_&site=5833225&ad=45415', color:'#f4b740' },
-    { name:'BetWinner', sub:'Load your code',  url:'https://bwredir.com/324N?p=%2Fregistration%2F', color:'#4da6ff' }
+    { name:'1xBet',     sub:'Sign upe',  url:'https://reffpa.com/L?tag=d_5833178m_97c_&site=5833178&ad=97&r=signup', color:'#1a7f37' },
+    { name:'Melbet',    sub:'Sign up',  url:'https://refpa3665.com/L?tag=d_5833225m_45415c_&site=5833225&ad=45415', color:'#f4b740' },
+    { name:'BetWinner', sub:'Sign up',  url:'https://bwredir.com/324N?p=%2Fregistration%2F', color:'#4da6ff' }
   ],
   /* Line-icon helper for App-side markup. Three call sites used App.ic() but
      it was never defined, which threw the moment a prediction row rendered. */
@@ -3691,10 +3691,10 @@ const App={
       <div class="bk-strip">${this.BOOKIES.map(b=>`
         <button class="bk-card" onclick="window.open('${b.url}','_blank')">
           <span class="lg">${b.name}</span>
-          <span class="sb">Sign up · load your code</span>
+          <span class="sb">Click here - Sign up</span>
         </button>`).join('')}
       </div>
-      <p class="sub" style="font-size:.64rem;margin-top:4px;text-align:center;">Partner bookmakers. These are affiliate links — we may earn a commission if you open an account. You stake your own money and keep 100% of what you win. 18+.</p>`;
+      <p class="sub" style="font-size:.64rem;margin-top:4px;text-align:center;">Trusted Bookmakers. — click to get access to exclusive offers from the above sportsbooks. Place your own bets confidently, and make the most of your first-time bonuses. Convenience and potential rewards all in one place. You stake your own money and keep 100% of what you win. 18+.</p>`;
   },
   openResults(){this._resultsBack=this.currentView();this.show('results');this.renderResults();},
   resultsBack(){const v=this._resultsBack||'hub';this.show(v==='results'?'hub':v);},
