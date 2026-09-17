@@ -2073,97 +2073,29 @@ const App={
       const el=document.getElementById('home-statstrip')||document.getElementById('hub-statstrip'); if(!el||!s||!s.ok)return;
       const total=s.won+s.lost; const rate=total?Math.round(s.won/total*100):0;
       el.innerHTML=`<div class="card" style="padding:12px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
-        <div><div style="font-weight:800;font-size:1.05rem;color:var(--green);">${s.won}W\u2013${s.lost}L</div><div class="sub" style="font-size:.62rem;">Verified Record${total?` \u00B7 ${rate}%`:''}</div></div>
+        <div><div style="font-weight:800;font-size:1.05rem;color:var(--green);">${s.won}W\u2013${s.lost}L</div><div class="sub" style="font-size:.62rem;">30-day record${total?` \u00B7 ${rate}%`:''}</div></div>
         <div><div style="font-weight:800;font-size:1.05rem;">${s.active_tips||0}</div><div class="sub" style="font-size:.62rem;">Active tips</div></div>
         <div><div style="font-weight:800;font-size:1.05rem;">${s.matches_tracked}</div><div class="sub" style="font-size:.62rem;">Matches tracked</div></div>
       </div>`;
     }).catch(()=>{});
     // Match center — today & tomorrow from our fixtures DB
-    Api.publicFixtures('football').then(r => {
-  const el = document.getElementById('home-matches') || document.getElementById('hub-matches'); 
-  if (!el) return;
-  
-  const rawFx = (r && r.fixtures) || [];
-  
-  // Filter out matches finished more than 135 minutes ago
-  const now = Date.now();
-  const CUTOFF_MS = 135 * 60 * 1000;
-  const fx = rawFx.filter(f => !f.start_ts || f.start_ts > now || (now - f.start_ts <= CUTOFF_MS));
-
-  if (!fx.length) {
-    el.innerHTML = '<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">No live or upcoming matches right now.</p></div>'; 
-    return;
-  }
-
-  const today = new Date().toDateString();
-  const groups = {};
-  fx.slice(0, 14).forEach(f => { 
-    const d = new Date(f.start_ts); 
-    const key = d.toDateString() === today ? 'Today' : 'Tomorrow'; 
-    (groups[key] = groups[key] || []).push(f); 
-  });
-
-  el.innerHTML = Object.entries(groups).map(([g, list]) => 
-    `<div class="sec" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">${g}</div>` + 
-    list.map(f => {
-      const t = new Date(f.start_ts).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', hour12: false});
-      return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
-          <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.82rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
-          <div class="sub" style="font-size:.64rem;">⚽ ${this.esc(f.league || '')}</div></div>
-        </div>
-      </div>`;
-    }).join('')
-  ).join('') + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.openPanel('preds')">See our predictions →</button>`;
-}).catch(() => {
-  const el = document.getElementById('home-matches') || document.getElementById('hub-matches');
-  if (el) el.innerHTML = '';
-});
- // 1. Helper to extract a clean local YYYY-MM-DD string
-      const getLocalDateStr = (ts) => {
-        const d = new Date(ts);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      };
-
-      const todayStr = getLocalDateStr(Date.now());
-      const tomorrowObj = new Date();
-      tomorrowObj.setDate(tomorrowObj.getDate() + 1);
-      const tomorrowStr = getLocalDateStr(tomorrowObj.getTime());
-
-      // 2. Group fixtures accurately by true local calendar days
-      const groups = {};
-      fx.forEach(f => {
-        const fDateStr = getLocalDateStr(f.start_ts);
-        let key = 'Other Dates';
-        if (fDateStr === todayStr) {
-          key = 'Today';
-        } else if (fDateStr === tomorrowStr) {
-          key = 'Tomorrow';
-        } else {
-          // Format future dates nicely e.g., "Fri, 18 Sep"
-          const d = new Date(f.start_ts);
-          key = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-        }
-        (groups[key] = groups[key] || []).push(f);
-      });
-
-      // 3. Render groups cleanly to the container
-      el.innerHTML = Object.entries(groups).map(([g, list]) => 
-        `<div class="sub" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">${g}</div>` + 
-        list.map(f => {
-          const t = new Date(f.start_ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-          return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
-              <div style="flex:1;min-width:0;">
-                <div style="font-weight:700;font-size:.82rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
-                <div class="sub" style="font-size:.64rem;">\u26BD ${this.esc(f.league || '')}</div>
-              </div>
-            </div>
-          </div>`;
-        }).join('')
-      ).join('');
+    Api.publicFixtures('football').then(r=>{
+      const el=document.getElementById('home-matches')||document.getElementById('hub-matches'); if(!el)return;
+      const fx=(r&&r.fixtures)||[];
+      if(!fx.length){ el.innerHTML='<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">Match schedule updates daily \u2014 check back soon.</p></div>'; return; }
+      const today=new Date().toDateString();
+      const groups={};
+      fx.slice(0,14).forEach(f=>{ const d=new Date(f.start_ts); const key=d.toDateString()===today?'Today':'Tomorrow'; (groups[key]=groups[key]||[]).push(f); });
+      el.innerHTML=Object.entries(groups).map(([g,list])=>`<div class="sub" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">${g}</div>`+list.map(f=>{
+        const t=new Date(f.start_ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+        return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
+            <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.82rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
+            <div class="sub" style="font-size:.64rem;">\u26BD ${this.esc(f.league||'')}</div></div>
+            ${f.id?this.statsBtn(f.id):''}
+          </div>
+        </div>`;}).join('')).join('')
         + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.openPanel('preds')">See our predictions →</button>`;
     }).catch(()=>{const el=document.getElementById('home-matches')||document.getElementById('hub-matches');if(el)el.innerHTML='';});
     // News & updates — real platform notifications
