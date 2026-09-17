@@ -4477,21 +4477,15 @@ var MC = window.MC = {
     }
     return out;
   },
-  match:function(f, skip){
+   match:function(f, skip){
     skip=skip||{};
     var s=this.draft, now=Date.now();
     if(!skip.day && s.day!=='all' && this.dayKey(f.start_ts)!==s.day) return false;
-    if(!skip.range && s.range!=='all'){
-      var end;
-      if(s.range==='3d') end=now+3*86400000;
-      else if(s.range==='7d') end=now+7*86400000;
-      else if(s.range==='wknd'){
-        var d=new Date(f.start_ts).getDay();
-        if(d!==0&&d!==6) return false;
-        end=now+7*86400000;
-      }
-      if(end && f.start_ts>end) return false;
-    }
+    
+    // --- RANGE FILTER REMOVED ---
+    // We bypass range filtering entirely since the buttons are gone:
+    // if(!skip.range && s.range!=='all'){ ... }
+
     if(!skip.hours && s.hours>0 && f.start_ts > now+s.hours*3600000) return false;
     if(!skip.odds && (s.oMin||s.oMax)){
       var o=f._od&&f._od.h2h, arr=o?[num(o.Home),num(o.Draw),num(o.Away)].filter(Boolean):[];
@@ -4646,12 +4640,6 @@ var MC = window.MC = {
     return '<p class="mc-lab">Daily</p><div class="mc-chips">'+
       '<button class="mc-chip'+(s.day==='all'?' on':'')+'" onclick="MC.setF(\'day\',\'all\')"><div class="d">All</div><div class="n">('+all+')</div></button>'+
       chips+'</div>'+
-      '<p class="mc-lab">Range</p><div class="mc-grid2">'+
-        r('all','All')+
-        r('3d','Next 3 days', function(f){ return f.start_ts<=now+3*86400000; })+
-        r('7d','Next 7 days', function(f){ return f.start_ts<=now+7*86400000; })+
-        r('wknd','This weekend', function(f){ var d=new Date(f.start_ts).getDay(); return d===0||d===6; })+
-      '</div>'+
       '<div class="mc-hoursrow"><b>Next hours</b><span id="mc-hrsv">'+s.hours+'</span></div>'+
       '<input type="range" class="mc-slider" min="0" max="24" step="3" value="'+s.hours+'" '+
         'oninput="document.getElementById(\'mc-hrsv\').textContent=this.value" '+
