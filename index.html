@@ -2528,8 +2528,7 @@ const App={
     fx = fx.filter(f => f.start_ts && new Date(f.start_ts).toISOString().slice(0, 10) === today);
   } else if (this._fxDay === 'tomorrow') {
     fx = fx.filter(f => f.start_ts && new Date(f.start_ts).toISOString().slice(0, 10) === tom);
-  }
-
+  
     if(this._fxQ) fx=fx.filter(f=>((f.league||'')+(f.home||'')+(f.away||'')).toLowerCase().includes(this._fxQ));
     const total=fx.length; fx=fx.slice(0,120);
     if(!fx.length){
