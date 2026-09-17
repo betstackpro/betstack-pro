@@ -1486,7 +1486,7 @@ const App={
     if(view==='how'){const e=document.getElementById('how-tiers');if(e)e.innerHTML=this.tierCards('info');}
     if(view==='settings')this.updateTelegramConnect();
     this.show(view);
-    document.getElementById('nav').classList.toggle('hide', view==='admin'||view==='hub');
+    document.getElementById('nav').classList.toggle('hide', view==='admin'||view==='hub'||view==='how'||!State.role);
     document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.nav===view));
   },
 
