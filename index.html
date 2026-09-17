@@ -4460,15 +4460,20 @@ var MC = window.MC = {
       self.loaded=true; self.err=null; self.paint();
     }).catch(function(){ self.err='load_failed'; self.paint(); });
   },
-
-  /* ---------- filter maths (also drives every count badge) ---------- */
-  dayKey:function(ts){ return new Date(ts).toISOString().slice(0,10); },
+    /* ---------- filter maths (also drives every count badge) ---------- */
+  dayKey:function(ts){ 
+    var d = new Date(ts);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  },
   days:function(){
     var out=[], i, d, today=new Date(); today.setHours(0,0,0,0);
     for(i=0;i<7;i++){
-      d=new Date(today.getTime()+i*86400000);
-      out.push({ k:d.toISOString().slice(0,10),
-                 lab: i===0?'Today': d.toLocaleDateString(undefined,{weekday:'short'}).toUpperCase() });
+      d=new Date(today.getTime() + i * 86400000);
+      var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      out.push({ 
+        k: k,
+        lab: i===0 ? 'Today' : d.toLocaleDateString('en-GB',{weekday:'short'}).toUpperCase() 
+      });
     }
     return out;
   },
