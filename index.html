@@ -2079,11 +2079,48 @@ const App={
       </div>`;
     }).catch(()=>{});
     // Match center — today & tomorrow from our fixtures DB
-    Api.publicFixtures('football').then(r=>{
-      const el=document.getElementById('home-matches')||document.getElementById('hub-matches'); if(!el)return;
-      const fx=(r&&r.fixtures)||[];
-      if(!fx.length){ el.innerHTML='<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">Match schedule updates daily \u2014 check back soon.</p></div>'; return; }
-            // 1. Helper to extract a clean local YYYY-MM-DD string
+    Api.publicFixtures('football').then(r => {
+  const el = document.getElementById('home-matches') || document.getElementById('hub-matches'); 
+  if (!el) return;
+  
+  const rawFx = (r && r.fixtures) || [];
+  
+  // Filter out matches finished more than 135 minutes ago
+  const now = Date.now();
+  const CUTOFF_MS = 135 * 60 * 1000;
+  const fx = rawFx.filter(f => !f.start_ts || f.start_ts > now || (now - f.start_ts <= CUTOFF_MS));
+
+  if (!fx.length) {
+    el.innerHTML = '<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">No live or upcoming matches right now.</p></div>'; 
+    return;
+  }
+
+  const today = new Date().toDateString();
+  const groups = {};
+  fx.slice(0, 14).forEach(f => { 
+    const d = new Date(f.start_ts); 
+    const key = d.toDateString() === today ? 'Today' : 'Tomorrow'; 
+    (groups[key] = groups[key] || []).push(f); 
+  });
+
+  el.innerHTML = Object.entries(groups).map(([g, list]) => 
+    `<div class="sec" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">${g}</div>` + 
+    list.map(f => {
+      const t = new Date(f.start_ts).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', hour12: false});
+      return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
+          <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.82rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
+          <div class="sub" style="font-size:.64rem;">⚽ ${this.esc(f.league || '')}</div></div>
+        </div>
+      </div>`;
+    }).join('')
+  ).join('') + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.openPanel('preds')">See our predictions →</button>`;
+}).catch(() => {
+  const el = document.getElementById('home-matches') || document.getElementById('hub-matches');
+  if (el) el.innerHTML = '';
+});
+ // 1. Helper to extract a clean local YYYY-MM-DD string
       const getLocalDateStr = (ts) => {
         const d = new Date(ts);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -2472,13 +2509,27 @@ const App={
     Api.adminFixtures(this._fxSport).then(r=>{ this._fxAll=(r&&r.fixtures)||[]; this.paintFixtures(); this.paintFixtureDays&&this.paintFixtureDays(); })
       .catch(()=>{ const el=document.getElementById('fx-list'); if(el)el.innerHTML='<p class="sub">Could not load games.</p>'; });
   },
-  paintFixtures(){
-    const el=document.getElementById('fx-list'); if(!el)return;
-    let fx=this._fxAll||[];
-    const today=new Date().toISOString().slice(0,10), tom=new Date(Date.now()+86400000).toISOString().slice(0,10);
-    if(this._fxDay==='today') fx=fx.filter(f=>new Date(f.start_ts).toISOString().slice(0,10)===today);
-    else if(this._fxDay==='tom') fx=fx.filter(f=>new Date(f.start_ts).toISOString().slice(0,10)===tom);
-    else if(this._fxDay&&this._fxDay!=='all') fx=fx.filter(f=>new Date(f.start_ts).toISOString().slice(0,10)===this._fxDay);
+ paintFixtures() {
+  const el = document.getElementById('fx-list'); 
+  if (!el) return;
+  
+  const rawFx = this._fxAll || [];
+  const now = Date.now();
+  const CUTOFF_MS = 135 * 60 * 1000;
+
+  // Filter out matches older than 135 minutes post-kickoff
+  let fx = rawFx.filter(f => !f.start_ts || f.start_ts > now || (now - f.start_ts <= CUTOFF_MS));
+
+  // Day filters
+  const today = new Date().toISOString().slice(0, 10);
+  const tom = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  
+  if (this._fxDay === 'today') {
+    fx = fx.filter(f => f.start_ts && new Date(f.start_ts).toISOString().slice(0, 10) === today);
+  } else if (this._fxDay === 'tomorrow') {
+    fx = fx.filter(f => f.start_ts && new Date(f.start_ts).toISOString().slice(0, 10) === tom);
+  }
+
     if(this._fxQ) fx=fx.filter(f=>((f.league||'')+(f.home||'')+(f.away||'')).toLowerCase().includes(this._fxQ));
     const total=fx.length; fx=fx.slice(0,120);
     if(!fx.length){
