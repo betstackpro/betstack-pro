@@ -2083,19 +2083,50 @@ const App={
       const el=document.getElementById('home-matches')||document.getElementById('hub-matches'); if(!el)return;
       const fx=(r&&r.fixtures)||[];
       if(!fx.length){ el.innerHTML='<div class="card" style="padding:14px;"><p class="sub" style="margin:0;">Match schedule updates daily \u2014 check back soon.</p></div>'; return; }
-      const today=new Date().toDateString();
-      const groups={};
-      fx.slice(0,14).forEach(f=>{ const d=new Date(f.start_ts); const key=d.toDateString()===today?'Today':'Tomorrow'; (groups[key]=groups[key]||[]).push(f); });
-      el.innerHTML=Object.entries(groups).map(([g,list])=>`<div class="sub" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">${g}</div>`+list.map(f=>{
-        const t=new Date(f.start_ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
-        return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
-            <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:.82rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
-            <div class="sub" style="font-size:.64rem;">\u26BD ${this.esc(f.league||'')}</div></div>
-            ${f.id?this.statsBtn(f.id):''}
-          </div>
-        </div>`;}).join('')).join('')
+            // 1. Helper to extract a clean local YYYY-MM-DD string
+      const getLocalDateStr = (ts) => {
+        const d = new Date(ts);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      };
+
+      const todayStr = getLocalDateStr(Date.now());
+      const tomorrowObj = new Date();
+      tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+      const tomorrowStr = getLocalDateStr(tomorrowObj.getTime());
+
+      // 2. Group fixtures accurately by true local calendar days
+      const groups = {};
+      fx.forEach(f => {
+        const fDateStr = getLocalDateStr(f.start_ts);
+        let key = 'Other Dates';
+        if (fDateStr === todayStr) {
+          key = 'Today';
+        } else if (fDateStr === tomorrowStr) {
+          key = 'Tomorrow';
+        } else {
+          // Format future dates nicely e.g., "Fri, 18 Sep"
+          const d = new Date(f.start_ts);
+          key = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        }
+        (groups[key] = groups[key] || []).push(f);
+      });
+
+      // 3. Render groups cleanly to the container
+      el.innerHTML = Object.entries(groups).map(([g, list]) => 
+        `<div class="sub" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 6px;">${g}</div>` + 
+        list.map(f => {
+          const t = new Date(f.start_ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+          return `<div class="card" style="padding:10px 14px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:.72rem;font-weight:700;color:var(--sub);min-width:44px;">${t}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:.82rem;">${this.esc(f.home)} <span class="sub">vs</span> ${this.esc(f.away)}</div>
+                <div class="sub" style="font-size:.64rem;">\u26BD ${this.esc(f.league || '')}</div>
+              </div>
+            </div>
+          </div>`;
+        }).join('')
+      ).join('');
         + `<button class="btn btn-out btn-sm" style="width:100%;height:38px;margin-top:4px;" onclick="App.openPanel('preds')">See our predictions →</button>`;
     }).catch(()=>{const el=document.getElementById('home-matches')||document.getElementById('hub-matches');if(el)el.innerHTML='';});
     // News & updates — real platform notifications
