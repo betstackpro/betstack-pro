@@ -2447,21 +2447,45 @@ const App={
   
   const rawFx = this._fxAll || [];
   const now = Date.now();
-  const CUTOFF_MS = 130 * 60 * 1000; // 130 minutes post-kickoff cutoff
+  const CUTOFF_MS = 130 * 60 * 1000; // 130 minutes
 
-  // Filter out matches older than 130 minutes past kickoff time, or missing timestamps
-  let fx = rawFx.filter(f => !f.start_ts || f.start_ts > now || (now - f.start_ts <= CUTOFF_MS));
+  // Helper to safely convert any timestamp format to milliseconds
+  const getMs = (ts) => {
+    if (!ts) return 0;
+    if (typeof ts === 'number') {
+      return ts < 1e12 ? ts * 1000 : ts; // Handles seconds vs milliseconds
+    }
+    return new Date(ts).getTime(); // Handles ISO strings / date strings
+  };
 
-  // Define date strings for filtering
+  // Filter out matches older than 130 minutes past kickoff
+  let fx = rawFx.filter(f => {
+    const tMs = getMs(f.start_ts);
+    if (!tMs) return true; // Keep if timestamp is missing
+    const elapsed = now - tMs;
+    // Keep if game hasn't started yet OR elapsed time is within the 130-minute cutoff
+    return tMs > now || elapsed <= CUTOFF_MS;
+  });
+
+  // Day filters
   const today = new Date().toISOString().slice(0, 10);
   const tom = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-
+  
   if (this._fxDay === 'today') {
-    fx = fx.filter(f => f.start_ts && new Date(f.start_ts).toISOString().slice(0, 10) === today);
+    fx = fx.filter(f => {
+      const tMs = getMs(f.start_ts);
+      return tMs && new Date(tMs).toISOString().slice(0, 10) === today;
+    });
   } else if (this._fxDay === 'tomorrow') {
-    fx = fx.filter(f => f.start_ts && new Date(f.start_ts).toISOString().slice(0, 10) === tom);
+    fx = fx.filter(f => {
+      const tMs = getMs(f.start_ts);
+      return tMs && new Date(tMs).toISOString().slice(0, 10) === tom;
+    });
   } else if (this._fxDay && this._fxDay !== 'all') {
-    fx = fx.filter(f => f.start_ts && new Date(f.start_ts).toISOString().slice(0, 10) === this._fxDay);
+    fx = fx.filter(f => {
+      const tMs = getMs(f.start_ts);
+      return tMs && new Date(tMs).toISOString().slice(0, 10) === this._fxDay;
+    });
   }
 
   if (this._fxQ) {
@@ -2480,15 +2504,17 @@ const App={
 
   const days = {};
   fx.forEach(f => { 
-    const key = new Date(f.start_ts).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); 
+    const tMs = getMs(f.start_ts);
+    const key = new Date(tMs).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); 
     (days[key] = days[key] || []).push(f); 
   });
 
   el.innerHTML = `<p class="sub" style="font-size:.7rem;margin-bottom:6px;">${total} game${total > 1 ? 's' : ''}${total > 120 ? ' · showing first 120 — use the filter' : ''}</p>`
     + Object.entries(days).map(([day, list]) => `<div class="sec" style="margin:12px 0 8px;">${day}</div>` + list.map(f => {
+      const tMs = getMs(f.start_ts);
       let odds = {}; try { odds = JSON.parse(f.odds || '{}'); } catch (e) {}
-      const t = new Date(f.start_ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-      const dt = new Date(f.start_ts).toISOString().slice(0, 10);
+      const t = new Date(tMs).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const dt = new Date(tMs).toISOString().slice(0, 10);
       const chips = [];
       if (odds.h2h) { 
         if (odds.h2h.Home) chips.push(['1', odds.h2h.Home, f.home + ' Win']); 
@@ -2511,11 +2537,12 @@ const App={
         <div class="sub" style="font-size:.68rem;margin-bottom:8px;">${this.esc(f.league || '')} · ${t}</div>
         <div class="sub" style="font-size:.64rem;margin-bottom:5px;">👇 Tap a pick to add it to your slip:</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${picksHtml}
-          <button class="pill" style="font-size:.7rem;padding:6px 11px;border-color:var(--green);color:var(--green);" onclick='App.openAllMarkets(${JSON.stringify({ m: this.esc(f.home) + " vs " + this.esc(f.away), d: new Date(f.start_ts).toISOString().slice(0, 10), t: t, odds: f.odds || null }).replace(/'/g, "&#39;")})'>＋ All markets</button>
+          <button class="pill" style="font-size:.7rem;padding:6px 11px;border-color:var(--green);color:var(--green);" onclick='App.openAllMarkets(${JSON.stringify({ m: this.esc(f.home) + " vs " + this.esc(f.away), d: new Date(tMs).toISOString().slice(0, 10), t: t, odds: f.odds || null }).replace(/'/g, "&#39;")})'>＋ All markets</button>
           ${this.statsBtn(f.id)}</div>
       </div>`;
     }).join('')).join('');
 },
+
 
   refreshFixtures(){
     this.toast('Fetching this week\u2019s games\u2026');
