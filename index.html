@@ -34,6 +34,11 @@ body.light{--bg:#f2f4f7;--surface:#fff;--surface-2:#fff;--surface-3:#eef0f4;
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html{font-size:94%;}   /* base bumped 81% -> 89% (+10%) for readability */
 html,body{height:100%;}
+/* Lock the page so it can never scroll or rubber-band behind the app (fixes nav 'dragging'),
+   and paint the canvas the same colour as the nav so no black strip can show under it. */
+html{position:fixed;inset:0;width:100%;overflow:hidden;overscroll-behavior:none;background:#101216;}
+html:has(body.light){background:#fff;}
+body{position:fixed;inset:0;width:100%;overflow:hidden;overscroll-behavior:none;}
 body{font-family:var(--b);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased;}
 ::-webkit-scrollbar{width:0;height:0;}
 button{font-family:var(--b);cursor:pointer;border:none;background:none;color:inherit;}
@@ -335,6 +340,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 /* bottom nav */
 .nav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--border);padding-bottom:0;z-index:30;}
 .nav.hide{display:none;}
+body.fitfull .nav{padding-bottom:14px;}
 .navitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 0 4px;color:var(--faint);}
 .navitem svg{width:23px;height:23px;}
 .navitem span{font-size:.62rem;font-weight:700;}
@@ -964,7 +970,7 @@ body.light .st{background:rgba(0,0,0,.04);}
         <button class="btn btn-out btn-sm" style="height:44px;border-color:var(--red);color:var(--red);" onclick="App.deleteAccount()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Delete account</button>
         <button class="btn btn-red btn-sm" style="height:44px;" onclick="App.logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Log out</button>
       </div>
-      <p class="center muted" style="margin-top:18px;font-size:.72rem;line-height:1.5;">© 2026 Betstack Pro v2.1 · All rights reserved.<br>Gambling involves risk. Please bet responsibly. 18+ &amp; above.</p>
+      <p class="center muted" style="margin-top:18px;font-size:.72rem;line-height:1.5;">© 2026 Betstack Pro v2.1 · All rights reserved.<br><span id="dbg" style="opacity:.6;font-size:.62rem;">build 7</span><br>Gambling involves risk. Please bet responsibly. 18+ &amp; above.</p>
     </div>
 
   </div>
@@ -978,6 +984,40 @@ body.light .st{background:rgba(0,0,0,.04);}
 </div>
 
 <div class="overlay" id="overlay" onclick="if(event.target===this)App.closeSheet()"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* Home-screen app on iPhone: the page viewport can stop short of the real screen bottom,
+   leaving a black strip under the nav. Stretch the shell to the full physical screen. */
+(function(){
+  var sh=document.querySelector('.shell'); if(!sh) return;
+  function fit(){
+    try{
+      var sa=window.navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+      var portrait=window.innerHeight>window.innerWidth;
+      if(sa&&portrait&&screen.height>window.innerHeight+2){
+        sh.style.bottom='auto'; sh.style.height=screen.height+'px'; document.body.classList.add('fitfull');
+      }else{
+        sh.style.bottom=''; sh.style.height=''; document.body.classList.remove('fitfull');
+      }
+    }catch(e){}
+  }
+  document.addEventListener('touchmove',function(e){
+    if(e.target.closest&&e.target.closest('.nav,.topbar'))e.preventDefault();
+  },{passive:false});
+  fit(); window.addEventListener('resize',fit);
+  function dbg(){
+    try{
+      var d=document.getElementById('dbg'); if(!d) return;
+      var pr=document.createElement('div'); pr.style.cssText='position:fixed;left:0;bottom:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden;';
+      document.body.appendChild(pr); var sab=parseFloat(getComputedStyle(pr).paddingBottom)||0; pr.remove();
+      var r=sh.getBoundingClientRect(); var vv=window.visualViewport?Math.round(window.visualViewport.height):'-';
+      d.textContent='build 7 \u00B7 inner '+window.innerWidth+'x'+window.innerHeight+' \u00B7 screen '+screen.width+'x'+screen.height+' \u00B7 vv '+vv+' \u00B7 shell '+Math.round(r.height)+' \u00B7 sab '+sab+' \u00B7 app '+((window.navigator.standalone===true)?'yes':'no');
+    }catch(e){}
+  }
+  setInterval(dbg,1500); setTimeout(dbg,300);
+  window.addEventListener('orientationchange',function(){setTimeout(fit,300);});
+})();
+</script>
 
 <script>
 const State={role:null,balance:0,principal:0,earnings:0,refs:3,owned:new Set(),codes:new Set(),pin:null,profile:null,twofa:false,tgLinked:false};
