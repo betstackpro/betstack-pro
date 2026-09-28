@@ -338,8 +338,9 @@ body.light .st{background:rgba(0,0,0,.04);}
 .acc-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
 .acc.open .acc-body{max-height:260px;padding-bottom:14px;}
 /* bottom nav */
-.nav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--border);padding-bottom:4px;z-index:30;}
-.nav.hide{display:none;}
+.nav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);padding-bottom:4px;z-index:30;}
+.nav.hide{grid-template-columns:1fr;min-height:54px;}
+.nav.hide .navitem{display:none;}
 
 .navitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 0 4px;color:var(--faint);}
 .navitem svg{width:23px;height:23px;}
@@ -998,33 +999,33 @@ const API_BASE='https://api.betstackpro.com'; // first-party API domain — same
    Admin pastes ONE short booking code; every bookmaker link is built from it at runtime.
    Tags fall back per-bookmaker to DEFAULT, so fill NG/GH/KE only where you have region IDs. */
 const COUPON={
-  hosts:{xbet:'https://1xbet.com',melbet:'https://melbet.com',winner:'https://betwinner.com'},
-  path:'/registration/acceptCoupon/?id=',
-  tags:{
-    DEFAULT:{xbet:'d_5833178m_97c_',melbet:'d_5833225m_45415c_',winner:''},
-    NG:{},GH:{},KE:{}
-  },
-  country:'DEFAULT',
+  /* NOTE (2026-09-28): there is no public deep-link that auto-loads a bet slip
+     into 1xBet/Melbet/BetWinner. Their own help docs describe a MANUAL step:
+     open the bookmaker app while logged in, go to Bet slip > Load a coupon,
+     and type the code. The old "acceptCoupon" URL below returned 404 on a
+     real device, so the buttons now just open each bookmaker's app/site and
+     the code is front-and-centre to paste in by hand. */
+  homes:{xbet:'https://1xbet.com',melbet:'https://melbet.com',winner:'https://betwinner.com'},
   clean(c){return String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);},
-  links(code){
-    code=this.clean(code); if(!code)return null;
-    const t=Object.assign({},this.tags.DEFAULT,this.tags[this.country]||{});
-    const mk=k=>this.hosts[k]+this.path+encodeURIComponent(code)+(t[k]?'&tag='+encodeURIComponent(t[k]):'');
-    return {xbet:mk('xbet'),melbet:mk('melbet'),winner:mk('winner')};
-  },
   copy(code){
-    const done=()=>App.toast('Code '+code+' copied');
+    const done=()=>App.toast('Code '+code+' copied \u2014 paste it in your bookmaker\u2019s "Load a coupon" box');
     if(navigator.clipboard)navigator.clipboard.writeText(code).then(done,done);else done();
   },
+  open(code,which){
+    this.clipCopy(code);
+    window.open(this.homes[which],'_blank','noopener');
+  },
+  clipCopy(code){ if(navigator.clipboard)navigator.clipboard.writeText(code).catch(()=>{}); },
   block(code){
-    const L=this.links(code); if(!L)return '';
-    const b=(u,bg,fg,n)=>`<a href="${u}" target="_blank" rel="noopener noreferrer sponsored" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;margin-top:8px;border-radius:12px;background:${bg};color:${fg};font-weight:800;font-size:.92rem;text-decoration:none;"><span>Load on ${n}</span><span style="font-size:.62rem;background:${fg};color:${bg};padding:2px 8px;border-radius:99px;">FAST</span></a>`;
+    code=this.clean(code); if(!code)return '';
+    const b=(k,bg,fg,n)=>`<button onclick="COUPON.open('${code}','${k}')" style="display:flex;width:100%;align-items:center;justify-content:space-between;padding:14px 16px;margin-top:8px;border:none;border-radius:12px;background:${bg};color:${fg};font-weight:800;font-size:.92rem;cursor:pointer;"><span>Open ${n}</span><span style="font-size:.62rem;background:${fg};color:${bg};padding:2px 8px;border-radius:99px;">STEP 2</span></button>`;
     return `<div class="code-box" style="text-align:left;margin-top:12px;">
-      <div class="code-label" style="text-align:center;">\u26A1 Load these games instantly</div>
+      <div class="code-label" style="text-align:center;">\u26A1 Load these games at your bookmaker</div>
       <div style="text-align:center;margin:6px 0 4px;"><span style="font-family:var(--d);font-weight:800;font-size:1.5rem;letter-spacing:.14em;">${code}</span>
-      <button class="btn btn-out btn-sm" style="margin-left:10px;height:30px;padding:0 12px;" onclick="COUPON.copy('${code}')">Copy</button></div>
-      ${b(L.xbet,'#1a7f37','#fff','1xBet')}${b(L.melbet,'#f4b740','#1a1300','Melbet')}${b(L.winner,'#4da6ff','#00142b','BetWinner')}
-      <div class="book-sub" style="margin-top:8px;">Opens the ticket in your bookmaker app or browser \u00B7 Affiliate links \u00B7 If a game is missing in your region, rebuild it from the picks above \u00B7 18+</div></div>`;
+      <button class="btn btn-out btn-sm" style="margin-left:10px;height:30px;padding:0 12px;" onclick="COUPON.copy('${code}')">Copy \u00B7 STEP 1</button></div>
+      <div class="book-sub" style="text-align:center;margin:2px 0 6px;">Copy the code, then open your bookmaker and paste it into <b>Bet slip \u2192 Load a coupon</b>. You must be logged in.</div>
+      ${b('xbet','#1a7f37','#fff','1xBet')}${b('melbet','#f4b740','#1a1300','Melbet')}${b('winner','#4da6ff','#00142b','BetWinner')}
+      <div class="book-sub" style="margin-top:8px;">If a game is missing in your region, rebuild it from the picks above \u00B7 18+</div></div>`;
   }
 };
 try{fetch('/cdn-cgi/trace').then(r=>r.text()).then(t=>{const m=/loc=([A-Z]{2})/.exec(t);if(m)COUPON.country=m[1];}).catch(()=>{});}catch(e){}
