@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Betstack Pro</title>
-<meta name="theme-color" content=" #050505">
+<meta name="theme-color" content="#000000">
 <meta name="description" content="A transparent betting syndicate — follow the group verified picks and keep 100% of what you win. Every result stays on the record. 18+.">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
@@ -47,7 +47,7 @@ body{font-family:var(--b);color:var(--text);overflow:hidden;-webkit-font-smoothi
 button{font-family:var(--b);cursor:pointer;border:none;background:none;color:inherit;}
 input,select,textarea{font-family:var(--b);}
 h1,h2,h3,h4{font-family:var(--d);letter-spacing:-.02em;line-height:1.06;}
-.shell{position:fixed;top:0;bottom:0;left:0;right:0;width:100%;max-width:460px;height:auto;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;border-left:1px solid var(--border);border-right:1px solid var(--border);}
+.shell{position:fixed;top:0;bottom:0;left:0;right:0;width:100%;max-width:460px;height:auto;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;}
 /* ---- Desktop / landscape: full-width web layout, mobile stays portrait shell ---- */
 @media (min-width:1024px){
   .shell{max-width:1080px;border-left:1px solid var(--border);border-right:1px solid var(--border);box-shadow:0 0 60px rgba(0,0,0,.5);}
@@ -82,7 +82,8 @@ h1,h2,h3,h4{font-family:var(--d);letter-spacing:-.02em;line-height:1.06;}
 .icon-btn:active{transform:scale(.92);}
 .icon-btn svg{width:21px;height:21px;}
 .content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--bg);}
-.page{display:none;flex-direction:column;min-height:100%;padding:calc(env(safe-area-inset-top,0px) + 28px) 16px 110px 16px;}
+.page{display:none;flex-direction:column;min-height:100%;padding:12px 16px 110px 16px;}
+html:not(.authed) .page{padding-top:calc(env(safe-area-inset-top,0px) + 28px);}
 .page.active{display:flex;animation:rise .4s cubic-bezier(.16,.84,.44,1);}
 @keyframes rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 .auth-page{padding:calc(env(safe-area-inset-top,0px) + 16px) 18px 32px 18px;}
@@ -318,6 +319,11 @@ body.light .st{background:rgba(0,0,0,.04);}
 .res-pick{font-size:.8rem;color:var(--muted);margin-top:2px;}
 .res-date{font-size:.67rem;color:var(--faint);margin-top:3px;}
 .res-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+.res-tags{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;}
+.res-tag{font-size:.54rem;font-weight:800;letter-spacing:.07em;padding:2px 7px;border-radius:6px;border:1px solid var(--border);color:var(--muted);}
+.res-tag.free{color:#4da6ff;border-color:#4da6ff55;}.res-tag.premium{color:var(--gold);border-color:#f4b74055;}.res-tag.syndicate{color:var(--green);border-color:#2fd68a55;}
+.res-tag.live{color:var(--red);border-color:#ff5d6c55;}.res-tag.pre{color:var(--muted);}
+.res-day{font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:14px 0 4px;}
 .res-badge{font-size:.58rem;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:7px;border:1px solid currentColor;}
 .res-badge.won{color:var(--green);}
 .res-badge.lost{color:var(--red);}
@@ -341,7 +347,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .acc-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
 .acc.open .acc-body{max-height:260px;padding-bottom:14px;}
 /* bottom nav */
-.nav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);padding-bottom:0px;z-index:30;}
+.nav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);padding-bottom:4px;z-index:30;}
 .nav.hide{display:none;background:transparent;}
 
 .navitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 0 4px;color:var(--faint);}
@@ -562,6 +568,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .steps i{flex:1;height:5px;border-radius:99px;background:var(--surface-3);}
 .steps i.on{background:var(--green);}
 /* splash */
+html.resume #splash,html.resume #onboard{display:none!important;}
 #splash{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;transition:opacity .5s,visibility .5s;}
 #splash.out{opacity:0;visibility:hidden;}
 #splash .bars{font-size:96px;animation:pop .7s cubic-bezier(.16,.94,.44,1);}
@@ -666,6 +673,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 </div>
 
 <!-- SPLASH (loads first) -->
+<script>try{if(localStorage.getItem("bs_token"))document.documentElement.classList.add("resume");}catch(e){}</script>
 <div id="splash">
   <div class="bars"><i></i><i></i><i></i><i></i></div>
   <div class="splash-word"><b>BETSTACK</b> <span>PRO</span></div>
@@ -932,8 +940,8 @@ body.light .st{background:rgba(0,0,0,.04);}
         <div style="flex:1;"><div class="t">Two-factor authentication</div><div class="d">Require a code at login</div></div>
         <div class="toggle" id="tfa-toggle" style="pointer-events:none;"></div></div>
       <div class="set-card"><div class="ic" style="background:var(--gold-dim);color:var(--gold);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 11v3M7 18a8 8 0 0 1 10 0M4.5 15a11 11 0 0 1 15 0M2 12a14 14 0 0 1 20 0"/></svg></div>
-        <div style="flex:1;"><div class="t">Biometric unlock</div><div class="d">Face or fingerprint</div></div>
-        <div class="toggle" onclick="App.flip(this,'Biometric unlock')"></div></div>
+        <div style="flex:1;"><div class="t">Biometric unlock</div><div class="d">Sign in with Face ID or fingerprint</div></div>
+        <div class="toggle" id="pk-toggle" onclick="App.pkToggle(this)"></div></div>
       <div class="sec">Preferences</div>
       <div class="menu-card">
         <div class="menu-item" onclick="App.toast('Currency: USD')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M9 9h4a2 2 0 0 1 0 4H9"/></svg><span class="lab">Currency</span><span style="margin-left:auto;color:var(--muted);font-size:.85rem;margin-right:8px;">USD</span><span class="chev">›</span></div>
@@ -1215,9 +1223,25 @@ const App={
     // Capture mode replaces the whole page, so guard anything that expects the
     // normal shell to still be there.
     setTimeout(()=>{ const sp=document.getElementById('splash'); if(sp) sp.classList.add('out'); },2300);
+    // remember scroll position so coming back lands on the exact spot
+    try{ document.getElementById('content').addEventListener('scroll',()=>{ clearTimeout(this._st); this._st=setTimeout(()=>{ try{ const r=JSON.parse(localStorage.getItem('bs_resume')||'null'); if(r){ r.s=document.getElementById('content').scrollTop; localStorage.setItem('bs_resume',JSON.stringify(r)); } }catch(e){} },250); },{passive:true}); }catch(e){}
     setInterval(()=>{ if(this.pruneChat() && this.arenaCur==='chat' && document.getElementById('view-arena').classList.contains('active')) this.renderChat(); },60000);
     // Admin is reachable ONLY when the backend confirms role=admin (via restoreSession → /api/auth/me). No URL/hash shortcut.
-    if(AUTH_TOKEN){ this.restoreSession(); }
+    if(AUTH_TOKEN){
+      // Signed in: paint the app straight away from the saved snapshot (no splash, no landing flash),
+      // then confirm the session with the server in the background.
+      let cu=null; try{ cu=JSON.parse(localStorage.getItem('bs_user')||'null'); }catch(e){}
+      { const sp0=document.getElementById('splash'); if(sp0){ sp0.style.transition='none'; sp0.classList.add('out'); } }
+      if(cu){
+        State.tier=cu.tier||'none'; State.isAdmin=!!cu.isAdmin; State.tgLinked=!!cu.tg;
+        State.profile=Object.assign(State.profile||{},{username:cu.username,email:cu.email,name:cu.name});
+        Account={email:cu.email,username:cu.username};
+        this._optimistic=true;
+        const sp=document.getElementById('splash'); if(sp){ sp.style.transition='none'; sp.classList.add('out'); }
+        this.login('Member',true);
+      }
+      this.restoreSession();
+    }
     else { this.showOnboarding(); }
     this.renderHubPreds();
     this.watchLive();
@@ -1254,11 +1278,16 @@ const App={
         State.tgLinked=!!r.user.telegram_linked;
         State.profile=Object.assign(State.profile||{},{username:r.user.username,email:r.user.email,name:r.user.full_name});
         Account={email:r.user.email,username:r.user.username};
-        this.login('Member',true);
+        try{ localStorage.setItem('bs_user',JSON.stringify({tier:State.tier,isAdmin:State.isAdmin,tg:State.tgLinked,username:r.user.username,email:r.user.email,name:r.user.full_name})); }catch(e){}
+        if(this._optimistic){ this._optimistic=false; this.updateAdminMenu(); this.syncContent(); } else this.login('Member',true);
         if(paid)setTimeout(()=>this.resumePay(paid),700);
         else if(cancelled)this.toast('Payment cancelled — you can try again');
-      }else{setToken('');if(cancelled)this.toast('Payment cancelled');}
-    }).catch(()=>{if(cancelled)this.toast('Payment cancelled');});
+      }else{setToken('');try{localStorage.removeItem('bs_user');}catch(e){} if(this._optimistic){this._optimistic=false;this.logout();} if(cancelled)this.toast('Payment cancelled');}
+    }).catch(e=>{
+      // a rejected/expired token must sign out; a plain network error must NOT (stay where you are, work offline)
+      if(/HTTP 40[13]/.test(String(e))){ setToken(''); try{localStorage.removeItem('bs_user');}catch(_){} if(this._optimistic){this._optimistic=false;this.logout();} }
+      if(cancelled)this.toast('Payment cancelled');
+    });
   },
   pruneChat(){const cut=Date.now()-12*3600000;const n=CHAT.length;CHAT=CHAT.filter(m=>!m.ts||m.ts>cut);return CHAT.length!==n;},
   money(n){return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});},
@@ -1343,6 +1372,7 @@ const App={
       <div class="field"><label>Email Address</label><input class="input" id="li-id" type="email" placeholder="you@email.com"></div>
       <div class="field"><label>Password</label><div class="pw-wrap"><input class="input" id="li-pw" type="password" placeholder="••••••••"><button type="button" class="pw-eye" onclick="App.togglePw('li-pw',this)" aria-label="Show password">${svg(EYE_SHOW)}</button></div></div>
       <button class="btn btn-green" onclick="App.doLogin('${role}')">${svg('<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>')} SIGN IN</button>
+      ${(this.pkHas()&&this.pkSupported())?`<button class="btn btn-out" style="margin-top:10px;" onclick="App.pkLogin()">${svg('<path d="M12 11v3M7 18a8 8 0 0 1 10 0M4.5 15a11 11 0 0 1 15 0M2 12a14 14 0 0 1 20 0"/>')} Sign in with Face ID / fingerprint</button>`:''}
       <div class="social-sep"><span>or continue with</span></div>
       <div class="social-btns">
         <button class="social-btn" onclick="App.telegramLogin()"><svg viewBox="0 0 24 24" width="18" height="18" fill="#29a9eb"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.24l-1.86 8.78c-.14.62-.5.77-1.02.48l-2.82-2.08-1.36 1.31c-.15.15-.28.28-.56.28l.2-2.87 5.23-4.72c.23-.2-.05-.32-.35-.12l-6.46 4.07-2.78-.87c-.6-.19-.62-.6.13-.89l10.86-4.19c.5-.18.94.12.78.89z"/></svg>Telegram</button>
@@ -1485,7 +1515,8 @@ const App={
     this.toast('Connection error — please try again later');
   },
 
-  show(v){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.getElementById('content').scrollTop=0;},
+  show(v){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.getElementById('content').scrollTop=0;
+    if(v==='results' && State.role && !State._preview){ try{ localStorage.setItem('bs_resume',JSON.stringify({v:'results',t:Date.now()})); }catch(e){} } },
 
   login(role,silent){
     State.role=role;State.owned=new Set();
@@ -1495,7 +1526,11 @@ const App={
     document.getElementById('topbar').style.display='flex';
     document.getElementById('nav').classList.remove('hide');document.documentElement.classList.add('authed');
     this.updateAdminMenu();
-    this.go('home');
+    let start='home', rs=null;
+    if(silent){ try{ rs=JSON.parse(localStorage.getItem('bs_resume')||'null'); }catch(e){} if(rs && ['home','arena','wallet','settings','admin','results'].indexOf(rs.v)>-1) start=rs.v; else rs=null; }
+    if(rs){ if(rs.ad)this._adminTab=rs.ad; if(rs.ar)this.arenaCur=rs.ar; }
+    if(start==='results'){ this.go('home'); this.openResults(); } else this.go(start);
+    if(rs && rs.s>0){ const c=document.getElementById('content'); [120,450,1100,2200].forEach(ms=>setTimeout(()=>{ if(c && c.scrollHeight>=rs.s) c.scrollTop=rs.s; },ms)); }
     this.syncContent();
     if(!silent)this.toast('Signed in');
   },
@@ -1518,7 +1553,7 @@ const App={
     this.showPreviewBanner(role);
     this.toast('Viewing as '+role);
   },
-  logout(){State.role=null;State.tier=null;State.isAdmin=false;setToken('');document.getElementById('topbar').style.display='none';document.getElementById('nav').classList.add('hide');document.documentElement.classList.remove('authed');this.updateAdminMenu();this.go('hub');},
+  logout(){State.role=null;State.tier=null;State.isAdmin=false;setToken('');try{localStorage.removeItem('bs_user');localStorage.removeItem('bs_resume');}catch(e){}document.getElementById('topbar').style.display='none';document.getElementById('nav').classList.add('hide');document.documentElement.classList.remove('authed');this.updateAdminMenu();this.go('hub');},
 
   go(view){
     if(view==='admin' && !State.isAdmin){return this.go('home');} // console is for server-verified admins only
@@ -1533,6 +1568,8 @@ const App={
     this.show(view);
     document.getElementById('nav').classList.toggle('hide', view==='admin'||view==='hub'||view==='how'||!State.role);document.documentElement.classList.toggle('authed', !!State.role);
     document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.nav===view));
+    if(State.role && !State._preview){ try{ localStorage.setItem('bs_resume',JSON.stringify({v:view,ad:this._adminTab||'',ar:this.arenaCur||'',t:Date.now()})); }catch(e){} }
+    if(view==='settings')this.pkPaint();
   },
 
   tierName(k){const t=TIERS.find(x=>x.key===k);return t?t.name:'No plan';},
@@ -1727,11 +1764,59 @@ const App={
     else{ this.buyTier(key); }
   },
 
-  rate(){return Math.round(PERF.filter(p=>p.w).length/PERF.length*100);},
+  _hit:null,
+  /* ---- Face ID / fingerprint / device PIN sign-in (WebAuthn passkey) ---- */
+  _b64e(buf){ let t=''; const a=new Uint8Array(buf); for(let i=0;i<a.length;i++)t+=String.fromCharCode(a[i]); return btoa(t).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); },
+  _b64d(str){ str=String(str).replace(/-/g,'+').replace(/_/g,'/'); while(str.length%4)str+='='; const b=atob(str); const a=new Uint8Array(b.length); for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return a; },
+  pkSupported(){ return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create && navigator.credentials.get); },
+  pkHas(){ try{ return !!localStorage.getItem('bs_pk'); }catch(e){ return false; } },
+  pkPaint(){ const t=document.getElementById('pk-toggle'); if(t) t.classList.toggle('on', this.pkHas()); },
+  async pkEnable(){
+    if(!this.pkSupported()){ this.toast('This phone/browser does not support Face ID sign-in'); return false; }
+    try{
+      const c=await Api.post('/api/passkey/challenge',{});
+      const email=(State.profile&&State.profile.email)||'member';
+      const cred=await navigator.credentials.create({publicKey:{
+        challenge:new TextEncoder().encode(c.challenge),
+        rp:{name:'Betstack Pro',id:location.hostname},
+        user:{id:new TextEncoder().encode(email).slice(0,64),name:email,displayName:(State.profile&&State.profile.username)||'Member'},
+        pubKeyCredParams:[{type:'public-key',alg:-7}],
+        authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'},
+        timeout:60000,attestation:'none'}});
+      const r=cred.response; const spki=r.getPublicKey&&r.getPublicKey();
+      if(!spki){ this.toast('This browser cannot create a Face ID key'); return false; }
+      const res=await Api.post('/api/passkey/register',{id:this._b64e(cred.rawId),clientDataJSON:this._b64e(r.clientDataJSON),spki:this._b64e(spki),alg:(r.getPublicKeyAlgorithm?r.getPublicKeyAlgorithm():-7),ch:c.challenge,sig:c.sig});
+      if(res&&res.ok){ try{ localStorage.setItem('bs_pk',this._b64e(cred.rawId)); }catch(e){} this.toast('Face ID / fingerprint sign-in is on'); return true; }
+      this.toast('Could not turn on Face ID \u2014 try again'); return false;
+    }catch(e){ this.toast(e&&e.name==='NotAllowedError'?'Cancelled':'Could not turn on Face ID \u2014 try again'); return false; }
+  },
+  async pkToggle(el){
+    if(this.pkHas()){
+      try{ await Api.post('/api/passkey/remove',{}); }catch(e){}
+      try{ localStorage.removeItem('bs_pk'); }catch(e){}
+      this.pkPaint(); this.toast('Face ID sign-in turned off');
+    }else{ if(await this.pkEnable()) this.pkPaint(); }
+  },
+  async pkLogin(){
+    let id=''; try{ id=localStorage.getItem('bs_pk')||''; }catch(e){}
+    if(!id||!this.pkSupported()){ this.toast('Sign in with your password, then turn on Face ID in Settings'); return; }
+    try{
+      const c=await Api.post('/api/passkey/challenge',{});
+      const cred=await navigator.credentials.get({publicKey:{challenge:new TextEncoder().encode(c.challenge),rpId:location.hostname,
+        allowCredentials:[{type:'public-key',id:this._b64d(id)}],userVerification:'required',timeout:60000}});
+      const r=cred.response;
+      const res=await Api.post('/api/passkey/login',{id:this._b64e(cred.rawId),clientDataJSON:this._b64e(r.clientDataJSON),authenticatorData:this._b64e(r.authenticatorData),signature:this._b64e(r.signature),ch:c.challenge,sig:c.sig});
+      if(res&&res.ok&&res.token){ setToken(res.token); this._optimistic=false; this.restoreSession(); }
+      else this.toast('Face ID sign-in failed \u2014 use your password');
+    }catch(e){ this.toast(e&&e.name==='NotAllowedError'?'Cancelled':'Face ID sign-in failed \u2014 use your password'); }
+  },
+  hitTxt(){ return this._hit==null ? '\u2014' : this._hit+'%'; },
+  loadHit(){ Api.publicStats().then(s=>{ if(!s||!s.ok)return; const t=(s.won||0)+(s.lost||0); this._hit=t?Math.round(s.won/t*100):null; const el=document.getElementById('hit-rate'); if(el) el.textContent=this.hitTxt(); }).catch(()=>{}); },
+  rate(){ return this._hit==null?0:this._hit; },
   bars(){return PERF.map(p=>`<div class="bar ${p.w?'w':'l'}" style="height:${p.h}%"></div>`).join('');},
 
   renderHome(){
-    const el=document.getElementById('view-home');let h='';const rate=this.rate();
+    const el=document.getElementById('view-home');let h='';const rate=this.rate();this.loadHit();
     // A referred user who signed up but hasn't subscribed is NOT a member yet.
     // They get their referral account and a clear way in — nothing else, so the
     // paid surface stays paid.
@@ -1803,7 +1888,7 @@ const App={
         <div class="pill-eye" style="margin-bottom:14px;">Daily Tips &amp; Predictions</div>
         <h1 class="h1" style="font-size:1.95rem;">Welcome back</h1>
         <p class="sub" style="color:#cfd3d9;">Free daily predictions are below for everyone. Subscribe to a tier to unlock the full bet tips and join the <b style="color:var(--green);">Syndicate</b> — load every code at your own bookmaker and keep 100% of what you win.</p>
-        <div class="stat2"><div class="st"><div class="v">${CODES.length}</div><div class="k">Tips today</div></div><div class="st"><div class="v" style="color:var(--green);">${rate}%</div><div class="k">90d hit rate</div></div></div>
+        <div class="stat2"><div class="st"><div class="v">${CODES.length}</div><div class="k">Tips today</div></div><div class="st"><div class="v" id="hit-rate" style="color:var(--green);">${this.hitTxt()}</div><div class="k">90d hit rate</div></div></div>
       </div>
       ${planBanner}
       ${State.isAdmin?`<div class="plan-banner" style="background:linear-gradient(135deg,rgba(31,209,122,.1),rgba(244,183,64,.06),transparent);border-color:rgba(31,209,122,.3);"><div class="role-ic" style="width:42px;height:42px;border-color:var(--green);color:var(--green);display:grid;place-items:center;">${this.ic('users',22)}</div><div class="pb-mid"><div class="pb-t">Syndicate</div><div class="pb-s">Follow the group's picks together — you keep your own money. Admin preview while it's built.</div></div><button class="btn btn-out btn-sm" style="height:36px;" onclick="App.go('syndicate')">Open</button></div>`:''}
@@ -2118,7 +2203,7 @@ const App={
       const el=document.getElementById('home-statstrip')||document.getElementById('hub-statstrip'); if(!el||!s||!s.ok)return;
       const total=s.won+s.lost; const rate=total?Math.round(s.won/total*100):0;
       el.innerHTML=`<div class="card" style="padding:12px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
-        <div><div style="font-weight:800;font-size:1.05rem;color:var(--green);">${s.won}W\u2013${s.lost}L</div><div class="sub" style="font-size:.62rem;">30-day record${total?` \u00B7 ${rate}%`:''}</div></div>
+        <div><div style="font-weight:800;font-size:1.05rem;color:var(--green);">${s.won}W\u2013${s.lost}L</div><div class="sub" style="font-size:.62rem;">90-day record${total?` \u00B7 ${rate}%`:''}</div></div>
         <div><div style="font-weight:800;font-size:1.05rem;">${s.active_tips||0}</div><div class="sub" style="font-size:.62rem;">Active tips</div></div>
         <div><div style="font-weight:800;font-size:1.05rem;">${s.matches_tracked}</div><div class="sub" style="font-size:.62rem;">Matches tracked</div></div>
       </div>`;
@@ -3520,7 +3605,7 @@ const App={
     return [];
   },
   async buildChain(){
-    let src=await this.loadRealResults();
+    let src=(await this.loadRealResults()).slice().sort((a,b)=>(a.ts-b.ts));
     let prev='0000000000000000000000000000000000000000000000000000000000000000';
     const out=[];
     for(const r of src){
@@ -3831,7 +3916,7 @@ const App={
       <line x1="${pad}" y1="${y(0.5).toFixed(1)}" x2="${W-pad}" y2="${y(0.5).toFixed(1)}" stroke="var(--border-2)" stroke-width="1" stroke-dasharray="3 3"/>
       <path d="${area}" fill="rgba(31,209,122,.10)"/><path d="${line}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round"/>${dots}</svg>`;
   },
-  setResFilter(kind,val){this._resFilter=this._resFilter||{result:'all',sport:'all',from:'',to:''};this._resFilter[kind]=val;this.renderResults();},
+  setResFilter(kind,val){this._resFilter=this._resFilter||{result:'all',sport:'all',src:'all',from:'',to:''};this._resFilter[kind]=val;this.renderResults();},
   async renderResults(){
     const el=document.getElementById('results-body');
     const back=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;"><div class="icon-btn" style="margin-left:-8px;" onclick="App.resultsBack()">${svg('<path d="M19 12H5M12 19l-7-7 7-7"/>')}</div></div>`;
@@ -3842,9 +3927,11 @@ const App={
     // One layout for every case. With no picks it still renders the full page —
     // stats at zero, a flat chart, the chain tools and the filters — so the
     // record looks the same on day one as it will on day one hundred.
-    const f=this._resFilter||(this._resFilter={result:'all',sport:'all',from:'',to:''});
+    const f=this._resFilter||(this._resFilter={result:'all',sport:'all',src:'all',from:'',to:''});
     const won=chain.filter(c=>c.result==='won').length,lost=chain.length-won;
     const rate=chain.length?Math.round(won/chain.length*100):0;
+    const cut90=Date.now()-90*86400000; const c90=chain.filter(c=>c.ts>=cut90); const w90=c90.filter(c=>c.result==='won').length;
+    const r90txt=c90.length?`Hit rate = wins \u00F7 (wins + losses) over the last 90 days \u2014 the exact number on the Home screen (${w90}W\u2013${c90.length-w90}L). All-time: <b>${rate}%</b> (${won}W\u2013${lost}L). Void picks never count. Every game counts once: free predictions, premium tips and syndicate picks, pre-match and live.`:'Every game counts once: free predictions, premium tips and syndicate picks, pre-match and live.';
     let units=0;chain.forEach(c=>units+=c.result==='won'?(c.odds-1):-1);
     const fmt=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+new Date(t).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     const sports=['all',...Array.from(new Set(chain.map(c=>c.sport)))];
@@ -3858,12 +3945,23 @@ const App={
     const shown=chain.map((c,i)=>({c,i})).filter(o=>
       (f.result==='all'||o.c.result===f.result) &&
       (f.sport==='all'||o.c.sport===f.sport) &&
+      (!f.src||f.src==='all'||(f.src==='live'?o.c.live:f.src==='pre'?!o.c.live:o.c.source===f.src)) &&
       inDate(o.c.ts));
     const chip=(kind,val,label)=>`<button class="res-chip ${f[kind]===val?'on':''}" onclick="App.setResFilter('${kind}','${val}')">${label}</button>`;
     const sportSel=`<select class="sel" style="height:38px;" onchange="App.setResFilter('sport',this.value)">${sports.map(s=>`<option value="${s}" ${f.sport===s?'selected':''}>${s==='all'?'All sports':s}</option>`).join('')}</select>`;
-    const rows=shown.length?shown.map(o=>`<div class="res-row" onclick="App.openSheet('entry','${o.i}')">
-        <div class="res-main"><div class="res-ev">${this.esc(o.c.event)}</div><div class="res-pick">${this.esc(o.c.pick)} · @ ${o.c.odds.toFixed(2)} · ${o.c.sport}</div><div class="res-date">${fmt(o.c.ts)} · published pre-kickoff</div></div>
-        <div class="res-right"><span class="res-badge ${o.c.result}">${o.c.result.toUpperCase()}</span><span class="res-hash">${o.c.hash.slice(0,10)}…</span></div></div>`).join('')
+    // newest first, grouped by day (Today, Yesterday, then dates). The chart above still reads oldest -> newest.
+    const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();};
+    const dayLabel=t=>{const n=new Date(),d=new Date(t);const k=dayKey(t);const y=new Date(n.getTime()-86400000);const tm=new Date(n.getTime()+86400000);
+      if(k===dayKey(n))return 'Today';if(k===dayKey(y))return 'Yesterday';if(k===dayKey(tm))return 'Tomorrow';
+      return d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short',year:'numeric'});};
+    const srcName={free:'FREE',premium:'PREMIUM',syndicate:'SYNDICATE'};
+    let lastDay='';
+    const rows=shown.length?shown.slice().reverse().map(o=>{
+        const k=dayKey(o.c.ts);const head=k!==lastDay?`<div class="res-day">${dayLabel(o.c.ts)}</div>`:'';lastDay=k;
+        const tags=`<div class="res-tags"><span class="res-tag ${o.c.source||'free'}">${srcName[o.c.source]||'FREE'}</span><span class="res-tag ${o.c.live?'live':'pre'}">${o.c.live?'\u25CF LIVE':'PRE-MATCH'}</span></div>`;
+        return head+`<div class="res-row" onclick="App.openSheet('entry','${o.i}')">
+        <div class="res-main"><div class="res-ev">${this.esc(o.c.event)}</div><div class="res-pick">${this.esc(o.c.pick)} · @ ${o.c.odds.toFixed(2)} · ${this.esc(o.c.sport)}</div><div class="res-date">${fmt(o.c.ts)}</div>${tags}</div>
+        <div class="res-right"><span class="res-badge ${o.c.result}">${o.c.result.toUpperCase()}</span><span class="res-hash">${o.c.hash.slice(0,10)}…</span></div></div>`;}).join('')
       :(chain.length
           ? `<div class="empty"><div class="ic">${svg(ICON.doc)}</div><p>No picks match this filter.</p></div>`
           : `<div class="empty"><div class="ic">${svg(ICON.doc)}</div>
@@ -3875,8 +3973,9 @@ const App={
         <div class="res-stat"><div class="v">${chain.length}</div><div class="k">Picks</div></div>
         <div class="res-stat"><div class="v" style="color:var(--green);">${won}</div><div class="k">Won</div></div>
         <div class="res-stat"><div class="v" style="color:var(--red);">${lost}</div><div class="k">Lost</div></div>
-        <div class="res-stat"><div class="v">${chain.length?rate+'%':'\u2014'}</div><div class="k">Hit rate</div></div>
+        <div class="res-stat"><div class="v">${c90.length?Math.round(w90/c90.length*100)+'%':'\u2014'}</div><div class="k">90d hit rate</div></div>
       </div>
+      <p class="sub" style="font-size:.74rem;margin:-4px 2px 12px;">${r90txt}</p>
       <div class="sec">Cumulative hit rate</div>
       <div class="res-chart">${this.trendSvg(chain)}<div class="res-chart-x"><span>${chain.length?fmt(chain[0].ts).split(' ')[0]:''}</span><span>50% line</span><span>${chain.length?fmt(chain[chain.length-1].ts).split(' ')[0]:''}</span></div></div>
       <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><p>Net result at 1 unit flat stake: <b style="color:${units>=0?'var(--green)':'var(--red)'};">${units>=0?'+':''}${units.toFixed(2)} units</b> across ${chain.length} settled picks. A positive record is never a guarantee of future results — picks lose too, and they all stay on this page.</p></div>
@@ -3884,6 +3983,7 @@ const App={
       <button class="btn btn-green btn-sm" style="height:44px;margin-bottom:14px;" onclick="App.shareResults()">Share our record</button>
       <div class="sec">Full record</div>
       <div class="res-filters"><div class="res-chips">${chip('result','all','All')}${chip('result','won','Won')}${chip('result','lost','Lost')}</div>${sportSel}</div>
+      <div class="res-chips" style="margin:0 0 8px;flex-wrap:wrap;">${chip('src','all','All sources')}${chip('src','free','Free')}${chip('src','premium','Premium')}${chip('src','syndicate','Syndicate')}${chip('src','live','Live')}${chip('src','pre','Pre-match')}</div>
       <div style="display:flex;gap:8px;align-items:end;margin:0 0 8px;">
         <div style="flex:1;"><label class="sub" style="font-size:.6rem;display:block;margin-bottom:3px;">From</label><input class="input" type="date" style="height:40px;" value="${f.from||''}" onchange="App.setResFilter('from',this.value)"></div>
         <div style="flex:1;"><label class="sub" style="font-size:.6rem;display:block;margin-bottom:3px;">To</label><input class="input" type="date" style="height:40px;" value="${f.to||''}" onchange="App.setResFilter('to',this.value)"></div>
@@ -7343,7 +7443,7 @@ var SYN = window.SYN = {
   sendPush:function(){
     var tier=(document.getElementById('syn-push-tier')||{}).value, text=(document.getElementById('syn-push-text')||{}).value, odds=parseFloat((document.getElementById('syn-push-odds')||{}).value);
     if(!text||!text.trim()){ if(App&&App.toast)App.toast('Enter the pick'); return; }
-    Api.post('/api/admin/syndicate/push',{tier:tier,text:text.trim(),min_odds:isFinite(odds)?odds:null,fixture_id:SYN._lastFixture||''}).then(function(r){
+    Api.post('/api/admin/syndicate/push',{tier:tier,text:text.trim(),min_odds:isFinite(odds)?odds:null,fixture_id:SYN._lastFixture||'',games:SYN.gamesFromText(text)}).then(function(r){
       if(r&&r.ok){ if(App&&App.toast)App.toast('Sent to '+(r.sent||0)+' eligible member'+((r.sent||0)===1?'':'s'));
         if(r.code){ SYN.lastCode=r.code; SYN.lastRef=r.ref||null; if(SYN.aTab==='push') SYN.aPaint(); }
       }
@@ -7395,7 +7495,7 @@ var SYN = window.SYN = {
     if(!isFinite(odds)){ if(App&&App.toast)App.toast('Set the minimum odds floor'); return; }
     var self=this;
     var txt='\u26A1 LIVE: '+pick.trim()+'\n\nOnly play if you can still get '+odds.toFixed(2)+' or better. Window: '+win+' min.';
-    Api.post('/api/admin/syndicate/push',{tier:this.liveSession.tier,text:txt,min_odds:odds}).then(function(r){
+    Api.post('/api/admin/syndicate/push',{tier:this.liveSession.tier,text:txt,min_odds:odds,live:true,games:self.gamesFromText(pick)}).then(function(r){
       if(r&&r.ok){ self.liveSession.picks++; if(App&&App.toast)App.toast('Sent to '+(r.sent||0)+' member'+((r.sent||0)===1?'':'s'));
         var e=document.getElementById('syn-lv-pick'); if(e)e.value=''; self.aPaint(); }
       else if(App&&App.toast)App.toast('Could not send');
@@ -7595,8 +7695,18 @@ var SYN = window.SYN = {
     this._fxRows=rows; this._fxMatch=f;
     this.sheet(body);
   },
+  gamesFromText:function(text){
+    var out=[], meta=this._gameMeta||{};
+    String(text||'').split('\n').forEach(function(ln){
+      var m=/^\s*(.+?\s+vs\s+.+?)\s+\u2014\s+(.+?)\s+@\s?([0-9]+(?:\.[0-9]+)?)\s*$/.exec(ln);
+      if(!m) return; var mt=meta[m[1]]||{};
+      out.push({match:m[1],pick:m[2],odds:parseFloat(m[3]),league:mt.league||'',kickoff_ts:mt.start_ts||null,sport:'Football'});
+    });
+    return out;
+  },
   useMarket:function(k){
     var f=this._fxMatch; if(!f) return;
+    this._gameMeta=this._gameMeta||{}; this._gameMeta[f.home+' vs '+f.away]={league:f.league||'',start_ts:f.start_ts||null};
     var el=document.getElementById(this._fxTarget);
     var line=f.home+' vs '+f.away;
     var odds=null;
