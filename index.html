@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Betstack Pro</title>
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#050505">
 <meta name="description" content="A transparent betting syndicate — follow the group verified picks and keep 100% of what you win. Every result stays on the record. 18+.">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
@@ -74,7 +74,7 @@ h1,h2,h3,h4{font-family:var(--d);letter-spacing:-.02em;line-height:1.06;}
 .wordmark{font-family:var(--d);font-weight:800;font-size:1.15rem;letter-spacing:-.01em;}
 .wordmark b{color:var(--green);font-weight:800;}.wordmark span{color:var(--muted);font-weight:600;}
 /* topbar */
-.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 2px) 16px 4px;background:var(--surface);border-bottom:1px solid var(--border);z-index:30;}
+.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 2px) 16px 4px;background:var(--surface);z-index:30;}
 .topbar .lhs{display:flex;align-items:center;gap:10px;}
 .topbar .bars{font-size:26px;}
 .top-actions{display:flex;gap:8px;align-items:center;color:var(--muted);}
@@ -347,7 +347,7 @@ body.light .st{background:rgba(0,0,0,.04);}
 .acc-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
 .acc.open .acc-body{max-height:260px;padding-bottom:14px;}
 /* bottom nav */
-.nav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);padding-bottom:4px;z-index:30;}
+.nav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);padding-bottom:0px;z-index:30;}
 .nav.hide{display:none;background:transparent;}
 
 .navitem{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 0 4px;color:var(--faint);}
@@ -7420,7 +7420,7 @@ var SYN = window.SYN = {
         '<textarea class="ta" id="syn-push-text" rows="3" placeholder="e.g. LIV vs CHE \u2014 Over 2.5 @1.90" style="padding:12px 14px;"></textarea></div>'+
       '<div class="field" style="margin-top:10px;"><label>Minimum odds floor</label>'+
         '<input class="input" id="syn-push-odds" inputmode="decimal" value="1.85" style="height:46px;"></div>'+
-        '<p class="sub" style="font-size:.64rem;margin-top:5px;">Pre-filled \u2014 just replace the number. Members who can no longer get this price skip the bet.</p>'+
+        '<p class="sub" style="font-size:.64rem;margin-top:5px;">Pre-filled \u2014 just replace the number. Members who can no longer get this price skip the bet. A pick written as \u201cHome vs Away \u2014 selection\u201d goes on the public Verified record once you mark it Won or Lost.</p>'+
       '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.sendPush()">Send</button>'+
       '<div id="syn-push-code" style="margin-top:10px;">'+(this.lastCode
         ? '<div class="sy-note" style="border-style:solid;border-color:var(--green);color:var(--green);">Pick code <b style="font-family:var(--d);">'+esc(this.lastCode)+'</b> \u2014 members can quote this back to you.'+
@@ -7471,7 +7471,7 @@ var SYN = window.SYN = {
             '<div class="field" style="flex:1;"><label>Minimum odds</label><input class="input" id="syn-lv-odds" inputmode="decimal" value="1.85" style="height:46px;"></div>'+
             '<div class="field" style="flex:1;"><label>Valid for (minutes)</label><input class="input" id="syn-lv-win" inputmode="numeric" value="5" style="height:46px;"></div>'+
           '</div>'+
-          '<p class="sub" style="font-size:.64rem;margin-top:5px;">Odds pre-filled \u2014 replace the number. \u201cValid for\u201d is how long the pick stays live before members should skip it.</p>'+
+          '<p class="sub" style="font-size:.64rem;margin-top:5px;">Odds pre-filled \u2014 replace the number. Write the pick as \u201cHome vs Away \u2014 selection\u201d and it goes on the public Verified record when you mark it Won or Lost. \u201cValid for\u201d is how long the pick stays live before members should skip it.</p>'+
           '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.dropLive()">Drop pick to session</button>'
         : '<div class="field"><label>Tier</label><select class="sel" id="syn-lv-tier" style="height:46px;"><option value="gold">Gold &amp; VIP</option><option value="vip">VIP only</option><option value="all">All tiers</option></select></div>'+
           '<button class="btn btn-green" style="margin-top:12px;" onclick="SYN.startLive()">Start live session</button>');
